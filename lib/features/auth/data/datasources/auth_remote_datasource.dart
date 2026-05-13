@@ -26,6 +26,12 @@ abstract class AuthRemoteDataSource {
 
   Future<void> requestOtp({required String email});
 
+  Future<void> requestPasswordReset({required String email});
+
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  });
 }
 
 @Injectable(as: AuthRemoteDataSource)
@@ -138,6 +144,39 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on DioException catch (e) {
       throw ServerException(
         e.response?.data['msg'] ?? 'Failed to send OTP',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<void> requestPasswordReset({required String email}) async {
+    try {
+      await apiClient.dio.post(
+        '/auth/request-reset',
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      throw ServerException(
+        e.response?.data['msg'] ?? 'Failed to send password reset email',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      await apiClient.dio.post(
+        '/auth/reset-password/$token',
+        data: {'newPassword': newPassword},
+      );
+    } on DioException catch (e) {
+      throw ServerException(
+        e.response?.data['msg'] ?? 'Failed to reset password',
         statusCode: e.response?.statusCode,
       );
     }

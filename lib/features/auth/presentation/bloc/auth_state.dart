@@ -30,6 +30,11 @@ class AuthOtpVerified extends AuthState {}
 
 class AuthOtpSent extends AuthState {}
 
+/// NEW: Password reset email sent successfully
+class AuthPasswordResetSent extends AuthState {}
+
+class AuthPasswordResetSuccess extends AuthState {}
+
 class AuthAuthenticated extends AuthState {
   final UserEntity user;
   AuthAuthenticated(this.user);

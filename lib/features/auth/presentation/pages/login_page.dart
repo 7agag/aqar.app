@@ -7,6 +7,7 @@ import '../../../../core/widgets/social_login_button.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import 'forgot_password_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -84,7 +85,15 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       GestureDetector(
                         onTap: () {
-                          // TODO: navigate to forgot password
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => BlocProvider.value(
+                                value: context.read<AuthBloc>(),
+                                child: const ForgotPasswordPage(),
+                              ),
+                            ),
+                          );
                         },
                         child: const Text(
                           'Forgot Password?',
@@ -111,8 +120,8 @@ class _LoginPageState extends State<LoginPage> {
                       prefixIcon: const Icon(Icons.lock_outline,
                           color: AppColors.textHint, size: 20),
                       suffixIcon: GestureDetector(
-                        onTap: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
+                        onTap: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
                         child: Icon(
                           _obscurePassword
                               ? Icons.visibility_off_outlined
@@ -132,7 +141,8 @@ class _LoginPageState extends State<LoginPage> {
               AqarButton(
                 text: 'Sign In',
                 isLoading: state is AuthLoading,
-                suffix: const Icon(Icons.arrow_forward, color: Colors.white, size: 18),
+                suffix: const Icon(Icons.arrow_forward,
+                    color: Colors.white, size: 18),
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     context.read<AuthBloc>().add(
