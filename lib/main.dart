@@ -1,3 +1,6 @@
+import 'package:aqar/features/property/presentation/bloc/property_bloc.dart';
+import 'package:aqar/features/property/presentation/bloc/property_event.dart';
+import 'package:aqar/features/property/presentation/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -22,6 +25,8 @@ class AqarApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(create: (_) => sl<AuthBloc>()),
+        BlocProvider(create: (_) => sl<PropertyBloc>()
+          ..add(GetPropertiesRequested()),),
       ],
       child: MaterialApp(
         title: 'AQAR',
@@ -32,7 +37,15 @@ class AqarApp extends StatelessWidget {
           final uri = Uri.parse(settings.name ?? '/');
 
           if (uri.path == '/') {
+            return MaterialPageRoute(builder: (_) => const HomePage());
+          }
+
+          if (uri.path == '/auth') {
             return MaterialPageRoute(builder: (_) => const AuthPage());
+          }
+
+          if (uri.path == '/home') {
+            return MaterialPageRoute(builder: (_) => const HomePage());
           }
 
           if (uri.pathSegments.length >= 2 &&

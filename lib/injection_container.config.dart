@@ -9,8 +9,6 @@
 // coverage:ignore-file
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'package:aqar/features/auth/domain/usecases/verify_otp_usecase.dart'
-    as _i8;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i558;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
@@ -23,13 +21,26 @@ import 'core/network/network_info.dart' as _i75;
 import 'features/auth/data/datasources/auth_remote_datasource.dart' as _i588;
 import 'features/auth/data/repositories/auth_repository_impl.dart' as _i111;
 import 'features/auth/domain/repositories/auth_repository.dart' as _i1015;
-import 'features/auth/domain/usecases/forgot_password_usecase.dart' as _i633;
+import 'features/auth/domain/usecases/forgot_password_usecase.dart' as _i993;
 import 'features/auth/domain/usecases/login_usecase.dart' as _i206;
 import 'features/auth/domain/usecases/logout_usecase.dart' as _i824;
 import 'features/auth/domain/usecases/register_usecase.dart' as _i693;
 import 'features/auth/domain/usecases/request_otp_usecase.dart' as _i324;
-import 'features/auth/domain/usecases/reset_password_usecase.dart' as _i742;
+import 'features/auth/domain/usecases/reset_password_usecase.dart' as _i1070;
+import 'features/auth/domain/usecases/verify_otp_usecase.dart' as _i8;
 import 'features/auth/presentation/bloc/auth_bloc.dart' as _i363;
+import 'features/property/data/datasources/property_remote_datasource.dart'
+    as _i267;
+import 'features/property/data/repositories/property_repository_impl.dart'
+    as _i1003;
+import 'features/property/domain/repositories/property_repository.dart'
+    as _i995;
+import 'features/property/domain/usecases/get_my_properties_usecase.dart'
+    as _i493;
+import 'features/property/domain/usecases/get_properties_usecase.dart' as _i223;
+import 'features/property/domain/usecases/get_property_by_id_usecase.dart'
+    as _i822;
+import 'features/property/presentation/bloc/property_bloc.dart' as _i468;
 
 extension GetItInjectableX on _i174.GetIt {
 // initializes the registration of main-scope dependencies inside of GetIt
@@ -53,32 +64,47 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i588.AuthRemoteDataSourceImpl(gh<_i871.ApiClient>()));
     gh.factory<_i75.NetworkInfo>(
         () => _i75.NetworkInfoImpl(gh<_i973.InternetConnectionChecker>()));
+    gh.factory<_i267.PropertyRemoteDataSource>(
+        () => _i267.PropertyRemoteDataSourceImpl(gh<_i871.ApiClient>()));
     gh.factory<_i1015.AuthRepository>(() => _i111.AuthRepositoryImpl(
           gh<_i588.AuthRemoteDataSource>(),
           gh<_i558.FlutterSecureStorage>(),
         ));
+    gh.factory<_i995.PropertyRepository>(() =>
+        _i1003.PropertyRepositoryImpl(gh<_i267.PropertyRemoteDataSource>()));
+    gh.factory<_i993.ForgotPasswordUseCase>(
+        () => _i993.ForgotPasswordUseCase(gh<_i1015.AuthRepository>()));
     gh.factory<_i206.LoginUseCase>(
         () => _i206.LoginUseCase(gh<_i1015.AuthRepository>()));
-    gh.factory<_i633.ForgotPasswordUseCase>(
-        () => _i633.ForgotPasswordUseCase(gh<_i1015.AuthRepository>()));
-    gh.factory<_i742.ResetPasswordUseCase>(
-        () => _i742.ResetPasswordUseCase(gh<_i1015.AuthRepository>()));
     gh.factory<_i824.LogoutUseCase>(
         () => _i824.LogoutUseCase(gh<_i1015.AuthRepository>()));
     gh.factory<_i693.RegisterUseCase>(
         () => _i693.RegisterUseCase(gh<_i1015.AuthRepository>()));
-    gh.factory<_i8.VerifyOtpUseCase>(
-        () => _i8.VerifyOtpUseCase(gh<_i1015.AuthRepository>()));
     gh.factory<_i324.RequestOtpUseCase>(
         () => _i324.RequestOtpUseCase(gh<_i1015.AuthRepository>()));
+    gh.factory<_i1070.ResetPasswordUseCase>(
+        () => _i1070.ResetPasswordUseCase(gh<_i1015.AuthRepository>()));
+    gh.factory<_i8.VerifyOtpUseCase>(
+        () => _i8.VerifyOtpUseCase(gh<_i1015.AuthRepository>()));
+    gh.factory<_i493.GetMyPropertiesUseCase>(
+        () => _i493.GetMyPropertiesUseCase(gh<_i995.PropertyRepository>()));
+    gh.factory<_i223.GetPropertiesUseCase>(
+        () => _i223.GetPropertiesUseCase(gh<_i995.PropertyRepository>()));
+    gh.factory<_i822.GetPropertyByIdUseCase>(
+        () => _i822.GetPropertyByIdUseCase(gh<_i995.PropertyRepository>()));
+    gh.factory<_i468.PropertyBloc>(() => _i468.PropertyBloc(
+          getPropertiesUseCase: gh<_i223.GetPropertiesUseCase>(),
+          getPropertyByIdUseCase: gh<_i822.GetPropertyByIdUseCase>(),
+          getMyPropertiesUseCase: gh<_i493.GetMyPropertiesUseCase>(),
+        ));
     gh.factory<_i363.AuthBloc>(() => _i363.AuthBloc(
           loginUseCase: gh<_i206.LoginUseCase>(),
           registerUseCase: gh<_i693.RegisterUseCase>(),
           logoutUseCase: gh<_i824.LogoutUseCase>(),
           verifyOtpUseCase: gh<_i8.VerifyOtpUseCase>(),
           requestOtpUseCase: gh<_i324.RequestOtpUseCase>(),
-          forgotPasswordUseCase: gh<_i633.ForgotPasswordUseCase>(),
-          resetPasswordUseCase: gh<_i742.ResetPasswordUseCase>(),
+          forgotPasswordUseCase: gh<_i993.ForgotPasswordUseCase>(),
+          resetPasswordUseCase: gh<_i1070.ResetPasswordUseCase>(),
         ));
     return this;
   }
