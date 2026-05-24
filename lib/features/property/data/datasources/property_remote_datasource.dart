@@ -13,6 +13,7 @@ abstract class PropertyRemoteDataSource {
     double? maxSize,
     int? bedrooms,
     int? bathrooms,
+    String? propertyType,
   });
 
   Future<PropertyModel> getPropertyById(int id);
@@ -34,6 +35,7 @@ class PropertyRemoteDataSourceImpl implements PropertyRemoteDataSource {
     double? maxSize,
     int? bedrooms,
     int? bathrooms,
+    String? propertyType,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
@@ -44,6 +46,7 @@ class PropertyRemoteDataSourceImpl implements PropertyRemoteDataSource {
       if (maxSize != null) queryParams['maxSize'] = maxSize;
       if (bedrooms != null) queryParams['bedrooms'] = bedrooms;
       if (bathrooms != null) queryParams['bathrooms'] = bathrooms;
+      if (propertyType != null) queryParams['propertyType'] = propertyType;
 
       final response = await apiClient.dio.get(
         '/property',

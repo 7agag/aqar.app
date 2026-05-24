@@ -3,6 +3,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/aqar_button.dart';
 
 class AdvancedSearchSheet extends StatefulWidget {
+  final String? initialLocation;
+  final double? initialMinPrice;
+  final double? initialMaxPrice;
+  final int? initialBedrooms;
+  final int? initialBathrooms;
+  final String? initialPropertyType;
   final Function({
     String? location,
     double? minPrice,
@@ -12,7 +18,16 @@ class AdvancedSearchSheet extends StatefulWidget {
     String? propertyType,
   }) onApply;
 
-  const AdvancedSearchSheet({super.key, required this.onApply});
+  const AdvancedSearchSheet({
+    super.key,
+    this.initialLocation,
+    this.initialMinPrice,
+    this.initialMaxPrice,
+    this.initialBedrooms,
+    this.initialBathrooms,
+    this.initialPropertyType,
+    required this.onApply,
+  });
 
   @override
   State<AdvancedSearchSheet> createState() => _AdvancedSearchSheetState();
@@ -25,6 +40,17 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
   int _bedrooms = 0;
   int _bathrooms = 0;
   String _propertyType = 'all';
+
+  @override
+  void initState() {
+    super.initState();
+    _locationController.text = widget.initialLocation ?? '';
+    _minPrice = widget.initialMinPrice ?? 0;
+    _maxPrice = widget.initialMaxPrice ?? 5000000;
+    _bedrooms = widget.initialBedrooms ?? 0;
+    _bathrooms = widget.initialBathrooms ?? 0;
+    _propertyType = widget.initialPropertyType ?? 'all';
+  }
 
   @override
   void dispose() {
@@ -132,7 +158,7 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
 
             // Price Range
             _buildLabel(
-                'Price Range  (\$${_minPrice.toInt()} — \$${_maxPrice.toInt()})'),
+                'Price Range  (\$${_minPrice.toInt()} - \$${_maxPrice.toInt()})'),
             RangeSlider(
               values: RangeValues(_minPrice, _maxPrice),
               min: 0,
@@ -201,8 +227,7 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                   maxPrice: _maxPrice < 5000000 ? _maxPrice : null,
                   bedrooms: _bedrooms > 0 ? _bedrooms : null,
                   bathrooms: _bathrooms > 0 ? _bathrooms : null,
-                  propertyType:
-                      _propertyType != 'all' ? _propertyType : null,
+                  propertyType: _propertyType != 'all' ? _propertyType : null,
                 );
                 Navigator.pop(context);
               },

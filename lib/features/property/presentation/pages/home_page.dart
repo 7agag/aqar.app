@@ -27,6 +27,14 @@ class _HomePageState extends State<HomePage> {
   double? _activeMaxPrice;
   int? _activeBedrooms;
   int? _activeBathrooms;
+  String? _activePropertyType;
+
+  bool get _hasActiveAdvancedFilters =>
+      _activeMinPrice != null ||
+      _activeMaxPrice != null ||
+      _activeBedrooms != null ||
+      _activeBathrooms != null ||
+      _activePropertyType != null;
 
   @override
   void initState() {
@@ -40,6 +48,7 @@ class _HomePageState extends State<HomePage> {
     double? maxPrice,
     int? bedrooms,
     int? bathrooms,
+    String? propertyType,
   }) {
     context.read<PropertyBloc>().add(
           GetPropertiesRequested(
@@ -48,6 +57,7 @@ class _HomePageState extends State<HomePage> {
             maxPrice: maxPrice,
             bedrooms: bedrooms,
             bathrooms: bathrooms,
+            propertyType: propertyType,
           ),
         );
   }
@@ -60,6 +70,7 @@ class _HomePageState extends State<HomePage> {
       maxPrice: _activeMaxPrice,
       bedrooms: _activeBedrooms,
       bathrooms: _activeBathrooms,
+      propertyType: _activePropertyType,
     );
   }
 
@@ -69,6 +80,12 @@ class _HomePageState extends State<HomePage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AdvancedSearchSheet(
+        initialLocation: _activeLocation,
+        initialMinPrice: _activeMinPrice,
+        initialMaxPrice: _activeMaxPrice,
+        initialBedrooms: _activeBedrooms,
+        initialBathrooms: _activeBathrooms,
+        initialPropertyType: _activePropertyType,
         onApply: ({
           location,
           minPrice,
@@ -83,6 +100,7 @@ class _HomePageState extends State<HomePage> {
             _activeMaxPrice = maxPrice;
             _activeBedrooms = bedrooms;
             _activeBathrooms = bathrooms;
+            _activePropertyType = propertyType;
           });
           _loadProperties(
             location: location,
@@ -90,10 +108,40 @@ class _HomePageState extends State<HomePage> {
             maxPrice: maxPrice,
             bedrooms: bedrooms,
             bathrooms: bathrooms,
+            propertyType: propertyType,
           );
         },
       ),
     );
+  }
+
+  void _reloadWithActiveFilters() {
+    _loadProperties(
+      location: _activeLocation,
+      minPrice: _activeMinPrice,
+      maxPrice: _activeMaxPrice,
+      bedrooms: _activeBedrooms,
+      bathrooms: _activeBathrooms,
+      propertyType: _activePropertyType,
+    );
+  }
+
+  void _clearPriceFilter() {
+    setState(() {
+      _activeMinPrice = null;
+      _activeMaxPrice = null;
+    });
+    _reloadWithActiveFilters();
+  }
+
+  void _clearPropertyTypeFilter() {
+    setState(() => _activePropertyType = null);
+    _reloadWithActiveFilters();
+  }
+
+  void _clearBedroomsFilter() {
+    setState(() => _activeBedrooms = null);
+    _reloadWithActiveFilters();
   }
 
   @override
@@ -168,37 +216,75 @@ class _HomePageState extends State<HomePage> {
       child: SearchBarWidget(
         onSearch: _onSearch,
         onFilterTap: _onFilterTap,
+        hasActiveFilters: _hasActiveAdvancedFilters,
       ),
     );
   }
 
   Widget _buildFilters() {
+    if (!_hasVisibleFilterChips) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            FilterChipWidget(
-              label: 'Price Range',
-              isSelected: _activeMinPrice != null || _activeMaxPrice != null,
-              onTap: _onFilterTap,
-            ),
-            const SizedBox(width: 8),
-            FilterChipWidget(
-              label: 'House Type',
-              onTap: _onFilterTap,
-            ),
-            const SizedBox(width: 8),
-            FilterChipWidget(
-              label: 'Bedrooms',
-              isSelected: _activeBedrooms != null,
-              onTap: _onFilterTap,
-            ),
+            if (_activeMinPrice != null || _activeMaxPrice != null) ...[
+              FilterChipWidget(
+                label: _priceFilterLabel,
+                isSelected: true,
+                onTap: _onFilterTap,
+                onRemove: _clearPriceFilter,
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (_activePropertyType != null) ...[
+              FilterChipWidget(
+                label: _propertyTypeLabel(_activePropertyType!),
+                isSelected: true,
+                onTap: _onFilterTap,
+                onRemove: _clearPropertyTypeFilter,
+              ),
+              const SizedBox(width: 8),
+            ],
+            if (_activeBedrooms != null) ...[
+              FilterChipWidget(
+                label: '${_activeBedrooms!}+ Bedrooms',
+                isSelected: true,
+                onTap: _onFilterTap,
+                onRemove: _clearBedroomsFilter,
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  bool get _hasVisibleFilterChips =>
+      _activeMinPrice != null ||
+      _activeMaxPrice != null ||
+      _activePropertyType != null ||
+      _activeBedrooms != null;
+
+  String get _priceFilterLabel {
+    final min = _activeMinPrice?.toInt();
+    final max = _activeMaxPrice?.toInt();
+    if (min != null && max != null) return '\$$min - \$$max';
+    if (min != null) return 'From \$$min';
+    return 'Up to \$$max';
+  }
+
+  String _propertyTypeLabel(String propertyType) {
+    switch (propertyType) {
+      case 'for_rent':
+        return 'For Rent';
+      case 'for_sale':
+        return 'For Sale';
+      default:
+        return 'House Type';
+    }
   }
 
   Widget _buildBuyRentToggle() {
@@ -214,11 +300,11 @@ class _HomePageState extends State<HomePage> {
           children: [
             _toggleTab('Buy', _isBuy, () {
               setState(() => _isBuy = true);
-              _loadProperties(location: _activeLocation);
+              _reloadWithActiveFilters();
             }),
             _toggleTab('Rent', !_isBuy, () {
               setState(() => _isBuy = false);
-              _loadProperties(location: _activeLocation);
+              _reloadWithActiveFilters();
             }),
           ],
         ),

@@ -37,6 +37,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
         maxSize: event.maxSize,
         bedrooms: event.bedrooms,
         bathrooms: event.bathrooms,
+        propertyType: event.propertyType,
       ),
     );
     result.fold(

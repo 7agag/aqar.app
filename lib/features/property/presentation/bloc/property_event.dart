@@ -13,6 +13,7 @@ class GetPropertiesRequested extends PropertyEvent {
   final double? maxSize;
   final int? bedrooms;
   final int? bathrooms;
+  final String? propertyType;
 
   GetPropertiesRequested({
     this.location,
@@ -22,10 +23,20 @@ class GetPropertiesRequested extends PropertyEvent {
     this.maxSize,
     this.bedrooms,
     this.bathrooms,
+    this.propertyType,
   });
 
   @override
-  List<Object?> get props => [location, minPrice, maxPrice, bedrooms];
+  List<Object?> get props => [
+        location,
+        minPrice,
+        maxPrice,
+        minSize,
+        maxSize,
+        bedrooms,
+        bathrooms,
+        propertyType,
+      ];
 }
 
 class GetPropertyByIdRequested extends PropertyEvent {

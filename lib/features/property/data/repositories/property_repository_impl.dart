@@ -20,6 +20,7 @@ class PropertyRepositoryImpl implements PropertyRepository {
     double? maxSize,
     int? bedrooms,
     int? bathrooms,
+    String? propertyType,
   }) async {
     try {
       final result = await remoteDataSource.getProperties(
@@ -30,6 +31,7 @@ class PropertyRepositoryImpl implements PropertyRepository {
         maxSize: maxSize,
         bedrooms: bedrooms,
         bathrooms: bathrooms,
+        propertyType: propertyType,
       );
       return Right(result);
     } on ServerException catch (e) {

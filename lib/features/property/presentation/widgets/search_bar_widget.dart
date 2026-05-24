@@ -4,11 +4,15 @@ import '../../../../core/theme/app_colors.dart';
 class SearchBarWidget extends StatefulWidget {
   final Function(String) onSearch;
   final VoidCallback onFilterTap;
+  final bool hasActiveFilters;
+  final String? currentQuery;
 
   const SearchBarWidget({
     super.key,
     required this.onSearch,
     required this.onFilterTap,
+    this.hasActiveFilters = false,
+    this.currentQuery,
   });
 
   @override
@@ -19,6 +23,22 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
   final _controller = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _controller.text = widget.currentQuery ?? '';
+  }
+
+  @override
+  void didUpdateWidget(covariant SearchBarWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextQuery = widget.currentQuery ?? '';
+    if (nextQuery != _controller.text) {
+      _controller.text = nextQuery;
+      _controller.selection = TextSelection.collapsed(offset: nextQuery.length);
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -26,6 +46,8 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isActive = widget.hasActiveFilters;
+
     return Container(
       height: 52,
       decoration: BoxDecoration(
@@ -63,17 +85,37 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
           ),
           GestureDetector(
             onTap: widget.onFilterTap,
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
               width: 38,
               height: 38,
               margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: isActive ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isActive ? AppColors.primary : AppColors.borderLight,
+                ),
+                boxShadow: isActive
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.28),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.tune_rounded,
-                color: Colors.white,
+                color: isActive ? Colors.white : AppColors.textPrimary,
                 size: 18,
               ),
             ),

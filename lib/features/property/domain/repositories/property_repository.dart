@@ -11,6 +11,7 @@ abstract class PropertyRepository {
     double? maxSize,
     int? bedrooms,
     int? bathrooms,
+    String? propertyType,
   });
 
   Future<Either<Failure, PropertyEntity>> getPropertyById(int id);
