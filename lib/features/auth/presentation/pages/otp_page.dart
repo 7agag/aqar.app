@@ -47,8 +47,7 @@ class _OtpPageState extends State<OtpPage> {
     });
   }
 
-  String get _otpCode =>
-      _controllers.map((c) => c.text).join();
+  String get _otpCode => _controllers.map((c) => c.text).join();
 
   void _onOtpChanged(String value, int index) {
     if (value.length == 1 && index < 5) {
@@ -64,8 +63,12 @@ class _OtpPageState extends State<OtpPage> {
 
   @override
   void dispose() {
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -74,7 +77,7 @@ class _OtpPageState extends State<OtpPage> {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthOtpVerified) {
-          // TODO: navigate to home
+          Navigator.pushNamedAndRemoveUntil(context, '/auth', (route) => false);
         }
         if (state is AuthOtpSent) {
           _startResendTimer();
@@ -131,7 +134,7 @@ class _OtpPageState extends State<OtpPage> {
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -313,8 +316,7 @@ class _OtpBox extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: AppColors.primary, width: 2),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
         ),
       ),

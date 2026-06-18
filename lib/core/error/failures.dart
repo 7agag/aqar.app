@@ -9,15 +9,15 @@ abstract class Failure extends Equatable {
 }
 
 class ServerFailure extends Failure {
-  const ServerFailure(super.message);
+  const ServerFailure(super.message, {int? statusCode});
 }
 
 class UnauthorizedFailure extends Failure {
-  const UnauthorizedFailure() : super('غير مصرح لك بالدخول');
+  const UnauthorizedFailure() : super('Unauthorized access');
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure() : super('تحقق من الاتصال بالإنترنت');
+  const NetworkFailure() : super('No internet connection');
 }
 
 class CacheFailure extends Failure {

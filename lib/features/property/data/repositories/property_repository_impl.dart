@@ -1,8 +1,9 @@
 import 'package:dartz/dartz.dart';
 import 'package:injectable/injectable.dart';
-import '../../../../core/error/exceptions.dart';
-import '../../../../core/error/failures.dart';
+import '../../../../../core/error/exceptions.dart';
+import '../../../../../core/error/failures.dart';
 import '../../domain/entities/property_entity.dart';
+import '../../domain/entities/property_filter_params.dart';
 import '../../domain/repositories/property_repository.dart';
 import '../datasources/property_remote_datasource.dart';
 
@@ -12,28 +13,14 @@ class PropertyRepositoryImpl implements PropertyRepository {
   PropertyRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<Failure, List<PropertyEntity>>> getProperties({
-    String? location,
-    double? minPrice,
-    double? maxPrice,
-    double? minSize,
-    double? maxSize,
-    int? bedrooms,
-    int? bathrooms,
-    String? propertyType,
-  }) async {
+  Future<Either<Failure, List<PropertyEntity>>> getProperties(
+    PropertyFilterParams params,
+  ) async {
     try {
-      final result = await remoteDataSource.getProperties(
-        location: location,
-        minPrice: minPrice,
-        maxPrice: maxPrice,
-        minSize: minSize,
-        maxSize: maxSize,
-        bedrooms: bedrooms,
-        bathrooms: bathrooms,
-        propertyType: propertyType,
-      );
+      final result = await remoteDataSource.getProperties(params);
       return Right(result);
+    } on UnauthorizedException {
+      return const Left(UnauthorizedFailure());
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     }
@@ -44,6 +31,8 @@ class PropertyRepositoryImpl implements PropertyRepository {
     try {
       final result = await remoteDataSource.getPropertyById(id);
       return Right(result);
+    } on UnauthorizedException {
+      return const Left(UnauthorizedFailure());
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     }
@@ -54,8 +43,11 @@ class PropertyRepositoryImpl implements PropertyRepository {
     try {
       final result = await remoteDataSource.getMyProperties();
       return Right(result);
+    } on UnauthorizedException {
+      return const Left(UnauthorizedFailure());
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     }
   }
+
 }

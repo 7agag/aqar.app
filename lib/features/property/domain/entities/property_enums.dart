@@ -1,0 +1,52 @@
+enum ListingType {
+  forSale('for_sale', 'For Sale'),
+  forRent('for_rent', 'For Rent');
+
+  final String value;
+  final String label;
+  const ListingType(this.value, this.label);
+  static ListingType fromValue(String v) =>
+      values.firstWhere((e) => e.value == v, orElse: () => forRent);
+}
+
+enum PhysicalPropertyType {
+  apartment('apartment', 'Apartment'),
+  villa('villa', 'Villa'),
+  studio('studio', 'Studio'),
+  house('house', 'House');
+
+  final String value;
+  final String label;
+  const PhysicalPropertyType(this.value, this.label);
+  static PhysicalPropertyType? fromValue(String? v) =>
+      v == null ? null : values.firstWhere(
+        (e) => e.value == v,
+        orElse: () => apartment,
+      );
+}
+
+enum ListingStatus {
+  inactive('inactive', 'Inactive'),
+  active('active', 'Active'),
+  underNegotiation('under_negotiation', 'Under Negotiation'),
+  sold('sold', 'Sold'),
+  expired('expired', 'Expired');
+
+  final String value;
+  final String label;
+  const ListingStatus(this.value, this.label);
+  static ListingStatus fromValue(String? v) =>
+      values.firstWhere((e) => e.value == v, orElse: () => inactive);
+}
+
+enum PricingUnit {
+  day('DAY', 'day'),
+  month('MONTH', 'month'),
+  year('YEAR', 'year');
+
+  final String value;
+  final String label;
+  const PricingUnit(this.value, this.label);
+  static PricingUnit fromValue(String v) =>
+      values.firstWhere((e) => e.value == v, orElse: () => day);
+}

@@ -20,10 +20,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final token = await remoteDataSource.login(
-        email: email,
-        password: password,
-      );
+      final token = await remoteDataSource.login(email: email, password: password);
       await secureStorage.write(key: 'access_token', value: token);
       return Right(token);
     } on UnauthorizedException {
@@ -119,10 +116,7 @@ class AuthRepositoryImpl implements AuthRepository {
     required String newPassword,
   }) async {
     try {
-      await remoteDataSource.resetPassword(
-        token: token,
-        newPassword: newPassword,
-      );
+      await remoteDataSource.resetPassword(token: token, newPassword: newPassword);
       return const Right(null);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

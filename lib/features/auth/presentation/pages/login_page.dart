@@ -33,7 +33,8 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
-        if (state is AuthAuthenticated) {
+        // ✅ تعديل هنا: ننتظر AuthLoginSuccess بدلاً من AuthAuthenticated
+        if (state is AuthLoginSuccess) {
           Navigator.of(context).pushReplacementNamed('/home');
         }
         if (state is AuthError) {
@@ -206,7 +207,7 @@ class _LoginPageState extends State<LoginPage> {
             'OR CONTINUE WITH',
             style: TextStyle(
               fontSize: 11,
-              color: AppColors.textSecondary.withOpacity(0.7),
+              color: AppColors.textSecondary.withValues(alpha: 0.7),
               letterSpacing: 1,
             ),
           ),

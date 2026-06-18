@@ -1,23 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
-import '../../../../core/error/exceptions.dart';
-import '../../../../core/network/api_client.dart';
+import '../../../../../core/error/exceptions.dart';
+import '../../../../../core/network/api_client.dart';
 import '../models/property_model.dart';
+import '../../domain/entities/property_filter_params.dart';
 
 abstract class PropertyRemoteDataSource {
-  Future<List<PropertyModel>> getProperties({
-    String? location,
-    double? minPrice,
-    double? maxPrice,
-    double? minSize,
-    double? maxSize,
-    int? bedrooms,
-    int? bathrooms,
-    String? propertyType,
-  });
-
+  Future<List<PropertyModel>> getProperties(PropertyFilterParams params);
   Future<PropertyModel> getPropertyById(int id);
-
   Future<List<PropertyModel>> getMyProperties();
 }
 
@@ -27,37 +17,19 @@ class PropertyRemoteDataSourceImpl implements PropertyRemoteDataSource {
   PropertyRemoteDataSourceImpl(this.apiClient);
 
   @override
-  Future<List<PropertyModel>> getProperties({
-    String? location,
-    double? minPrice,
-    double? maxPrice,
-    double? minSize,
-    double? maxSize,
-    int? bedrooms,
-    int? bathrooms,
-    String? propertyType,
-  }) async {
+  Future<List<PropertyModel>> getProperties(PropertyFilterParams params) async {
     try {
-      final queryParams = <String, dynamic>{};
-      if (location != null) queryParams['location'] = location;
-      if (minPrice != null) queryParams['minPrice'] = minPrice;
-      if (maxPrice != null) queryParams['maxPrice'] = maxPrice;
-      if (minSize != null) queryParams['minSize'] = minSize;
-      if (maxSize != null) queryParams['maxSize'] = maxSize;
-      if (bedrooms != null) queryParams['bedrooms'] = bedrooms;
-      if (bathrooms != null) queryParams['bathrooms'] = bathrooms;
-      if (propertyType != null) queryParams['propertyType'] = propertyType;
-
       final response = await apiClient.dio.get(
         '/property',
-        queryParameters: queryParams,
+        queryParameters: params.toJson(),
       );
-
       final List data = response.data as List;
-      return data.map((e) => PropertyModel.fromJson(e)).toList();
+      return data
+          .map((e) => PropertyModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
       throw ServerException(
-        e.response?.data['msg'] ?? 'Failed to get properties',
+        e.response?.data['msg'] ?? 'Failed to fetch properties',
         statusCode: e.response?.statusCode,
       );
     }
@@ -67,10 +39,13 @@ class PropertyRemoteDataSourceImpl implements PropertyRemoteDataSource {
   Future<PropertyModel> getPropertyById(int id) async {
     try {
       final response = await apiClient.dio.get('/property/$id');
-      return PropertyModel.fromJson(response.data);
+      return PropertyModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw ServerException('Property not found', statusCode: 404);
+      }
       throw ServerException(
-        e.response?.data['msg'] ?? 'Failed to get property',
+        e.response?.data['msg'] ?? 'Failed to fetch property',
         statusCode: e.response?.statusCode,
       );
     }
@@ -81,10 +56,13 @@ class PropertyRemoteDataSourceImpl implements PropertyRemoteDataSource {
     try {
       final response = await apiClient.dio.get('/property/my-properties');
       final List data = response.data as List;
-      return data.map((e) => PropertyModel.fromJson(e)).toList();
+      return data
+          .map((e) => PropertyModel.fromJson(e as Map<String, dynamic>))
+          .toList();
     } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw UnauthorizedException();
       throw ServerException(
-        e.response?.data['msg'] ?? 'Failed to get my properties',
+        e.response?.data['msg'] ?? 'Failed to fetch my properties',
         statusCode: e.response?.statusCode,
       );
     }

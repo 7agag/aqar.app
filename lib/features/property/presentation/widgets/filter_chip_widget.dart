@@ -1,3 +1,5 @@
+// lib/features/property/presentation/widgets/filter_chip_widget.dart
+
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 

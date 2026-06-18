@@ -94,7 +94,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<UserModel> getProfile() async {
     try {
       final response = await apiClient.dio.get('/auth/profile');
-      return UserModel.fromJson(response.data['user']);
+      final data = response.data;
+      final userJson = data is Map<String, dynamic> && data['user'] != null
+          ? data['user'] as Map<String, dynamic>
+          : data as Map<String, dynamic>;
+      return UserModel.fromJson(userJson);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) throw UnauthorizedException();
       throw ServerException(

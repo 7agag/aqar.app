@@ -1,7 +1,11 @@
+// lib/features/auth/presentation/bloc/auth_state.dart
+
+
+import 'package:aqar/features/auth/domain/entities/user_entity.dart';
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/user_entity.dart';
 
 abstract class AuthState extends Equatable {
+  const AuthState();
   @override
   List<Object?> get props => [];
 }
@@ -12,43 +16,40 @@ class AuthLoading extends AuthState {}
 
 class AuthLoginSuccess extends AuthState {
   final String token;
-  AuthLoginSuccess(this.token);
-
+  const AuthLoginSuccess(this.token);
   @override
-  List<Object> get props => [token];
+  List<Object?> get props => [token];
 }
 
 class AuthRegisterSuccess extends AuthState {
   final String email;
-  AuthRegisterSuccess(this.email);
-
+  const AuthRegisterSuccess(this.email);
   @override
-  List<Object> get props => [email];
+  List<Object?> get props => [email];
 }
+
+class AuthUnauthenticated extends AuthState {}
 
 class AuthOtpVerified extends AuthState {}
 
 class AuthOtpSent extends AuthState {}
 
-/// NEW: Password reset email sent successfully
 class AuthPasswordResetSent extends AuthState {}
 
 class AuthPasswordResetSuccess extends AuthState {}
 
-class AuthAuthenticated extends AuthState {
-  final UserEntity user;
-  AuthAuthenticated(this.user);
-
-  @override
-  List<Object> get props => [user];
-}
-
-class AuthUnauthenticated extends AuthState {}
-
 class AuthError extends AuthState {
   final String message;
-  AuthError(this.message);
-
+  const AuthError(this.message);
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message];
+}
+
+class AuthProfileLoading extends AuthState {}
+
+class AuthProfileLoaded extends AuthState {
+  final UserEntity user;
+  const AuthProfileLoaded(this.user);
+  @override
+  List<Object?> get props => [user];
 }

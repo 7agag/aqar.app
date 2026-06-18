@@ -1,50 +1,29 @@
+// lib/features/property/presentation/bloc/property_event.dart
+
 import 'package:equatable/equatable.dart';
 
+import '../../domain/entities/property_filter_params.dart';
+
 abstract class PropertyEvent extends Equatable {
+  const PropertyEvent();
   @override
   List<Object?> get props => [];
 }
 
 class GetPropertiesRequested extends PropertyEvent {
-  final String? location;
-  final double? minPrice;
-  final double? maxPrice;
-  final double? minSize;
-  final double? maxSize;
-  final int? bedrooms;
-  final int? bathrooms;
-  final String? propertyType;
-
-  GetPropertiesRequested({
-    this.location,
-    this.minPrice,
-    this.maxPrice,
-    this.minSize,
-    this.maxSize,
-    this.bedrooms,
-    this.bathrooms,
-    this.propertyType,
-  });
-
+  final PropertyFilterParams params;
+  const GetPropertiesRequested({required this.params});
   @override
-  List<Object?> get props => [
-        location,
-        minPrice,
-        maxPrice,
-        minSize,
-        maxSize,
-        bedrooms,
-        bathrooms,
-        propertyType,
-      ];
+  List<Object?> get props => [params];
 }
 
 class GetPropertyByIdRequested extends PropertyEvent {
   final int id;
-  GetPropertyByIdRequested({required this.id});
-
+  const GetPropertyByIdRequested({required this.id});
   @override
-  List<Object> get props => [id];
+  List<Object?> get props => [id];
 }
 
-class GetMyPropertiesRequested extends PropertyEvent {}
+class GetMyPropertiesRequested extends PropertyEvent {
+  const GetMyPropertiesRequested();
+}

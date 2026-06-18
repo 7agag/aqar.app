@@ -1,3 +1,4 @@
+import 'package:aqar/core/config/app_config.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:injectable/injectable.dart';
@@ -8,13 +9,10 @@ class ApiClient {
   late final Dio _dio;
   final FlutterSecureStorage _storage;
 
-  // ← غير دي لـ URL بتاعك
-  static const String baseUrl = 'http://localhost:8000';
-
   ApiClient(this._storage) {
     _dio = Dio(
       BaseOptions(
-        baseUrl: baseUrl,
+        baseUrl: AppConfig.baseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
         headers: {'Content-Type': 'application/json'},

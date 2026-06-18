@@ -1,14 +1,28 @@
+// lib/features/property/presentation/pages/home_page.dart
+
+import 'package:aqar/features/favorite/presentation/bloc/favorite_bloc.dart';
+import 'package:aqar/features/favorite/presentation/pages/favorites_page.dart';
+import 'package:aqar/features/map/presentation/pages/map_page.dart';
+import 'package:aqar/features/property/presentation/pages/search_page.dart';
+import 'package:aqar/features/auth/presentation/pages/profile_page.dart';
+import 'package:aqar/features/property/presentation/pages/all_properties_page.dart';
+import 'package:aqar/features/property/presentation/pages/property_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/refreshable_widget.dart';
+import '../../domain/entities/property_filter_params.dart';
+import '../../domain/entities/property_entity.dart';
+import '../../domain/entities/property_enums.dart';
 import '../bloc/property_bloc.dart';
 import '../bloc/property_event.dart';
 import '../bloc/property_state.dart';
-import '../widgets/featured_property_card.dart';
-import '../widgets/nearby_property_card.dart';
-import '../widgets/filter_chip_widget.dart';
-import '../widgets/search_bar_widget.dart';
 import '../widgets/advanced_search_sheet.dart';
+import '../widgets/sponsored_property_card.dart';
+import '../widgets/filter_chip_widget.dart';
+import '../widgets/nearby_property_card.dart';
+import '../widgets/search_bar_widget.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -17,170 +31,334 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  bool _isBuy = true;
+class _HomePageState extends State<HomePage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   int _currentIndex = 0;
 
-  // Active filters
-  String? _activeLocation;
+  // --- search & filters ---
+  String? _searchText;
+  bool _isBuy = true;
+  int _buyCount = 0;
+  int _rentCount = 0;
+  Set<int> _favoriteIds = {};
+
+  // Advanced filters (بدون Location)
   double? _activeMinPrice;
   double? _activeMaxPrice;
   int? _activeBedrooms;
   int? _activeBathrooms;
-  String? _activePropertyType;
+  PhysicalPropertyType? _activePhysicalType;
+  String? _activeRentalDuration;
+  double? _activeMinSize;
+  double? _activeMaxSize;
+
+  // Loading
+  bool _isLoading = false;
+
+  List<PropertyEntity> _allProperties = [];
 
   bool get _hasActiveAdvancedFilters =>
       _activeMinPrice != null ||
       _activeMaxPrice != null ||
       _activeBedrooms != null ||
       _activeBathrooms != null ||
-      _activePropertyType != null;
+      _activePhysicalType != null ||
+      _activeRentalDuration != null ||
+      _activeMinSize != null ||
+      _activeMaxSize != null;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadProperties();
+  // (local filtering removed — sponsored & nearby use independent getters)
+
+  ListingType _listingTypeOf(PropertyEntity property) {
+    final ls = property.listingStatus?.value;
+    if (ls == 'for_sale' || ls == 'for_rent') return ListingType.fromValue(ls!);
+
+    final pt = property.listingType.value;
+    if (pt == 'for_sale' || pt == 'for_rent') return ListingType.fromValue(pt);
+
+    return property.isAvailable ? ListingType.forRent : ListingType.forSale;
   }
 
-  void _loadProperties({
-    String? location,
-    double? minPrice,
-    double? maxPrice,
-    int? bedrooms,
-    int? bathrooms,
-    String? propertyType,
-  }) {
+  void _updateBuyRentCounts(List<PropertyEntity> properties) {
+    _buyCount = properties
+        .where((property) => _listingTypeOf(property) == ListingType.forSale)
+        .length;
+    _rentCount = properties
+        .where((property) => _listingTypeOf(property) == ListingType.forRent)
+        .length;
+  }
+
+  bool _matchesSearch(PropertyEntity p) {
+    if (_searchText == null) return true;
+    final q = _searchText!.toLowerCase();
+    return p.propertyName.toLowerCase().contains(q) ||
+        p.location.toLowerCase().contains(q);
+  }
+
+  List<PropertyEntity> get _sponsoredProperties =>
+      _allProperties.where((p) =>
+          p.isSponsored &&
+          p.listingType == (_isBuy ? ListingType.forSale : ListingType.forRent) &&
+          _matchesSearch(p)).toList();
+
+  List<PropertyEntity>? _nearbyCache;
+
+  List<PropertyEntity> get _nearbyProperties {
+    if (_nearbyCache != null) return _nearbyCache!;
+    final nonSponsored = _allProperties.where((p) =>
+        !p.isSponsored &&
+        p.listingType == (_isBuy ? ListingType.forSale : ListingType.forRent) &&
+        _matchesSearch(p)).toList();
+    nonSponsored.shuffle();
+    _nearbyCache = nonSponsored;
+    return nonSponsored;
+  }
+
+  void _clearNearbyCache() {
+    _nearbyCache = null;
+  }
+
+  // ========== تحميل البيانات ==========
+  Future<void> _loadProperties() async {
+    if (_isLoading) return;
+    setState(() {
+      _isLoading = true;
+      _allProperties = [];
+    });
+
     context.read<PropertyBloc>().add(
           GetPropertiesRequested(
-            location: location,
-            minPrice: minPrice,
-            maxPrice: maxPrice,
-            bedrooms: bedrooms,
-            bathrooms: bathrooms,
-            propertyType: propertyType,
+            params: const PropertyFilterParams(),
           ),
         );
   }
 
-  void _onSearch(String query) {
-    _activeLocation = query.isNotEmpty ? query : null;
-    _loadProperties(
-      location: _activeLocation,
-      minPrice: _activeMinPrice,
-      maxPrice: _activeMaxPrice,
-      bedrooms: _activeBedrooms,
-      bathrooms: _activeBathrooms,
-      propertyType: _activePropertyType,
-    );
+  // ========== البحث (عند الضغط على Enter فقط) ==========
+  void _performSearch(String query) {
+    setState(() {
+      _searchText = query.trim().isEmpty ? null : query.trim();
+      _nearbyCache = null;
+    });
   }
 
+  // ========== الفلاتر المتقدمة ==========
   void _onFilterTap() {
+    final currentState = context.read<PropertyBloc>().state;
+    List<PropertyEntity> allProps = [];
+    if (currentState is PropertiesLoaded) {
+      allProps = currentState.allProperties;
+    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => AdvancedSearchSheet(
-        initialLocation: _activeLocation,
+        isBuy: _isBuy,
         initialMinPrice: _activeMinPrice,
         initialMaxPrice: _activeMaxPrice,
         initialBedrooms: _activeBedrooms,
         initialBathrooms: _activeBathrooms,
-        initialPropertyType: _activePropertyType,
-        onApply: ({
-          location,
-          minPrice,
-          maxPrice,
-          bedrooms,
-          bathrooms,
-          propertyType,
-        }) {
+        initialPropertyType: _activePhysicalType,
+        initialRentalDuration: _activeRentalDuration,
+        initialMinSize: _activeMinSize,
+        initialMaxSize: _activeMaxSize,
+        allProperties: allProps,
+        onApply: (filter) {
+          final oldPhysicalType = _activePhysicalType;
+
           setState(() {
-            _activeLocation = location;
-            _activeMinPrice = minPrice;
-            _activeMaxPrice = maxPrice;
-            _activeBedrooms = bedrooms;
-            _activeBathrooms = bathrooms;
-            _activePropertyType = propertyType;
+            _activeMinPrice = filter.minPrice;
+            _activeMaxPrice = filter.maxPrice;
+            _activeBedrooms = filter.bedrooms;
+            _activeBathrooms = filter.bathrooms;
+            _activePhysicalType = filter.propertyType;
+            _activeRentalDuration = filter.rentalDuration;
+            _activeMinSize = filter.minSize;
+            _activeMaxSize = filter.maxSize;
           });
-          _loadProperties(
-            location: location,
-            minPrice: minPrice,
-            maxPrice: maxPrice,
-            bedrooms: bedrooms,
-            bathrooms: bathrooms,
-            propertyType: propertyType,
-          );
+
+          if (oldPhysicalType != filter.propertyType) {
+            _loadProperties();
+          }
         },
       ),
     );
   }
 
-  void _reloadWithActiveFilters() {
-    _loadProperties(
-      location: _activeLocation,
-      minPrice: _activeMinPrice,
-      maxPrice: _activeMaxPrice,
-      bedrooms: _activeBedrooms,
-      bathrooms: _activeBathrooms,
-      propertyType: _activePropertyType,
-    );
-  }
-
+  // ========== مسح الفلاتر ==========
   void _clearPriceFilter() {
     setState(() {
       _activeMinPrice = null;
       _activeMaxPrice = null;
     });
-    _reloadWithActiveFilters();
   }
 
   void _clearPropertyTypeFilter() {
-    setState(() => _activePropertyType = null);
-    _reloadWithActiveFilters();
+    setState(() {
+      _activePhysicalType = null;
+    });
+    _loadProperties();
   }
 
   void _clearBedroomsFilter() {
-    setState(() => _activeBedrooms = null);
-    _reloadWithActiveFilters();
+    setState(() {
+      _activeBedrooms = null;
+    });
+  }
+
+  void _clearBathroomsFilter() {
+    setState(() {
+      _activeBathrooms = null;
+    });
+  }
+
+  void _clearSizeFilter() {
+    setState(() {
+      _activeMinSize = null;
+      _activeMaxSize = null;
+    });
+  }
+
+  void _clearRentalDurationFilter() {
+    setState(() {
+      _activeRentalDuration = null;
+    });
+  }
+
+  void _clearAllFilters() {
+    setState(() {
+      _activeMinPrice = null;
+      _activeMaxPrice = null;
+      _activeBedrooms = null;
+      _activeBathrooms = null;
+      _activePhysicalType = null;
+      _activeRentalDuration = null;
+      _activeMinSize = null;
+      _activeMaxSize = null;
+    });
+    _loadProperties();
+  }
+
+  // _navigateToAllProperties removed — "Explore More" in nearby section uses inline navigation
+
+  // ========== دورة الحياة ==========
+  @override
+  void initState() {
+    super.initState();
+    _favoriteIds = {};
+    _loadProperties();
+    _loadCounts();
+    _loadFavorites();
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
+  void dispose() {
+    super.dispose();
+  }
+
+  // ========== تحميل الأعداد والمفضلة ==========
+  Future<void> _loadCounts() async {
+    final result = await context.read<PropertyBloc>().getPropertiesDirectly(
+          PropertyFilterParams(),
+        );
+
+    result.fold(
+      (_) {},
+      (properties) {
+        if (!mounted) return;
+        setState(() {
+          _updateBuyRentCounts(properties);
+        });
+      },
+    );
+  }
+
+  void _loadFavorites() {
+    context.read<FavoriteBloc>().add(GetFavoritesEvent());
+  }
+
+  void _toggleFavorite(int propertyId) {
+    final isFav = _favoriteIds.contains(propertyId);
+    if (isFav) {
+      context.read<FavoriteBloc>().add(RemoveFavoriteEvent(propertyId));
+      setState(() => _favoriteIds.remove(propertyId));
+    } else {
+      context.read<FavoriteBloc>().add(AddFavoriteEvent(propertyId));
+      setState(() => _favoriteIds.add(propertyId));
+    }
+  }
+
+  // ========== تبديل Buy/Rent ==========
+  void _toggleBuyRent(bool isBuy) {
+    setState(() {
+      _isBuy = isBuy;
+      _allProperties = [];
+      _clearNearbyCache();
+    });
+    _loadProperties();
+  }
+
+  // ----------------------------------------------------------------------
+  // HOME CONTENT
+  // ----------------------------------------------------------------------
+  Widget _buildHomeContent() {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<PropertyBloc, PropertyState>(
+          listener: (context, state) {
+            if (state is PropertiesLoaded) {
+              setState(() {
+                _allProperties = state.allProperties;
+                _isLoading = false;
+                _updateBuyRentCounts(state.allProperties);
+                _clearNearbyCache();
+              });
+            }
+            if (state is PropertyError) {
+              _isLoading = false;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message)),
+              );
+            }
+          },
+        ),
+        BlocListener<FavoriteBloc, FavoriteState>(
+          listener: (context, state) {
+            if (state is FavoriteLoaded) {
+              setState(() {
+                _favoriteIds = state.favorites.map((p) => p.propertyId).toSet();
+              });
+            } else if (state is FavoriteOperationSuccess) {
+              _loadFavorites();
+            }
+          },
+        ),
+      ],
+      child: SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildHeader()),
             SliverToBoxAdapter(child: _buildSearchBar()),
             SliverToBoxAdapter(child: _buildFilters()),
             SliverToBoxAdapter(child: _buildBuyRentToggle()),
-            SliverToBoxAdapter(child: _buildFeaturedSection()),
+            SliverToBoxAdapter(child: _buildSponsoredSection()),
             SliverToBoxAdapter(child: _buildNearbySection()),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
       ),
-      // Chatbot FAB
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: open chatbot
-        },
-        backgroundColor: AppColors.textPrimary,
-        shape: const CircleBorder(),
-        child: const Icon(
-          Icons.smart_toy_outlined,
-          color: Colors.white,
-          size: 24,
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
+  // ----------------------------------------------------------------------
+  // UI components
+  // ----------------------------------------------------------------------
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -214,48 +392,72 @@ class _HomePageState extends State<HomePage> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: SearchBarWidget(
-        onSearch: _onSearch,
+        onSubmitted: _performSearch, // ✅ البحث عند Enter
         onFilterTap: _onFilterTap,
         hasActiveFilters: _hasActiveAdvancedFilters,
+        currentQuery: _searchText,
       ),
     );
   }
 
   Widget _buildFilters() {
     if (!_hasVisibleFilterChips) return const SizedBox.shrink();
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            if (_activeMinPrice != null || _activeMaxPrice != null) ...[
+            if (_activeMinPrice != null || _activeMaxPrice != null)
               FilterChipWidget(
                 label: _priceFilterLabel,
                 isSelected: true,
                 onTap: _onFilterTap,
                 onRemove: _clearPriceFilter,
               ),
-              const SizedBox(width: 8),
-            ],
-            if (_activePropertyType != null) ...[
+            if (_activePhysicalType != null)
               FilterChipWidget(
-                label: _propertyTypeLabel(_activePropertyType!),
+                label: _activePhysicalType!.label,
                 isSelected: true,
                 onTap: _onFilterTap,
                 onRemove: _clearPropertyTypeFilter,
               ),
-              const SizedBox(width: 8),
-            ],
-            if (_activeBedrooms != null) ...[
+            if (_activeRentalDuration != null && _activeRentalDuration != 'all')
               FilterChipWidget(
-                label: '${_activeBedrooms!}+ Bedrooms',
+                label: _activeRentalDuration!,
+                isSelected: true,
+                onTap: _onFilterTap,
+                onRemove: _clearRentalDurationFilter,
+              ),
+            if (_activeBedrooms != null && _activeBedrooms! > 0)
+              FilterChipWidget(
+                label: '$_activeBedrooms+ Bedrooms',
                 isSelected: true,
                 onTap: _onFilterTap,
                 onRemove: _clearBedroomsFilter,
               ),
-            ],
+            if (_activeBathrooms != null && _activeBathrooms! > 0)
+              FilterChipWidget(
+                label: '$_activeBathrooms+ Bathrooms',
+                isSelected: true,
+                onTap: _onFilterTap,
+                onRemove: _clearBathroomsFilter,
+              ),
+            if (_activeMinSize != null || _activeMaxSize != null)
+              FilterChipWidget(
+                label: _sizeFilterLabel,
+                isSelected: true,
+                onTap: _onFilterTap,
+                onRemove: _clearSizeFilter,
+              ),
+            if (_hasActiveAdvancedFilters)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: TextButton(
+                  onPressed: _clearAllFilters,
+                  child: const Text('Clear All'),
+                ),
+              ),
           ],
         ),
       ),
@@ -265,26 +467,29 @@ class _HomePageState extends State<HomePage> {
   bool get _hasVisibleFilterChips =>
       _activeMinPrice != null ||
       _activeMaxPrice != null ||
-      _activePropertyType != null ||
-      _activeBedrooms != null;
+      _activePhysicalType != null ||
+      (_activeRentalDuration != null && _activeRentalDuration != 'all') ||
+      (_activeBedrooms != null && _activeBedrooms! > 0) ||
+      (_activeBathrooms != null && _activeBathrooms! > 0) ||
+      _activeMinSize != null ||
+      _activeMaxSize != null;
 
   String get _priceFilterLabel {
     final min = _activeMinPrice?.toInt();
     final max = _activeMaxPrice?.toInt();
     if (min != null && max != null) return '\$$min - \$$max';
     if (min != null) return 'From \$$min';
-    return 'Up to \$$max';
+    if (max != null) return 'Up to \$$max';
+    return '';
   }
 
-  String _propertyTypeLabel(String propertyType) {
-    switch (propertyType) {
-      case 'for_rent':
-        return 'For Rent';
-      case 'for_sale':
-        return 'For Sale';
-      default:
-        return 'House Type';
-    }
+  String get _sizeFilterLabel {
+    final min = _activeMinSize?.toInt();
+    final max = _activeMaxSize?.toInt();
+    if (min != null && max != null) return '$min - $max sqft';
+    if (min != null) return 'Min $min sqft';
+    if (max != null) return 'Max $max sqft';
+    return '';
   }
 
   Widget _buildBuyRentToggle() {
@@ -298,14 +503,8 @@ class _HomePageState extends State<HomePage> {
         ),
         child: Row(
           children: [
-            _toggleTab('Buy', _isBuy, () {
-              setState(() => _isBuy = true);
-              _reloadWithActiveFilters();
-            }),
-            _toggleTab('Rent', !_isBuy, () {
-              setState(() => _isBuy = false);
-              _reloadWithActiveFilters();
-            }),
+            _toggleTab('Buy', _isBuy, () => _toggleBuyRent(true)),
+            _toggleTab('Rent', !_isBuy, () => _toggleBuyRent(false)),
           ],
         ),
       ),
@@ -313,6 +512,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _toggleTab(String label, bool active, VoidCallback onTap) {
+    final count = label == 'Buy' ? _buyCount : _rentCount;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -325,7 +525,7 @@ class _HomePageState extends State<HomePage> {
             boxShadow: active
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 8,
                     )
                   ]
@@ -333,7 +533,7 @@ class _HomePageState extends State<HomePage> {
           ),
           alignment: Alignment.center,
           child: Text(
-            label,
+            '$label ($count)',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -345,196 +545,248 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildFeaturedSection() {
-    return BlocBuilder<PropertyBloc, PropertyState>(
-      builder: (context, state) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Featured Properties',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {},
-                    child: const Text(
-                      'See all',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (state is PropertyLoading)
-              const SizedBox(
-                height: 220,
-                child: Center(
-                  child:
-                      CircularProgressIndicator(color: AppColors.primary),
-                ),
-              )
-            else if (state is PropertiesLoaded && state.properties.isNotEmpty)
-              SizedBox(
-                height: 260,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 20),
-                  itemCount: state.properties.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 16),
-                      child: FeaturedPropertyCard(
-                        property: state.properties[index],
-                        onTap: () {},
-                        onFavTap: () {},
-                      ),
-                    );
-                  },
-                ),
-              )
-            else if (state is PropertiesLoaded && state.properties.isEmpty)
-              const SizedBox(
-                height: 100,
-                child: Center(
-                  child: Text(
-                    'No properties found',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                ),
-              )
-            else if (state is PropertyError)
-              SizedBox(
-                height: 100,
-                child: Center(
-                  child: Text(
-                    state.message,
-                    style: const TextStyle(color: AppColors.error),
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
+  // ========== Sponsored Section ==========
+  Widget _buildSponsoredSection() {
+    final sponsored = _sponsoredProperties;
+    final screenWidth = MediaQuery.of(context).size.width;
+    double cardWidth = screenWidth * 0.42;
+    if (cardWidth > 260) cardWidth = 260;
+    if (cardWidth < 180) cardWidth = 180;
+    final double cardHeight = (cardWidth * 0.6) + 90;
 
-  Widget _buildNearbySection() {
-    return BlocBuilder<PropertyBloc, PropertyState>(
-      builder: (context, state) {
-        if (state is! PropertiesLoaded) return const SizedBox.shrink();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Nearby Your Location',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {},
-                    child: const Text(
-                      'Explore Map',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+          child: Row(
+            children: [
+              Icon(Icons.auto_awesome,
+                  size: 18, color: const Color(0xFFD4AF37)),
+              const SizedBox(width: 6),
+              const Text(
+                'Sponsored Properties',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (sponsored.isEmpty)
+          _buildSponsoredEmpty(cardHeight)
+        else
+          SizedBox(
+            height: cardHeight,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(left: 20),
+              itemCount: sponsored.length,
+              itemBuilder: (context, index) {
+                final property = sponsored[index];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: SponsoredPropertyCard(
+                    property: property,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            PropertyDetailPage(property: property),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount:
-                  state.properties.length > 5 ? 5 : state.properties.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: NearbyPropertyCard(
-                    property: state.properties[index],
-                    onTap: () {},
-                    onFavTap: () {},
+                    onFavTap: () => _toggleFavorite(property.propertyId),
+                    isFavorite: _favoriteIds.contains(property.propertyId),
                   ),
                 );
               },
             ),
-          ],
-        );
-      },
+          ),
+      ],
     );
   }
 
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textSecondary,
-        selectedLabelStyle: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
+  Widget _buildSponsoredEmpty(double height) {
+    return SizedBox(
+      height: height,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.workspace_premium_outlined,
+              size: 40,
+              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'No sponsored listings',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Premium properties appear here',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textHint,
+              ),
+            ),
+          ],
         ),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
-        elevation: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'HOME',
+      ),
+    );
+  }
+
+  // ========== Nearby Section ==========
+  Widget _buildNearbySection() {
+    final nearby = _nearbyProperties;
+    if (nearby.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Nearby Properties',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AllPropertiesPage(
+                      pageType: _isBuy ? PageType.sale : PageType.rent,
+                    ),
+                  ),
+                ),
+                child: const Text(
+                  'Explore More',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search_rounded),
-            label: 'SEARCH',
+        ),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: nearby.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final property = nearby[index];
+            return NearbyPropertyCard(
+              property: property,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PropertyDetailPage(property: property),
+                ),
+              ),
+              onFavTap: () => _toggleFavorite(property.propertyId),
+              isFavorite: _favoriteIds.contains(property.propertyId),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // ----------------------------------------------------------------------
+  // MAIN BUILD
+  // ----------------------------------------------------------------------
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return RefreshableWidget(
+      onRefresh: _loadProperties,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _buildHomeContent(),
+            const SearchPage(),
+            const MapPage(),
+            const FavoritesPage(),
+            const ProfilePage(),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {},
+          backgroundColor: AppColors.textPrimary,
+          shape: const CircleBorder(),
+          child: const Icon(
+            Icons.smart_toy_outlined,
+            color: Colors.white,
+            size: 24,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            label: 'MAP',
+        ),
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border_rounded),
-            label: 'SAVED',
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (i) => setState(() => _currentIndex = i),
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: AppColors.primary,
+            unselectedItemColor: AppColors.textSecondary,
+            selectedLabelStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+            unselectedLabelStyle: const TextStyle(fontSize: 11),
+            elevation: 0,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_rounded),
+                label: 'HOME',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.search_rounded),
+                label: 'SEARCH',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.map_outlined),
+                label: 'MAP',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.favorite_border_rounded),
+                label: 'SAVED',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline_rounded),
+                label: 'PROFILE',
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline_rounded),
-            label: 'PROFILE',
-          ),
-        ],
+        ),
       ),
     );
   }

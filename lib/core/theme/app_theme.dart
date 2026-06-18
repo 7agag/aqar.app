@@ -47,5 +47,10 @@ class AppTheme {
             textStyle: AppTextStyles.button,
           ),
         ),
+        appBarTheme: const AppBarTheme(
+          elevation: 0,
+          centerTitle: true,
+          iconTheme: IconThemeData(color: AppColors.primary), // أضف هذا السطر
+        ),
       );
 }

@@ -72,8 +72,10 @@ class _AuthPageState extends State<AuthPage> {
       ),
       child: Row(
         children: [
-          _toggleTab('Sign In', _isSignIn, () => setState(() => _isSignIn = true)),
-          _toggleTab('Register', !_isSignIn, () => setState(() => _isSignIn = false)),
+          _toggleTab(
+              'Sign In', _isSignIn, () => setState(() => _isSignIn = true)),
+          _toggleTab(
+              'Register', !_isSignIn, () => setState(() => _isSignIn = false)),
         ],
       ),
     );
@@ -90,7 +92,11 @@ class _AuthPageState extends State<AuthPage> {
             color: active ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(26),
             boxShadow: active
-                ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)]
+                ? [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 8)
+                  ]
                 : [],
           ),
           alignment: Alignment.center,

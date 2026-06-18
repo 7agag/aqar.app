@@ -66,7 +66,6 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // First Name + Last Name جنب بعض
               Row(
                 children: [
@@ -229,7 +228,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       'OR CONTINUE WITH',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textSecondary.withOpacity(0.7),
+                        color: AppColors.textSecondary.withValues(alpha: 0.7),
                         letterSpacing: 1,
                       ),
                     ),

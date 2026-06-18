@@ -1,14 +1,14 @@
-import 'package:equatable/equatable.dart';
+import 'property_enums.dart';
 
-class PropertyEntity extends Equatable {
-  final int id;
+class PropertyEntity {
+  final int propertyId;
   final String ownerId;
   final String propertyName;
   final String propertyDesc;
   final String location;
   final double? latitude;
   final double? longitude;
-  final String pricingUnit;
+  final PricingUnit pricingUnit;
   final double priceValue;
   final double pricePerDay;
   final String size;
@@ -20,11 +20,17 @@ class PropertyEntity extends Equatable {
   final bool isVerified;
   final bool isAvailable;
   final bool isFurnished;
-  final String propertyType;
+  final bool isSponsored;
+  final ListingType listingType;
+  final PhysicalPropertyType? physicalType;
   final double? rate;
+  final ListingStatus? listingStatus;
+  final String? ownerFirstName;
+  final String? ownerSecondName;
+  final String? ownerEmail;
 
   const PropertyEntity({
-    required this.id,
+    required this.propertyId,
     required this.ownerId,
     required this.propertyName,
     required this.propertyDesc,
@@ -39,14 +45,29 @@ class PropertyEntity extends Equatable {
     required this.bedsNo,
     required this.bathroomsNo,
     required this.images,
-    required this.ownershipProofs,
+    this.ownershipProofs = const [],
     required this.isVerified,
     required this.isAvailable,
     required this.isFurnished,
-    required this.propertyType,
+    this.isSponsored = false,
+    required this.listingType,
+    this.physicalType,
     this.rate,
+    this.listingStatus,
+    this.ownerFirstName,
+    this.ownerSecondName,
+    this.ownerEmail,
   });
 
-  @override
-  List<Object?> get props => [id, ownerId];
+  String get pricingUnitSuffix {
+    if (listingType == ListingType.forSale) return '';
+    switch (pricingUnit) {
+      case PricingUnit.day:
+        return '/day';
+      case PricingUnit.month:
+        return '/mo';
+      case PricingUnit.year:
+        return '/yr';
+    }
+  }
 }
