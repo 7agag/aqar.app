@@ -69,7 +69,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   void _shareProperty() {
     final property = _property;
     final url = '${AppConfig.webUrl}/property/${property.propertyId}';
-    final price = property.listingType == ListingType.forSale
+    final price = _isForSale(property)
         ? 'EGP ${_fmt(property.priceValue)}'
         : 'EGP ${_fmt(property.priceValue)}/${property.pricingUnit.label}';
     SharePlus.instance.share(
@@ -104,6 +104,42 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   }
 
   PropertyEntity get _property => _fullProperty ?? widget.property;
+
+  bool _isForSale(PropertyEntity property) {
+    return property.listingType == ListingType.forSale;
+  }
+
+  bool _isForRent(PropertyEntity property) {
+    return property.listingType == ListingType.forRent;
+  }
+
+  String _ownerDisplayName(PropertyEntity property) {
+    final parts = [
+      property.ownerFirstName,
+      property.ownerSecondName,
+    ]
+        .whereType<String>()
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) return 'Property Owner';
+    return parts.join(' ');
+  }
+
+  String _ownerInitials(PropertyEntity property) {
+    final parts = _ownerDisplayName(property)
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) return 'PO';
+    final first = parts.first.characters.first.toUpperCase();
+    final second = parts.length > 1
+        ? parts.last.characters.first.toUpperCase()
+        : '';
+    return '$first$second';
+  }
 
   bool get _isOwner {
     final authState = context.read<AuthBloc>().state;
@@ -281,7 +317,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   Widget _buildPriceAndStatus(PropertyEntity property) {
     final isSold = property.listingStatus == ListingStatus.sold;
     String priceText;
-    if (property.listingType == ListingType.forSale) {
+    if (_isForSale(property)) {
       priceText = '${AppStrings.egp} ${_fmt(property.priceValue)}';
     } else if (property.pricingUnit == PricingUnit.day) {
       priceText =
@@ -417,11 +453,11 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       );
     }
 
-    if (property.listingType == ListingType.forSale) {
+    if (_isForSale(property)) {
       return InstallmentCalculator(property: property);
     }
 
-    if (property.pricingUnit == PricingUnit.day) {
+    if (_isForRent(property) && property.pricingUnit == PricingUnit.day) {
       return DailyRentCalculator(property: property);
     }
 
@@ -483,10 +519,8 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChatDetailsPage(
-                        userName:
-                            '${property.ownerFirstName ?? 'Property'} ${property.ownerSecondName ?? 'Owner'}',
-                        initials:
-                            '${(property.ownerFirstName ?? 'P')[0]}${(property.ownerSecondName ?? 'O')[0]}',
+                        userName: _ownerDisplayName(property),
+                        initials: _ownerInitials(property),
                         partnerId: property.ownerId,
                         propertyId: property.propertyId,
                       ),
@@ -647,7 +681,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
           _sectionTitle(AppStrings.propertyInfo),
           const SizedBox(height: 14),
           _infoRow(
-              AppStrings.type, property.listingType == ListingType.forSale
+              AppStrings.type, _isForSale(property)
                   ? AppStrings.forSale
                   : AppStrings.forRent),
           _infoDivider(),
@@ -686,7 +720,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
           _infoDivider(),
           _infoRow(
             AppStrings.pricing,
-            property.listingType == ListingType.forSale
+            _isForSale(property)
                 ? AppStrings.fixedPrice
                 : _formatPricingUnit(property.pricingUnit),
           ),
@@ -904,10 +938,8 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
             context,
             MaterialPageRoute(
               builder: (_) => ChatDetailsPage(
-                userName:
-                    '${property.ownerFirstName ?? 'Property'} ${property.ownerSecondName ?? 'Owner'}',
-                initials:
-                    '${(property.ownerFirstName ?? 'P')[0]}${(property.ownerSecondName ?? 'O')[0]}',
+                userName: _ownerDisplayName(property),
+                initials: _ownerInitials(property),
                 partnerId: property.ownerId,
                 propertyId: property.propertyId,
               ),

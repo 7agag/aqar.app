@@ -95,6 +95,8 @@ class PropertyModel extends PropertyEntity {
       rate: parseNullableDouble(json['rate']),
       listingStatus:
           ListingStatus.fromValue(json['listing_status']?.toString()),
+      ownerFirstName: json['owner_first_name']?.toString(),
+      ownerSecondName: json['owner_second_name']?.toString(),
     );
   }
 

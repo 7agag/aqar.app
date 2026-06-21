@@ -1,4 +1,2 @@
-2026/06/21-08:34:45.928 5a80 Reusing MANIFEST C:\Users\Jovek\AppData\Local\Temp\flutter_tools.bde55d48\flutter_tools_chrome_device.4a60edf2\Default\Local Storage\leveldb/MANIFEST-000001
-2026/06/21-08:34:45.940 5a80 Recovering log #4
-2026/06/21-08:34:45.944 5a80 Reusing old log C:\Users\Jovek\AppData\Local\Temp\flutter_tools.bde55d48\flutter_tools_chrome_device.4a60edf2\Default\Local Storage\leveldb/000004.log 
-2026/06/21-08:34:45.945 5a80 Delete type=0 #3
+2026/06/21-14:18:00.239 1d80 Creating DB C:\Users\Jovek\AppData\Local\Temp\flutter_tools.e195210e\flutter_tools_chrome_device.821c8061\Default\Local Storage\leveldb since it was missing.
+2026/06/21-14:18:00.294 1d80 Reusing MANIFEST C:\Users\Jovek\AppData\Local\Temp\flutter_tools.e195210e\flutter_tools_chrome_device.821c8061\Default\Local Storage\leveldb/MANIFEST-000001
