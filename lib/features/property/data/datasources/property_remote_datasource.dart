@@ -37,6 +37,8 @@ class PropertyRemoteDataSourceImpl implements PropertyRemoteDataSource {
         e.response?.data['msg'] ?? 'Failed to fetch properties',
         statusCode: e.response?.statusCode,
       );
+    } catch (e) {
+      throw ServerException('Failed to parse properties: $e');
     }
   }
 
@@ -53,6 +55,8 @@ class PropertyRemoteDataSourceImpl implements PropertyRemoteDataSource {
         e.response?.data['msg'] ?? 'Failed to fetch property',
         statusCode: e.response?.statusCode,
       );
+    } catch (e) {
+      throw ServerException('Failed to parse property: $e');
     }
   }
 
@@ -70,6 +74,8 @@ class PropertyRemoteDataSourceImpl implements PropertyRemoteDataSource {
         e.response?.data['msg'] ?? 'Failed to fetch my properties',
         statusCode: e.response?.statusCode,
       );
+    } catch (e) {
+      throw ServerException('Failed to parse my properties: $e');
     }
   }
 

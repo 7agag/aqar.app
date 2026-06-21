@@ -22,6 +22,19 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _shimmerCtrl;
 
+  void _loadMyProperties() {
+    context.read<PropertyBloc>().add(const GetMyPropertiesRequested());
+  }
+
+  Future<void> _openAddPropertyPage() async {
+    final added = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddPropertyStepperPage()),
+    );
+    if (!mounted) return;
+    if (added == true) _loadMyProperties();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -29,7 +42,7 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    context.read<PropertyBloc>().add(const GetMyPropertiesRequested());
+    _loadMyProperties();
   }
 
   @override
@@ -44,18 +57,19 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('My Properties',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.textPrimary)),
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: AppColors.textPrimary)),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddPropertyStepperPage()),
-            ),
+            icon:
+                const Icon(Icons.add_circle_outline, color: AppColors.primary),
+            onPressed: _openAddPropertyPage,
           ),
         ],
       ),
@@ -63,12 +77,16 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
         listener: (context, state) {
           if (state is PropertyOperationSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: AppColors.success),
+              SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.success),
             );
-            context.read<PropertyBloc>().add(const GetMyPropertiesRequested());
+            _loadMyProperties();
           } else if (state is PropertyError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+              SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.error),
             );
           }
         },
@@ -102,23 +120,25 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.home_outlined, size: 80, color: AppColors.textHint.withValues(alpha: 0.4)),
+          Icon(Icons.home_outlined,
+              size: 80, color: AppColors.textHint.withValues(alpha: 0.4)),
           const SizedBox(height: 16),
           Text('You haven\'t added\nany properties yet',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary.withValues(alpha: 0.7), height: 1.4)),
+              style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary.withValues(alpha: 0.7),
+                  height: 1.4)),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AddPropertyStepperPage()),
-            ),
+            onPressed: _openAddPropertyPage,
             icon: const Icon(Icons.add),
             label: const Text('Add Your First Property'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
           ),
@@ -132,13 +152,15 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, size: 64, color: AppColors.error.withValues(alpha: 0.6)),
+          Icon(Icons.error_outline,
+              size: 64, color: AppColors.error.withValues(alpha: 0.6)),
           const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center,
+          Text(message,
+              textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: () => context.read<PropertyBloc>().add(const GetMyPropertiesRequested()),
+            onPressed: _loadMyProperties,
             child: const Text('Retry'),
           ),
         ],
@@ -149,7 +171,7 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
   Widget _buildList(List<PropertyEntity> properties) {
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<PropertyBloc>().add(const GetMyPropertiesRequested());
+        _loadMyProperties();
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -185,7 +207,8 @@ class _ShimmerCard extends StatelessWidget {
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
+                borderRadius:
+                    const BorderRadius.horizontal(left: Radius.circular(14)),
                 child: Container(
                   width: 120,
                   height: 130,
@@ -198,16 +221,25 @@ class _ShimmerCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(height: 14, width: 140,
-                          decoration: BoxDecoration(color: Colors.grey.withValues(alpha: opacity),
+                      Container(
+                          height: 14,
+                          width: 140,
+                          decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: opacity),
                               borderRadius: BorderRadius.circular(4))),
                       const SizedBox(height: 8),
-                      Container(height: 11, width: 100,
-                          decoration: BoxDecoration(color: Colors.grey.withValues(alpha: opacity),
+                      Container(
+                          height: 11,
+                          width: 100,
+                          decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: opacity),
                               borderRadius: BorderRadius.circular(4))),
                       const SizedBox(height: 12),
-                      Container(height: 11, width: 80,
-                          decoration: BoxDecoration(color: Colors.grey.withValues(alpha: opacity),
+                      Container(
+                          height: 11,
+                          width: 80,
+                          decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: opacity),
                               borderRadius: BorderRadius.circular(4))),
                     ],
                   ),
@@ -231,10 +263,13 @@ class _PropertyCard extends StatelessWidget {
 
   PropertyStatus get _status {
     if (property.isSponsored) return PropertyStatus.sponsored;
-    if (property.listingStatus == ListingStatus.inactive || property.listingStatus == ListingStatus.expired) {
+    if (property.listingStatus == ListingStatus.inactive ||
+        property.listingStatus == ListingStatus.expired) {
       return PropertyStatus.archived;
     }
-    if (property.listingType == ListingType.forSale) return PropertyStatus.forSale;
+    if (property.listingType == ListingType.forSale) {
+      return PropertyStatus.forSale;
+    }
     return PropertyStatus.forRent;
   }
 
@@ -249,7 +284,10 @@ class _PropertyCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -259,13 +297,18 @@ class _PropertyCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
+                  borderRadius:
+                      const BorderRadius.horizontal(left: Radius.circular(14)),
                   child: SizedBox(
                     width: 120,
                     height: 130,
                     child: property.images.isNotEmpty
-                        ? Image.network(property.images.first, fit: BoxFit.cover)
-                        : Container(color: AppColors.surfaceLight, child: const Icon(Icons.home, color: AppColors.textHint)),
+                        ? Image.network(property.images.first,
+                            fit: BoxFit.cover)
+                        : Container(
+                            color: AppColors.surfaceLight,
+                            child: const Icon(Icons.home,
+                                color: AppColors.textHint)),
                   ),
                 ),
                 Expanded(
@@ -275,15 +318,27 @@ class _PropertyCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(property.propertyName,
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary)),
                         const SizedBox(height: 4),
                         Text(property.location,
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 12, color: AppColors.textSecondary.withValues(alpha: 0.7))),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary
+                                    .withValues(alpha: 0.7))),
                         const SizedBox(height: 8),
-                        Text('EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.navyBlue)),
+                        Text(
+                            'EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.navyBlue)),
                         const SizedBox(height: 6),
                         _StatusChip(status: status),
                       ],
@@ -292,7 +347,9 @@ class _PropertyCard extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(top: 10, right: 10),
-                  child: Icon(Icons.chevron_right, color: AppColors.textHint.withValues(alpha: 0.5), size: 20),
+                  child: Icon(Icons.chevron_right,
+                      color: AppColors.textHint.withValues(alpha: 0.5),
+                      size: 20),
                 ),
               ],
             ),
@@ -322,7 +379,8 @@ class _StatusChip extends StatelessWidget {
         border: Border.all(color: status.color.withValues(alpha: 0.2)),
       ),
       child: Text(status.label,
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: status.color)),
+          style: TextStyle(
+              fontSize: 11, fontWeight: FontWeight.w600, color: status.color)),
     );
   }
 }
@@ -347,7 +405,9 @@ class _ActionRow extends StatelessWidget {
             color: AppColors.primary,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => SelectSellingPlanPage(propertyId: property.propertyId)),
+              MaterialPageRoute(
+                  builder: (_) =>
+                      SelectSellingPlanPage(propertyId: property.propertyId)),
             ),
           ),
           const SizedBox(width: 8),
@@ -357,7 +417,8 @@ class _ActionRow extends StatelessWidget {
             color: AppColors.navyBlue,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => EditPropertyPage(property: property)),
+              MaterialPageRoute(
+                  builder: (_) => EditPropertyPage(property: property)),
             ),
           ),
           const SizedBox(width: 8),
@@ -377,18 +438,22 @@ class _ActionRow extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Property'),
-        content: Text('Are you sure you want to delete "${property.propertyName}"? This cannot be undone.'),
+        content: Text(
+            'Are you sure you want to delete "${property.propertyName}"? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: Text('Cancel',
+                style: TextStyle(color: AppColors.textSecondary)),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
               _deleteProperty(context);
             },
-            child: Text('Delete', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+            child: Text('Delete',
+                style: TextStyle(
+                    color: AppColors.error, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -396,7 +461,9 @@ class _ActionRow extends StatelessWidget {
   }
 
   void _deleteProperty(BuildContext context) {
-    context.read<PropertyBloc>().add(DeletePropertyRequested(id: property.propertyId));
+    context
+        .read<PropertyBloc>()
+        .add(DeletePropertyRequested(id: property.propertyId));
   }
 }
 
@@ -408,7 +475,11 @@ class _ActionButton extends StatelessWidget {
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _ActionButton({required this.icon, required this.label, required this.color, required this.onTap});
+  const _ActionButton(
+      {required this.icon,
+      required this.label,
+      required this.color,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -425,7 +496,9 @@ class _ActionButton extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: color),
               const SizedBox(height: 2),
-              Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.w600, color: color)),
             ],
           ),
         ),

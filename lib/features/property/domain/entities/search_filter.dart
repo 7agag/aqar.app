@@ -1,5 +1,3 @@
-import 'property_enums.dart';
-
 class SearchFilter {
   final bool isBuy;
   final String? location;
@@ -7,7 +5,6 @@ class SearchFilter {
   final double? maxPrice;
   final int? bedrooms;
   final int? bathrooms;
-  final PhysicalPropertyType? propertyType;
   final String? rentalDuration;
   final double? minSize;
   final double? maxSize;
@@ -19,7 +16,6 @@ class SearchFilter {
     this.maxPrice,
     this.bedrooms,
     this.bathrooms,
-    this.propertyType,
     this.rentalDuration,
     this.minSize,
     this.maxSize,

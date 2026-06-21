@@ -11,22 +11,6 @@ enum ListingType {
       values.firstWhere((e) => e.value == v, orElse: () => forRent);
 }
 
-enum PhysicalPropertyType {
-  apartment('apartment', 'Apartment'),
-  villa('villa', 'Villa'),
-  studio('studio', 'Studio'),
-  house('house', 'House');
-
-  final String value;
-  final String label;
-  const PhysicalPropertyType(this.value, this.label);
-  static PhysicalPropertyType? fromValue(String? v) =>
-      v == null ? null : values.firstWhere(
-        (e) => e.value == v,
-        orElse: () => apartment,
-      );
-}
-
 enum ListingStatus {
   inactive('inactive', 'Inactive'),
   active('active', 'Active'),

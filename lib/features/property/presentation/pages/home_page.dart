@@ -58,7 +58,6 @@ class _HomePageState extends State<HomePage>
   double? _activeMaxPrice;
   int? _activeBedrooms;
   int? _activeBathrooms;
-  PhysicalPropertyType? _activePhysicalType;
   String? _activeRentalDuration;
   double? _activeMinSize;
   double? _activeMaxSize;
@@ -76,7 +75,6 @@ class _HomePageState extends State<HomePage>
       _activeMaxPrice != null ||
       _activeBedrooms != null ||
       _activeBathrooms != null ||
-      _activePhysicalType != null ||
       _activeRentalDuration != null ||
       _activeMinSize != null ||
       _activeMaxSize != null;
@@ -109,20 +107,60 @@ class _HomePageState extends State<HomePage>
         p.location.toLowerCase().contains(q);
   }
 
-  List<PropertyEntity> get _sponsoredProperties =>
-      _allProperties.where((p) =>
+  double _numericSizeOf(PropertyEntity property) {
+    return double.tryParse(property.size) ?? 0;
+  }
+
+  bool _matchesActiveFilters(PropertyEntity property) {
+    if (!_matchesSearch(property)) return false;
+    if (_activeMinPrice != null && property.priceValue < _activeMinPrice!) {
+      return false;
+    }
+    if (_activeMaxPrice != null && property.priceValue > _activeMaxPrice!) {
+      return false;
+    }
+    if (_activeBedrooms != null &&
+        _activeBedrooms! > 0 &&
+        property.bedroomsNo < _activeBedrooms!) {
+      return false;
+    }
+    if (_activeBathrooms != null &&
+        _activeBathrooms! > 0 &&
+        property.bathroomsNo < _activeBathrooms!) {
+      return false;
+    }
+    if (_activeRentalDuration != null &&
+        _activeRentalDuration != 'all' &&
+        property.pricingUnit.value != _activeRentalDuration) {
+      return false;
+    }
+
+    final size = _numericSizeOf(property);
+    if (_activeMinSize != null && size < _activeMinSize!) return false;
+    if (_activeMaxSize != null && size > _activeMaxSize!) return false;
+
+    return true;
+  }
+
+  List<PropertyEntity> get _sponsoredProperties => _allProperties
+      .where((p) =>
           p.isSponsored &&
-          p.listingType == (_isBuy ? ListingType.forSale : ListingType.forRent) &&
-          _matchesSearch(p)).toList();
+          p.listingType ==
+              (_isBuy ? ListingType.forSale : ListingType.forRent) &&
+          _matchesActiveFilters(p))
+      .toList();
 
   List<PropertyEntity>? _nearbyCache;
 
   List<PropertyEntity> get _nearbyProperties {
     if (_nearbyCache != null) return _nearbyCache!;
-    final nonSponsored = _allProperties.where((p) =>
-        !p.isSponsored &&
-        p.listingType == (_isBuy ? ListingType.forSale : ListingType.forRent) &&
-        _matchesSearch(p)).toList();
+    final nonSponsored = _allProperties
+        .where((p) =>
+            !p.isSponsored &&
+            p.listingType ==
+                (_isBuy ? ListingType.forSale : ListingType.forRent) &&
+            _matchesActiveFilters(p))
+        .toList();
     nonSponsored.shuffle();
     _nearbyCache = nonSponsored;
     return nonSponsored;
@@ -172,28 +210,20 @@ class _HomePageState extends State<HomePage>
         initialMaxPrice: _activeMaxPrice,
         initialBedrooms: _activeBedrooms,
         initialBathrooms: _activeBathrooms,
-        initialPropertyType: _activePhysicalType,
         initialRentalDuration: _activeRentalDuration,
         initialMinSize: _activeMinSize,
         initialMaxSize: _activeMaxSize,
         allProperties: allProps,
         onApply: (filter) {
-          final oldPhysicalType = _activePhysicalType;
-
           setState(() {
             _activeMinPrice = filter.minPrice;
             _activeMaxPrice = filter.maxPrice;
             _activeBedrooms = filter.bedrooms;
             _activeBathrooms = filter.bathrooms;
-            _activePhysicalType = filter.propertyType;
             _activeRentalDuration = filter.rentalDuration;
             _activeMinSize = filter.minSize;
             _activeMaxSize = filter.maxSize;
           });
-
-          if (oldPhysicalType != filter.propertyType) {
-            _loadProperties();
-          }
         },
       ),
     );
@@ -205,13 +235,6 @@ class _HomePageState extends State<HomePage>
       _activeMinPrice = null;
       _activeMaxPrice = null;
     });
-  }
-
-  void _clearPropertyTypeFilter() {
-    setState(() {
-      _activePhysicalType = null;
-    });
-    _loadProperties();
   }
 
   void _clearBedroomsFilter() {
@@ -245,7 +268,6 @@ class _HomePageState extends State<HomePage>
       _activeMaxPrice = null;
       _activeBedrooms = null;
       _activeBathrooms = null;
-      _activePhysicalType = null;
       _activeRentalDuration = null;
       _activeMinSize = null;
       _activeMaxSize = null;
@@ -324,6 +346,13 @@ class _HomePageState extends State<HomePage>
       _clearNearbyCache();
     });
     _loadProperties();
+  }
+
+  void _selectTab(int index) {
+    setState(() => _currentIndex = index);
+    if (index == 0 || index == 1) {
+      _loadProperties();
+    }
   }
 
   // ----------------------------------------------------------------------
@@ -416,21 +445,28 @@ class _HomePageState extends State<HomePage>
                     ),
                   );
                 },
-                icon: const Icon(Icons.inbox_outlined, color: AppColors.textPrimary),
+                icon: const Icon(Icons.inbox_outlined,
+                    color: AppColors.textPrimary),
               ),
               IconButton(
                 onPressed: () {
                   _loadProperties();
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListPage()));
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const ChatListPage()));
                 },
-                icon: const Icon(Icons.chat_outlined, color: AppColors.textPrimary),
+                icon: const Icon(Icons.chat_outlined,
+                    color: AppColors.textPrimary),
               ),
               IconButton(
                 onPressed: () {
                   _loadProperties();
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const NotificationsPage()));
                 },
-                icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+                icon: const Icon(Icons.notifications_outlined,
+                    color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -465,13 +501,6 @@ class _HomePageState extends State<HomePage>
                 isSelected: true,
                 onTap: _onFilterTap,
                 onRemove: _clearPriceFilter,
-              ),
-            if (_activePhysicalType != null)
-              FilterChipWidget(
-                label: _activePhysicalType!.label,
-                isSelected: true,
-                onTap: _onFilterTap,
-                onRemove: _clearPropertyTypeFilter,
               ),
             if (_activeRentalDuration != null && _activeRentalDuration != 'all')
               FilterChipWidget(
@@ -518,7 +547,6 @@ class _HomePageState extends State<HomePage>
   bool get _hasVisibleFilterChips =>
       _activeMinPrice != null ||
       _activeMaxPrice != null ||
-      _activePhysicalType != null ||
       (_activeRentalDuration != null && _activeRentalDuration != 'all') ||
       (_activeBedrooms != null && _activeBedrooms! > 0) ||
       (_activeBathrooms != null && _activeBathrooms! > 0) ||
@@ -791,7 +819,8 @@ class _HomePageState extends State<HomePage>
         floatingActionButton: FloatingActionButton(
           onPressed: () => requireVerifiedUser(
             context,
-            onAllowed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiAssistantPage())),
+            onAllowed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const AiAssistantPage())),
           ),
           backgroundColor: AppColors.textPrimary,
           shape: const CircleBorder(),
@@ -814,7 +843,7 @@ class _HomePageState extends State<HomePage>
           ),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
-            onTap: (i) => setState(() => _currentIndex = i),
+            onTap: _selectTab,
             type: BottomNavigationBarType.fixed,
             backgroundColor: Colors.white,
             selectedItemColor: AppColors.primary,

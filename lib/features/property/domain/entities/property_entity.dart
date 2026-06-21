@@ -22,7 +22,6 @@ class PropertyEntity {
   final bool isFurnished;
   final bool isSponsored;
   final ListingType listingType;
-  final PhysicalPropertyType? physicalType;
   final double? rate;
   final ListingStatus? listingStatus;
   final String? ownerFirstName;
@@ -51,7 +50,6 @@ class PropertyEntity {
     required this.isFurnished,
     this.isSponsored = false,
     required this.listingType,
-    this.physicalType,
     this.rate,
     this.listingStatus,
     this.ownerFirstName,

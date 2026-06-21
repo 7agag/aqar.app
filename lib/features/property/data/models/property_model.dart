@@ -28,7 +28,6 @@ class PropertyModel extends PropertyEntity {
     required super.isFurnished,
     super.isSponsored,
     required super.listingType,
-    super.physicalType,
     super.rate,
     super.listingStatus,
     super.ownerFirstName,
@@ -37,6 +36,20 @@ class PropertyModel extends PropertyEntity {
   });
 
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) return int.tryParse(value) ?? 0;
+      return 0;
+    }
+
+    double? parseNullableDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value.trim());
+      return null;
+    }
+
     List<String> parseList(dynamic raw) {
       if (raw == null) return [];
       if (raw is List) {
@@ -56,30 +69,32 @@ class PropertyModel extends PropertyEntity {
     }
 
     return PropertyModel(
-      propertyId: json['property_id'] as int,
+      propertyId: parseInt(json['property_id']),
       ownerId: json['owner_id']?.toString() ?? '',
       propertyName: json['property_name']?.toString() ?? '',
       propertyDesc: json['property_desc']?.toString() ?? '',
       location: json['location']?.toString() ?? '',
-      latitude: (json['latitude'] as num?)?.toDouble(),
-      longitude: (json['longitude'] as num?)?.toDouble(),
-      pricingUnit: PricingUnit.fromValue(json['pricing_unit']?.toString() ?? 'DAY'),
+      latitude: parseNullableDouble(json['latitude']),
+      longitude: parseNullableDouble(json['longitude']),
+      pricingUnit:
+          PricingUnit.fromValue(json['pricing_unit']?.toString() ?? 'DAY'),
       priceValue: _parsePriceValue(json['price_value']),
       pricePerDay: _parsePriceValue(json['price_per_day']),
       size: json['size']?.toString() ?? '',
-      bedroomsNo: (json['bedrooms_no'] as num?)?.toInt() ?? 0,
-      bedsNo: (json['beds_no'] as num?)?.toInt() ?? 0,
-      bathroomsNo: (json['bathrooms_no'] as num?)?.toInt() ?? 0,
+      bedroomsNo: parseInt(json['bedrooms_no']),
+      bedsNo: parseInt(json['beds_no']),
+      bathroomsNo: parseInt(json['bathrooms_no']),
       images: parseList(json['images']),
       ownershipProofs: parseList(json['ownership_proofs']),
       isVerified: json['is_verified'] == true || json['is_verified'] == 1,
       isAvailable: json['is_available'] == true || json['is_available'] == 1,
       isFurnished: json['is_furnished'] == true || json['is_furnished'] == 1,
       isSponsored: json['is_sponsored'] == true || json['is_sponsored'] == 1,
-      listingType: ListingType.fromValue(json['property_type']?.toString() ?? 'for_rent'),
-      physicalType: PhysicalPropertyType.fromValue(json['physical_type']?.toString()),
-      rate: (json['rate'] as num?)?.toDouble(),
-      listingStatus: ListingStatus.fromValue(json['listing_status']?.toString()),
+      listingType: ListingType.fromValue(
+          json['property_type']?.toString() ?? 'for_rent'),
+      rate: parseNullableDouble(json['rate']),
+      listingStatus:
+          ListingStatus.fromValue(json['listing_status']?.toString()),
     );
   }
 
@@ -105,7 +120,6 @@ class PropertyModel extends PropertyEntity {
         'is_furnished': isFurnished,
         'is_sponsored': isSponsored,
         'property_type': listingType.value,
-        'physical_type': physicalType?.value,
         'rate': rate,
         'listing_status': listingStatus?.value,
       };

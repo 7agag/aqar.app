@@ -11,7 +11,6 @@ class AdvancedSearchSheet extends StatefulWidget {
   final double? initialMaxPrice;
   final int? initialBedrooms;
   final int? initialBathrooms;
-  final PhysicalPropertyType? initialPropertyType;
   final String? initialRentalDuration;
   final double? initialMinSize;
   final double? initialMaxSize;
@@ -26,7 +25,6 @@ class AdvancedSearchSheet extends StatefulWidget {
     this.initialMaxPrice,
     this.initialBedrooms,
     this.initialBathrooms,
-    this.initialPropertyType,
     this.initialRentalDuration,
     this.initialMinSize,
     this.initialMaxSize,
@@ -48,7 +46,6 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
   double _maxPrice = 5000000;
   int _bedrooms = 0;
   int _bathrooms = 0;
-  PhysicalPropertyType? _propertyType;
   String _rentalDuration = 'all';
   double _minSize = 0;
   double _maxSize = 10000;
@@ -81,7 +78,6 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
     _maxPrice = widget.initialMaxPrice ?? _priceMax;
     _bedrooms = widget.initialBedrooms ?? 0;
     _bathrooms = widget.initialBathrooms ?? 0;
-    _propertyType = widget.initialPropertyType;
     _rentalDuration = widget.initialRentalDuration ?? 'all';
   }
 
@@ -100,25 +96,24 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
     filtered = filtered.where((p) => p.listingType == targetType).toList();
 
     if (_locationController.text.isNotEmpty) {
-      filtered = filtered.where((p) => p.location
-          .toLowerCase()
-          .contains(_locationController.text.toLowerCase())).toList();
-    }
-
-    if (_rentalDuration != 'all') {
-      filtered = filtered.where((p) =>
-          p.listingType == ListingType.forRent &&
-          p.pricingUnit.value == _rentalDuration).toList();
-    }
-
-    if (_propertyType != null) {
       filtered = filtered
-          .where((p) => p.physicalType == _propertyType)
+          .where((p) => p.location
+              .toLowerCase()
+              .contains(_locationController.text.toLowerCase()))
           .toList();
     }
 
-    filtered = filtered.where((p) =>
-        p.priceValue >= _minPrice && p.priceValue <= _maxPrice).toList();
+    if (_rentalDuration != 'all') {
+      filtered = filtered
+          .where((p) =>
+              p.listingType == ListingType.forRent &&
+              p.pricingUnit.value == _rentalDuration)
+          .toList();
+    }
+
+    filtered = filtered
+        .where((p) => p.priceValue >= _minPrice && p.priceValue <= _maxPrice)
+        .toList();
 
     if (_bedrooms > 0) {
       filtered = filtered.where((p) => p.bedroomsNo >= _bedrooms).toList();
@@ -165,7 +160,6 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
               ),
             ),
             const SizedBox(height: 20),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -193,7 +187,6 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
             const SizedBox(height: 20),
             _buildBuyRentToggle(),
             const SizedBox(height: 20),
-
             _buildLabel('Location'),
             const SizedBox(height: 8),
             TextField(
@@ -215,25 +208,18 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                      color: AppColors.primary, width: 1.5),
+                  borderSide:
+                      const BorderSide(color: AppColors.primary, width: 1.5),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-
             if (!_isBuy) ...[
               _buildLabel('Rental Duration'),
               const SizedBox(height: 10),
               _buildRentalDurationChips(),
               const SizedBox(height: 20),
             ],
-
-            _buildLabel('Property Type'),
-            const SizedBox(height: 10),
-            _buildPropertyTypeChips(),
-            const SizedBox(height: 20),
-
             _buildLabel(
                 'Price Range  (\$${_minPrice.toInt()} - \$${_maxPrice.toInt()})'),
             RangeSlider(
@@ -249,22 +235,18 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
               }),
             ),
             const SizedBox(height: 12),
-
             _buildLabel('Bedrooms'),
             const SizedBox(height: 10),
             _buildBedroomsChips(),
             const SizedBox(height: 20),
-
             _buildLabel('Bathrooms'),
             const SizedBox(height: 10),
             _buildBathroomsChips(),
             const SizedBox(height: 20),
-
             _buildLabel('Size (sqft)'),
             const SizedBox(height: 8),
             _buildSizeRange(),
             const SizedBox(height: 28),
-
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -277,7 +259,6 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                   ),
                 ),
               ),
-
             AqarButton(
               text: 'Show Results ($_totalFilteredCount)',
               onPressed: _applyFilters,
@@ -297,8 +278,12 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
       ),
       child: Row(
         children: [
-          Expanded(child: _toggleTab('Buy', _isBuy, () => setState(() => _isBuy = true))),
-          Expanded(child: _toggleTab('Rent', !_isBuy, () => setState(() => _isBuy = false))),
+          Expanded(
+              child: _toggleTab(
+                  'Buy', _isBuy, () => setState(() => _isBuy = true))),
+          Expanded(
+              child: _toggleTab(
+                  'Rent', !_isBuy, () => setState(() => _isBuy = false))),
         ],
       ),
     );
@@ -314,7 +299,11 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
           color: active ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(22),
           boxShadow: active
-              ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6)]
+              ? [
+                  BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 6)
+                ]
               : [],
         ),
         alignment: Alignment.center,
@@ -362,28 +351,6 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
           },
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildPropertyTypeChips() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        _buildChip('All', _propertyType == null, () {
-          setState(() => _propertyType = null);
-        }),
-        ...PhysicalPropertyType.values.map((type) {
-          final isSelected = _propertyType == type;
-          return _buildChip(
-            type.label,
-            isSelected,
-            () {
-              setState(() => _propertyType = type);
-            },
-          );
-        }),
-      ],
     );
   }
 
@@ -480,7 +447,8 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
               ),
               const SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(10),
@@ -537,7 +505,8 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
               ),
               const SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(10),
@@ -592,7 +561,6 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
       _maxPrice = _priceMax;
       _bedrooms = 0;
       _bathrooms = 0;
-      _propertyType = null;
       _rentalDuration = 'all';
       _minSize = 0;
       _maxSize = _sizeMax;
@@ -622,7 +590,6 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
         maxPrice: _maxPrice < _priceMax ? _maxPrice : null,
         bedrooms: _bedrooms > 0 ? _bedrooms : null,
         bathrooms: _bathrooms > 0 ? _bathrooms : null,
-        propertyType: _propertyType,
         rentalDuration: _rentalDuration != 'all' ? _rentalDuration : null,
         minSize: _minSize > 0 ? _minSize : null,
         maxSize: _maxSize < _sizeMax ? _maxSize : null,

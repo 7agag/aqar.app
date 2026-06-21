@@ -33,7 +33,6 @@ class _SearchPageState extends State<SearchPage> {
   double? _activeMaxPrice;
   int? _activeBedrooms;
   int? _activeBathrooms;
-  PhysicalPropertyType? _activePhysicalType;
   String? _activeRentalDuration;
   double? _activeMinSize;
   double? _activeMaxSize;
@@ -49,7 +48,6 @@ class _SearchPageState extends State<SearchPage> {
       _activeMaxPrice != null ||
       _activeBedrooms != null ||
       _activeBathrooms != null ||
-      _activePhysicalType != null ||
       _activeRentalDuration != null ||
       _activeMinSize != null ||
       _activeMaxSize != null;
@@ -127,11 +125,6 @@ class _SearchPageState extends State<SearchPage> {
       filtered =
           filtered.where((p) => p.bathroomsNo >= _activeBathrooms!).toList();
     }
-    if (_activePhysicalType != null) {
-      filtered = filtered
-          .where((p) => p.physicalType == _activePhysicalType)
-          .toList();
-    }
     if (_activeRentalDuration != null && _activeRentalDuration != 'all') {
       filtered = filtered
           .where((p) =>
@@ -168,12 +161,10 @@ class _SearchPageState extends State<SearchPage> {
       builder: (_) => AdvancedSearchSheet(
         isBuy: _isBuy,
         initialLocation: _activeLocation,
-
         initialMinPrice: _activeMinPrice,
         initialMaxPrice: _activeMaxPrice,
         initialBedrooms: _activeBedrooms,
         initialBathrooms: _activeBathrooms,
-        initialPropertyType: _activePhysicalType,
         initialRentalDuration: _activeRentalDuration,
         initialMinSize: _activeMinSize,
         initialMaxSize: _activeMaxSize,
@@ -187,7 +178,6 @@ class _SearchPageState extends State<SearchPage> {
             _activeMaxPrice = filter.maxPrice;
             _activeBedrooms = filter.bedrooms;
             _activeBathrooms = filter.bathrooms;
-            _activePhysicalType = filter.propertyType;
             _activeRentalDuration = filter.rentalDuration;
             _activeMinSize = filter.minSize;
             _activeMaxSize = filter.maxSize;
@@ -236,13 +226,6 @@ class _SearchPageState extends State<SearchPage> {
               onTap: _openAdvancedSearch,
               onRemove: _clearPriceFilter,
             ),
-          if (_activePhysicalType != null)
-            FilterChipWidget(
-              label: _activePhysicalType!.label,
-              isSelected: true,
-              onTap: _openAdvancedSearch,
-              onRemove: _clearPropertyTypeFilter,
-            ),
           if (_activeRentalDuration != null && _activeRentalDuration != 'all')
             FilterChipWidget(
               label: _activeRentalDuration!,
@@ -281,7 +264,6 @@ class _SearchPageState extends State<SearchPage> {
       _activeLocation != null ||
       _activeMinPrice != null ||
       _activeMaxPrice != null ||
-      _activePhysicalType != null ||
       (_activeRentalDuration != null && _activeRentalDuration != 'all') ||
       (_activeBedrooms != null && _activeBedrooms! > 0) ||
       (_activeBathrooms != null && _activeBathrooms! > 0) ||
@@ -311,11 +293,6 @@ class _SearchPageState extends State<SearchPage> {
       _activeMinPrice = null;
       _activeMaxPrice = null;
     });
-    _applyFilters();
-  }
-
-  void _clearPropertyTypeFilter() {
-    setState(() => _activePhysicalType = null);
     _applyFilters();
   }
 
@@ -445,7 +422,8 @@ class _SearchPageState extends State<SearchPage> {
                           final property = _filteredProperties[index];
                           return SponsoredPropertyCard(
                             property: property,
-                            onTap: () => propertyDetailNavigator.value = property,
+                            onTap: () =>
+                                propertyDetailNavigator.value = property,
                             onFavTap: () {
                               final isFav =
                                   _favoriteIds.contains(property.propertyId);
