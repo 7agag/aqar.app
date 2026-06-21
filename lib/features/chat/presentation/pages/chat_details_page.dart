@@ -67,11 +67,16 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     if (msgChatId != _chatId) return;
     if (!mounted) return;
 
-    final senderId = data['sender_id']?.toString() ?? '';
-    if (senderId == _currentUserId) return;
+    final messageId = data['message_id']?.toString() ?? '';
+    if (messageId.isNotEmpty && _messages.any((m) => m.messageId == messageId)) return;
+
+    final senderId = data['sender_id']?.toString()
+        ?? data['sender']?.toString()
+        ?? data['user_id']?.toString()
+        ?? '';
 
     final message = ChatMessageEntity(
-      messageId: data['message_id']?.toString() ?? '',
+      messageId: messageId,
       senderId: senderId,
       content: data['content']?.toString() ?? '',
       isRead: false,
@@ -79,6 +84,17 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
           ? DateTime.tryParse(data['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
     );
+
+    if (senderId == _currentUserId) {
+      final idx = _messages.indexWhere(
+        (m) => m.messageId.isEmpty && m.content == message.content,
+      );
+      if (idx >= 0) {
+        setState(() { _messages[idx] = message; });
+      }
+      _scrollToTop();
+      return;
+    }
 
     setState(() {
       _messages.insert(0, message);
@@ -208,7 +224,56 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
             ),
           ],
         ),
-      ),
+        actions: [
+            Builder(
+              builder: (context) {
+                final anyUnread = _messages.any((m) => !m.isRead);
+                return IconButton(
+                  icon: Icon(
+                    anyUnread ? Icons.visibility : Icons.visibility_off,
+                    color: anyUnread ? AppColors.primary : AppColors.textHint,
+                    size: 22,
+                  ),
+                  tooltip: anyUnread ? 'Seen all' : 'Unread all',
+                  onPressed: () {
+                    if (anyUnread && _chatId != null) {
+                      setState(() {
+                        for (int i = 0; i < _messages.length; i++) {
+                          _messages[i] = ChatMessageEntity(
+                            messageId: _messages[i].messageId,
+                            senderId: _messages[i].senderId,
+                            content: _messages[i].content,
+                            isRead: true,
+                            createdAt: _messages[i].createdAt,
+                          );
+                        }
+                      });
+                      context.read<ChatBloc>().add(MarkAsReadRequested(chatId: _chatId!));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Marked all as read')),
+                      );
+                    } else if (!anyUnread) {
+                      setState(() {
+                        for (int i = 0; i < _messages.length; i++) {
+                          _messages[i] = ChatMessageEntity(
+                            messageId: _messages[i].messageId,
+                            senderId: _messages[i].senderId,
+                            content: _messages[i].content,
+                            isRead: false,
+                            createdAt: _messages[i].createdAt,
+                          );
+                        }
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Marked all as unread')),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       body: BlocListener<ChatBloc, ChatState>(
         listener: (context, state) {
           if (state is ChatHistoryLoaded && (widget.threadId == null || state.chatId == widget.threadId)) {
@@ -310,7 +375,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
         margin: const EdgeInsets.only(right: 80, bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: const BoxDecoration(
-          color: AppColors.surfaceLight,
+          color: AppColors.navyBlue,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(20),
@@ -326,16 +391,16 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
               msg.content,
               style: const TextStyle(
                 fontSize: 14,
-                color: AppColors.textPrimary,
+                color: Colors.white,
               ),
               textDirection: TextDirection.rtl,
             ),
             const SizedBox(height: 4),
             Text(
               _formatTime(msg.createdAt),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
-                color: AppColors.textHint,
+                color: Colors.white.withValues(alpha: 0.7),
               ),
               textDirection: TextDirection.ltr,
             ),

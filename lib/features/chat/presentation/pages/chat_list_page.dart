@@ -217,11 +217,62 @@ class _ChatListPageState extends State<ChatListPage>
             ),
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('New message coming soon')),
+            Builder(
+              builder: (context) {
+                final anyUnread = _inbox.any((t) => t.unreadCount > 0);
+                return IconButton(
+                  icon: Icon(
+                    Icons.done_all,
+                    color: anyUnread ? AppColors.primary : AppColors.textHint,
+                  ),
+                  tooltip: anyUnread ? 'Mark all as read' : 'Mark all as unread',
+                  onPressed: () {
+                    if (anyUnread) {
+                      final count = _inbox.fold(0, (sum, t) => sum + t.unreadCount);
+                      final unreadIds = _inbox
+                          .where((t) => t.unreadCount > 0)
+                          .map((t) => t.id)
+                          .toList();
+                      setState(() {
+                        _inbox = _inbox.map((t) => ChatThreadEntity(
+                          id: t.id,
+                          propertyId: t.propertyId,
+                          propertyName: t.propertyName,
+                          propertyImages: t.propertyImages,
+                          partnerName: t.partnerName,
+                          partnerId: t.partnerId,
+                          lastMessage: t.lastMessage,
+                          lastMessageTime: t.lastMessageTime,
+                          unreadCount: 0,
+                          isPropertyDeleted: t.isPropertyDeleted,
+                        )).toList();
+                      });
+                      for (final id in unreadIds) {
+                        context.read<ChatBloc>().add(MarkAsReadRequested(chatId: id));
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Marked $count messages as read')),
+                      );
+                    } else {
+                      setState(() {
+                        _inbox = _inbox.map((t) => ChatThreadEntity(
+                          id: t.id,
+                          propertyId: t.propertyId,
+                          propertyName: t.propertyName,
+                          propertyImages: t.propertyImages,
+                          partnerName: t.partnerName,
+                          partnerId: t.partnerId,
+                          lastMessage: t.lastMessage,
+                          lastMessageTime: t.lastMessageTime,
+                          unreadCount: 1,
+                          isPropertyDeleted: t.isPropertyDeleted,
+                        )).toList();
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Marked all as unread')),
+                      );
+                    }
+                  },
                 );
               },
             ),

@@ -27,7 +27,25 @@ class RentRequestRemoteDataSourceImpl implements RentRequestRemoteDataSource {
   Future<RentRequestListModel> getRequests() async {
     try {
       final response = await apiClient.dio.get('/rent-requests');
-      return RentRequestListModel.fromJson(response.data as Map<String, dynamic>);
+      final raw = response.data;
+      if (raw is List) {
+        return RentRequestListModel.fromList(raw);
+      }
+      if (raw is Map<String, dynamic>) {
+        if (raw.containsKey('sent') || raw.containsKey('received')) {
+          return RentRequestListModel.fromJson({
+            'data': raw,
+          });
+        }
+        final data = raw['data'];
+        if (data is List) {
+          return RentRequestListModel.fromList(data);
+        }
+        if (data is Map<String, dynamic>) {
+          return RentRequestListModel.fromJson(raw);
+        }
+      }
+      return const RentRequestListModel(sent: [], received: []);
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) throw UnauthorizedException();
       throw ServerException(

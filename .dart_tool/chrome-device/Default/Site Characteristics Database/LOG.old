@@ -1,10 +1,9 @@
-2026/06/21-21:32:11.656 2824 Log #3: 35 ops saved to Table #7 OK
-2026/06/21-21:32:11.666 2824 Archiving C:\Users\ElSaYaD\AppData\Local\Temp\flutter_tools.1b90868e\flutter_tools_chrome_device.4f0e80ac\Default\Site Characteristics Database/000003.log: OK
-2026/06/21-21:32:11.682 2824 Log #6: 2 ops saved to Table #8 OK
-2026/06/21-21:32:11.686 2824 Archiving C:\Users\ElSaYaD\AppData\Local\Temp\flutter_tools.1b90868e\flutter_tools_chrome_device.4f0e80ac\Default\Site Characteristics Database/000006.log: OK
-2026/06/21-21:32:11.686 2824 Table #4: 35 entries OK
-2026/06/21-21:32:11.687 2824 Table #6: 35 entries OK
-2026/06/21-21:32:11.687 2824 Table #7: 35 entries OK
-2026/06/21-21:32:11.687 2824 Table #8: 2 entries OK
-2026/06/21-21:32:11.698 2824 Archiving C:\Users\ElSaYaD\AppData\Local\Temp\flutter_tools.1b90868e\flutter_tools_chrome_device.4f0e80ac\Default\Site Characteristics Database/MANIFEST-000001: OK
-2026/06/21-21:32:11.708 2824 **** Repaired leveldb C:\Users\ElSaYaD\AppData\Local\Temp\flutter_tools.1b90868e\flutter_tools_chrome_device.4f0e80ac\Default\Site Characteristics Database; recovered 4 files; 3059 bytes. Some data may have been lost. ****
+2026/06/21-21:32:11.717 2824 Reusing MANIFEST C:\Users\ElSaYaD\AppData\Local\Temp\flutter_tools.1b90868e\flutter_tools_chrome_device.4f0e80ac\Default\Site Characteristics Database/MANIFEST-000001
+2026/06/21-21:32:11.719 72d8 Compacting 4@0 + 0@1 files
+2026/06/21-21:32:11.723 72d8 Generated table #11@0: 3 keys, 264 bytes
+2026/06/21-21:32:11.723 72d8 Compacted 4@0 + 0@1 files => 264 bytes
+2026/06/21-21:32:11.726 72d8 compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/06/21-21:32:11.727 72d8 Delete type=2 #4
+2026/06/21-21:32:11.727 72d8 Delete type=2 #6
+2026/06/21-21:32:11.727 72d8 Delete type=2 #7
+2026/06/21-21:32:11.727 72d8 Delete type=2 #8

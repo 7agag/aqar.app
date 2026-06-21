@@ -124,3 +124,11 @@
 2026-06-21 18:32:16.939: [INFO] Sync initialization duration: 2360ms
 2026-06-21 18:37:37.413: [INFO] VisibilityChanged: 1
 2026-06-21 18:37:59.690: [INFO] VisibilityChanged: 0
+2026-06-21 18:51:57.144: [INFO] VisibilityChanged: 0
+2026-06-21 18:51:57.286: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-06-21 18:51:57.286: [INFO] OnDoneLoading sync enabled: 1
+2026-06-21 18:52:06.479: [INFO] Sync initialization duration: 1285ms
+2026-06-21 18:54:10.555: [INFO] VisibilityChanged: 1
+2026-06-21 18:54:22.309: [INFO] VisibilityChanged: 0
+2026-06-21 19:49:35.521: [INFO] VisibilityChanged: 1
+2026-06-21 19:49:39.624: [INFO] VisibilityChanged: 0

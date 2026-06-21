@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -95,7 +97,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   void _shareProperty() {
     final property = _property!;
     final url = '${AppConfig.webUrl}/property/${property.propertyId}';
-    final price = property.listingType == ListingType.forSale
+    final price = _isForSale(property)
         ? 'EGP ${_fmt(property.priceValue)}'
         : 'EGP ${_fmt(property.priceValue)}/${property.pricingUnit.label}';
     SharePlus.instance.share(
@@ -127,6 +129,37 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     }
+  }
+
+  bool _isForSale(PropertyEntity property) {
+    return property.listingType == ListingType.forSale;
+  }
+
+  String _ownerDisplayName(PropertyEntity property) {
+    final parts = [
+      property.ownerFirstName,
+      property.ownerSecondName,
+    ]
+        .whereType<String>()
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) return 'Property Owner';
+    return parts.join(' ');
+  }
+
+  String _ownerInitials(PropertyEntity property) {
+    final parts = _ownerDisplayName(property)
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+
+    if (parts.isEmpty) return 'PO';
+    final first = parts.first.characters.first.toUpperCase();
+    final second =
+        parts.length > 1 ? parts.last.characters.first.toUpperCase() : '';
+    return '$first$second';
   }
 
   bool get _isOwner {
@@ -371,7 +404,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   Widget _buildPriceAndStatus(PropertyEntity property) {
     final isSold = property.listingStatus == ListingStatus.sold;
     String priceText;
-    if (property.listingType == ListingType.forSale) {
+    if (_isForSale(property)) {
       priceText = '${AppStrings.egp} ${_fmt(property.priceValue)}';
     } else if (property.pricingUnit == PricingUnit.day) {
       priceText =
@@ -514,7 +547,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       );
     }
 
-    if (property.listingType == ListingType.forSale) {
+    if (_isForSale(property)) {
       return InstallmentCalculator(property: property);
     }
 
@@ -927,25 +960,43 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         children: [
           _sectionTitle(AppStrings.location),
           const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            height: 140,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.navyBlue,
-                  AppColors.navyBlue.withValues(alpha: 0.7),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              height: 180,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: LatLng(
+                    property.latitude ?? 30.0444,
+                    property.longitude ?? 31.2357,
+                  ),
+                  initialZoom: 15,
+                  interactionOptions: const InteractionOptions(
+                    flags: InteractiveFlag.all,
+                  ),
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  ),
+                  if (property.latitude != null && property.longitude != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point:
+                              LatLng(property.latitude!, property.longitude!),
+                          width: 40,
+                          height: 40,
+                          child: const Icon(
+                            Icons.location_on_rounded,
+                            color: Color(0xFFE53935),
+                            size: 40,
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Center(
-              child: Icon(
-                Icons.map_rounded,
-                size: 48,
-                color: Colors.white.withValues(alpha: 0.4),
               ),
             ),
           ),
@@ -1040,7 +1091,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
           _infoDivider(),
           _infoRow(
             AppStrings.pricing,
-            property.listingType == ListingType.forSale
+            _isForSale(property)
                 ? AppStrings.fixedPrice
                 : _formatPricingUnit(property.pricingUnit),
           ),
@@ -1281,10 +1332,8 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
             context,
             MaterialPageRoute(
               builder: (_) => ChatDetailsPage(
-                userName:
-                    '${property.ownerFirstName ?? 'Property'} ${property.ownerSecondName ?? 'Owner'}',
-                initials:
-                    '${(property.ownerFirstName ?? 'P')[0]}${(property.ownerSecondName ?? 'O')[0]}',
+                userName: _ownerDisplayName(property),
+                initials: _ownerInitials(property),
                 partnerId: property.ownerId,
                 propertyId: property.propertyId,
               ),

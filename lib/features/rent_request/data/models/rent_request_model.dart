@@ -20,20 +20,34 @@ class RentRequestModel extends RentRequestEntity {
 
   factory RentRequestModel.fromJson(Map<String, dynamic> json) {
     return RentRequestModel(
-      requestId: json['request_id'] as String,
-      propertyId: json['property_id'] as int,
-      renterId: json['renter_id'] as String,
-      rentingType: RentingType.fromValue(json['renting_type'] as String),
-      state: RentRequestState.fromValue(json['request_state'] as String),
-      totalPrice: (json['total_price'] as num).toDouble(),
-      checkInDate: DateTime.parse(json['check_in_date'] as String),
-      checkOutDate: DateTime.parse(json['check_out_date'] as String),
-      createdAt: DateTime.parse(json['created_at'] as String),
-      propertyName: json['property_name'] as String?,
-      perspective: json['perspective'] as String?,
-      ownerId: json['owner_id'] as String?,
-      paymentId: json['payment_id'] as String?,
+      requestId: json['request_id']?.toString() ?? '',
+      propertyId: _parseInt(json['property_id']),
+      renterId: json['renter_id']?.toString() ?? '',
+      rentingType: RentingType.fromValue(json['renting_type']?.toString() ?? ''),
+      state: RentRequestState.fromValue(json['request_state']?.toString() ?? ''),
+      totalPrice: _parseDouble(json['total_price']),
+      checkInDate: DateTime.tryParse(json['check_in_date']?.toString() ?? '') ?? DateTime.now(),
+      checkOutDate: DateTime.tryParse(json['check_out_date']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      propertyName: json['property_name']?.toString(),
+      perspective: json['perspective']?.toString(),
+      ownerId: json['owner_id']?.toString(),
+      paymentId: json['payment_id']?.toString(),
     );
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value is double) return value;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 
   Map<String, dynamic> toJson() => {
@@ -60,14 +74,28 @@ class RentRequestListModel {
   const RentRequestListModel({required this.sent, required this.received});
 
   factory RentRequestListModel.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] as Map<String, dynamic>;
+    final data = json['data'];
+    if (data is! Map<String, dynamic>) {
+      return const RentRequestListModel(sent: [], received: []);
+    }
+    List<RentRequestModel> parseList(dynamic raw) {
+      if (raw is! List) return [];
+      return raw
+          .whereType<Map<String, dynamic>>()
+          .map(RentRequestModel.fromJson)
+          .toList();
+    }
     return RentRequestListModel(
-      sent: (data['sent'] as List)
-          .map((e) => RentRequestModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      received: (data['received'] as List)
-          .map((e) => RentRequestModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      sent: parseList(data['sent']),
+      received: parseList(data['received']),
     );
+  }
+
+  factory RentRequestListModel.fromList(List<dynamic> list) {
+    final models = list
+        .whereType<Map<String, dynamic>>()
+        .map(RentRequestModel.fromJson)
+        .toList();
+    return RentRequestListModel(sent: models, received: models);
   }
 }
