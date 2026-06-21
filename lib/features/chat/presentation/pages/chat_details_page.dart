@@ -10,6 +10,7 @@ import '../../domain/entities/chat_message_entity.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
 import '../bloc/chat_state.dart';
+import '../widgets/rent_status_banner.dart';
 
 class ChatDetailsPage extends StatefulWidget {
   final String userName;
@@ -288,6 +289,8 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
           onTap: () => _focusNode.unfocus(),
           child: Column(
             children: [
+              if (widget.propertyId != null)
+                RentStatusBanner(propertyId: widget.propertyId!),
               Expanded(
                 child: _messages.isEmpty
                     ? const Center(

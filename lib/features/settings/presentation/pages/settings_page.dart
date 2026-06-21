@@ -3,6 +3,7 @@ import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/features/about/presentation/pages/about_page.dart';
 import 'package:aqar/features/help/presentation/pages/help_page.dart';
+import 'package:aqar/features/auth/presentation/pages/change_password_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -16,7 +17,24 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
   bool _emailNotifications = true;
   bool _smsNotifications = false;
+  bool _darkMode = false;
   String _currentLocale = AppStrings.locale;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('dark_mode') ?? false;
+      _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
+      _emailNotifications = prefs.getBool('email_notifications') ?? true;
+      _smsNotifications = prefs.getBool('sms_notifications') ?? false;
+    });
+  }
 
   void _toggleLocale() {
     final newLocale = _currentLocale == 'en' ? 'ar' : 'en';
@@ -24,6 +42,11 @@ class _SettingsPageState extends State<SettingsPage> {
     AppStrings.locale = newLocale;
     SharedPreferences.getInstance().then((prefs) => prefs.setString('locale', newLocale));
     setState(() {});
+  }
+
+  void _toggleDarkMode(bool v) {
+    setState(() => _darkMode = v);
+    SharedPreferences.getInstance().then((prefs) => prefs.setBool('dark_mode', v));
   }
 
   @override
@@ -47,7 +70,16 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildSection('App Language'),
+          _buildSection('Appearance'),
+          _buildTile(
+            Icons.dark_mode_outlined,
+            'Dark Mode',
+            'Switch to a darker color scheme',
+            TrailingSwitch(
+              value: _darkMode,
+              onChanged: _toggleDarkMode,
+            ),
+          ),
           _buildTile(
             Icons.language_rounded,
             'Language',
@@ -65,7 +97,10 @@ class _SettingsPageState extends State<SettingsPage> {
             'Property updates, messages & alerts',
             TrailingSwitch(
               value: _notificationsEnabled,
-              onChanged: (v) => setState(() => _notificationsEnabled = v),
+              onChanged: (v) {
+                setState(() => _notificationsEnabled = v);
+                SharedPreferences.getInstance().then((prefs) => prefs.setBool('notifications_enabled', v));
+              },
             ),
           ),
           _buildTile(
@@ -74,7 +109,10 @@ class _SettingsPageState extends State<SettingsPage> {
             'Invoices, confirmations & receipts',
             TrailingSwitch(
               value: _emailNotifications,
-              onChanged: (v) => setState(() => _emailNotifications = v),
+              onChanged: (v) {
+                setState(() => _emailNotifications = v);
+                SharedPreferences.getInstance().then((prefs) => prefs.setBool('email_notifications', v));
+              },
             ),
           ),
           _buildTile(
@@ -83,7 +121,10 @@ class _SettingsPageState extends State<SettingsPage> {
             'OTP, alerts & important updates',
             TrailingSwitch(
               value: _smsNotifications,
-              onChanged: (v) => setState(() => _smsNotifications = v),
+              onChanged: (v) {
+                setState(() => _smsNotifications = v);
+                SharedPreferences.getInstance().then((prefs) => prefs.setBool('sms_notifications', v));
+              },
             ),
           ),
           const SizedBox(height: 24),
@@ -93,11 +134,10 @@ class _SettingsPageState extends State<SettingsPage> {
             'Change Password',
             'Update your account password',
             const TrailingChevron(),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Change Password')),
-              );
-            },
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+            ),
           ),
           _buildTile(
             Icons.delete_outline_rounded,

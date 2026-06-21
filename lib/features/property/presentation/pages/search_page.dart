@@ -42,6 +42,9 @@ class _SearchPageState extends State<SearchPage> {
   bool _isRefreshing = false;
   Set<int> _favoriteIds = {};
 
+  String _sortBy = 'newest';
+  final List<String> _recentSearches = [];
+
   bool get _hasActiveAdvancedFilters =>
       _activeLocation != null ||
       _activeMinPrice != null ||
@@ -75,10 +78,15 @@ class _SearchPageState extends State<SearchPage> {
 
   // ✅ البحث عند الضغط على Enter فقط
   void _performSearch(String query) {
+    final trimmed = query.trim();
     setState(() {
-      _searchText = query.trim().isEmpty ? null : query.trim();
+      _searchText = trimmed.isEmpty ? null : trimmed;
     });
-    _applyFilters(); // تطبيق الفلاتر محلياً
+    if (trimmed.isNotEmpty && !_recentSearches.contains(trimmed)) {
+      _recentSearches.insert(0, trimmed);
+      if (_recentSearches.length > 5) _recentSearches.removeLast();
+    }
+    _applyFilters();
   }
 
   double _getNumericSize(String? sizeStr) {
@@ -141,6 +149,23 @@ class _SearchPageState extends State<SearchPage> {
       filtered = filtered
           .where((p) => _getNumericSize(p.size) <= _activeMaxSize!)
           .toList();
+    }
+
+    switch (_sortBy) {
+      case 'price_asc':
+        filtered.sort((a, b) => a.priceValue.compareTo(b.priceValue));
+        break;
+      case 'price_desc':
+        filtered.sort((a, b) => b.priceValue.compareTo(a.priceValue));
+        break;
+      case 'size_desc':
+        filtered.sort((a, b) =>
+            _getNumericSize(b.size).compareTo(_getNumericSize(a.size)));
+        break;
+      case 'newest':
+      default:
+        filtered.sort((a, b) => b.propertyId.compareTo(a.propertyId));
+        break;
     }
 
     setState(() {
@@ -361,12 +386,82 @@ class _SearchPageState extends State<SearchPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: SearchBarWidget(
-                onSubmitted: _performSearch, // ✅ البحث عند Enter فقط
+                onSubmitted: _performSearch,
                 onFilterTap: _openAdvancedSearch,
                 hasActiveFilters: _hasActiveAdvancedFilters,
                 currentQuery: _searchText,
+              ),
+            ),
+            if (_recentSearches.isNotEmpty && (_searchText == null || _searchText!.isEmpty))
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4, right: 4),
+                      child: Icon(Icons.history, size: 14, color: AppColors.textHint),
+                    ),
+                    ..._recentSearches.map((q) => GestureDetector(
+                      onTap: () {
+                        _performSearch(q);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.borderLight),
+                        ),
+                        child: Text(q, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+            // Sort + Results count row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Row(
+                children: [
+                  if (_filteredProperties.isNotEmpty)
+                    Text(
+                      '${_filteredProperties.length} ${_filteredProperties.length == 1 ? 'result' : 'results'}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textHint),
+                    ),
+                  const Spacer(),
+                  Container(
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.borderLight),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _sortBy,
+                        icon: const Icon(Icons.swap_vert, size: 16, color: AppColors.textHint),
+                        style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                        items: const [
+                          DropdownMenuItem(value: 'newest', child: Text('Newest')),
+                          DropdownMenuItem(value: 'price_asc', child: Text('Price: Low to High')),
+                          DropdownMenuItem(value: 'price_desc', child: Text('Price: High to Low')),
+                          DropdownMenuItem(value: 'size_desc', child: Text('Largest')),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) {
+                            setState(() => _sortBy = v);
+                            _applyFilters();
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             _buildFilters(),

@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
+import 'package:aqar/core/services/escrow_service.dart';
 import 'package:aqar/core/theme/app_colors.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_state.dart';
 import 'package:aqar/features/payment/domain/usecases/get_payment_link_usecase.dart';
 import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
+import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
+import 'package:aqar/features/rent_request/presentation/bloc/rent_request_event.dart';
 import 'package:aqar/injection_container.dart';
 
 enum _PaymentTab { card, fawry, instapay, mobileWallet }
@@ -10,11 +16,17 @@ enum _PaymentTab { card, fawry, instapay, mobileWallet }
 class PaymentGatewayPage extends StatefulWidget {
   final String itemName;
   final double amount;
+  final int? propertyId;
+  final String? requestId;
+  final String? ownerId;
 
   const PaymentGatewayPage({
     super.key,
     required this.itemName,
     required this.amount,
+    this.propertyId,
+    this.requestId,
+    this.ownerId,
   });
 
   @override
@@ -46,8 +58,8 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
   late final AnimationController _animationController;
   late final Animation<double> _successScale;
 
-  String _transactionId = '';
-  String _paymentTimestampStr = '';
+  String get _transactionId => '';
+  String get _paymentTimestampStr => '';
 
   @override
   void initState() {
@@ -1227,11 +1239,20 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
           );
           if (!mounted) return;
           if (result == true) {
-            _transactionId = 'AQAR-TXN-${DateTime.now().millisecondsSinceEpoch}';
-            final now = DateTime.now();
-            _paymentTimestampStr =
-                '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
-                '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+            final authState = context.read<AuthBloc>().state;
+            if (authState is AuthProfileLoaded && widget.requestId != null && widget.propertyId != null) {
+              final ownerId = widget.ownerId;
+              if (ownerId != null && ownerId.isNotEmpty) {
+                await sl<EscrowService>().createLease(
+                  requestId: widget.requestId!,
+                  propertyId: widget.propertyId!,
+                  renterId: authState.user.id,
+                  ownerId: ownerId,
+                );
+                if (!mounted) return;
+                context.read<RentRequestBloc>().add(const LoadRentRequests());
+              }
+            }
             setState(() {
               _isProcessing = false;
               _isSuccess = true;

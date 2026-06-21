@@ -438,10 +438,7 @@ class _HomePageState extends State<HomePage>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => BlocProvider(
-                        create: (_) => di.sl<RentRequestBloc>(),
-                        child: const RentRequestsPage(),
-                      ),
+                      builder: (_) => const MyRequestsPage(),
                     ),
                   );
                 },

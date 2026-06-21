@@ -1288,9 +1288,37 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
       children: [
         const PhotoTipsCard(),
         const SizedBox(height: AppSpacing.xl),
-        _buildLabel('Property Images * (3–10)'),
+        Row(
+          children: [
+            _buildLabel('Property Images * (3–10)'),
+            const Spacer(),
+            if (_propertyImages.length >= 2)
+              GestureDetector(
+                onTap: () => _showReorderSheet(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.swap_vert, size: 14, color: AppColors.primary),
+                      SizedBox(width: 4),
+                      Text('Reorder',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.sm),
-        _buildImageGrid(_propertyImages, 10, _pickPropertyImages),
+        _buildImageGrid(),
         if (_propertyImages.length < 3)
           Padding(
             padding: const EdgeInsets.only(top: 6),
@@ -1325,17 +1353,16 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     );
   }
 
-  Widget _buildImageGrid(List<XFile> files, int max, VoidCallback onAdd) {
+  Widget _buildImageGrid() {
     return Wrap(
       spacing: AppSpacing.sm,
       runSpacing: AppSpacing.sm,
       children: [
-        ...files.map((f) => _buildImageThumb(f, () {
-              setState(() => files.remove(f));
-            })),
-        if (files.length < max)
+        ..._propertyImages.asMap().entries.map((e) =>
+            _buildImageThumb(e.key, e.value)),
+        if (_propertyImages.length < 10)
           GestureDetector(
-            onTap: onAdd,
+            onTap: _showImageSourceSheet,
             child: Container(
               width: 90,
               height: 90,
@@ -1366,37 +1393,193 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     );
   }
 
-  Widget _buildImageThumb(XFile file, VoidCallback onDelete) {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          child: SizedBox(
-            width: 90,
-            height: 90,
-            child: kIsWeb
-                ? _PickedImageTile(file: file)
-                : Image.file(File(file.path), fit: BoxFit.cover),
-          ),
-        ),
-        Positioned(
-          top: 2,
-          right: 2,
-          child: GestureDetector(
-            onTap: onDelete,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: const BoxDecoration(
-                  shape: BoxShape.circle, color: AppColors.error),
-              child: const Icon(Icons.close, color: Colors.white, size: 14),
+  Widget _buildImageThumb(int index, XFile file) {
+    return GestureDetector(
+      onTap: () => _showImagePreview(index),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+            child: SizedBox(
+              width: 90,
+              height: 90,
+              child: kIsWeb
+                  ? _PickedImageTile(file: file)
+                  : Image.file(File(file.path), fit: BoxFit.cover),
             ),
           ),
-        ),
-      ],
+          Positioned(
+            top: 2,
+            left: 2,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.85),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '${index + 1}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 2,
+            right: 2,
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _propertyImages.removeAt(index));
+              },
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: AppColors.error),
+                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              ),
+            ),
+          ),
+          if (_propertyImages.length > 1)
+            Positioned(
+              bottom: 2,
+              right: 2,
+              child: GestureDetector(
+                onTap: () => _showReorderSheet(),
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.drag_handle,
+                      color: Colors.white, size: 14),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  Future<void> _pickPropertyImages() async {
+  void _showImageSourceSheet() {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textHint.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text('Add Photo',
+                  style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary)),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: _sourceOption(
+                      icon: Icons.camera_alt_outlined,
+                      label: 'Camera',
+                      subtitle: 'Take a photo now',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pickFromCamera();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _sourceOption(
+                      icon: Icons.photo_library_outlined,
+                      label: 'Gallery',
+                      subtitle: 'Choose from library',
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _pickFromGallery();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sourceOption({
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppColors.primary, size: 26),
+            ),
+            const SizedBox(height: 10),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary)),
+            const SizedBox(height: 2),
+            Text(subtitle,
+                style: const TextStyle(
+                    fontSize: 11, color: AppColors.textSecondary)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickFromCamera() async {
+    final file = await ImagePicker().pickImage(source: ImageSource.camera);
+    if (file != null) {
+      setState(() {
+        if (_propertyImages.length < 10) _propertyImages.add(file);
+      });
+    }
+  }
+
+  Future<void> _pickFromGallery() async {
     final files = await ImagePicker().pickMultiImage();
     if (files.isNotEmpty) {
       setState(() {
@@ -1405,6 +1588,165 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
         }
       });
     }
+  }
+
+  void _showImagePreview(int index) {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _FullScreenImagePreview(
+          images: _propertyImages,
+          initialIndex: index,
+        ),
+      ),
+    );
+  }
+
+  void _showReorderSheet() {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textHint.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Text('Reorder Images',
+                        style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary)),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () {
+                        final current = List<XFile>.from(_propertyImages);
+                        Navigator.pop(ctx);
+                        setState(() => _propertyImages
+                          ..clear()
+                          ..addAll(current));
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('Done',
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 300,
+                  child: ReorderableListView.builder(
+                    itemCount: _propertyImages.length,
+                    onReorderItem: (oldI, newI) {
+                      setState(() {
+                        final item = _propertyImages.removeAt(oldI);
+                        _propertyImages.insert(newI, item);
+                      });
+                      setSheetState(() {});
+                    },
+                    itemBuilder: (_, i) {
+                      final file = _propertyImages[i];
+                      return Padding(
+                        key: ValueKey(file.path),
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceLight,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: AppColors.borderLight),
+                          ),
+                          child: ListTile(
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SizedBox(
+                                width: 52,
+                                height: 52,
+                                child: Image.file(File(file.path),
+                                    fit: BoxFit.cover),
+                              ),
+                            ),
+                            title: Text('Image ${i + 1}',
+                                style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600)),
+                            subtitle: Text(
+                                '${(File(file.path).lengthSync() / 1024).toStringAsFixed(0)} KB',
+                                style: const TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary)),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (i > 0)
+                                  IconButton(
+                                    icon: const Icon(Icons.keyboard_arrow_up,
+                                        size: 20),
+                                    onPressed: () {
+                                      setState(() {
+                                        final item =
+                                            _propertyImages.removeAt(i);
+                                        _propertyImages.insert(i - 1, item);
+                                      });
+                                      setSheetState(() {});
+                                    },
+                                  ),
+                                if (i < _propertyImages.length - 1)
+                                  IconButton(
+                                    icon: const Icon(
+                                        Icons.keyboard_arrow_down,
+                                        size: 20),
+                                    onPressed: () {
+                                      setState(() {
+                                        final item =
+                                            _propertyImages.removeAt(i);
+                                        _propertyImages.insert(i + 1, item);
+                                      });
+                                      setSheetState(() {});
+                                    },
+                                  ),
+                                Icon(Icons.drag_handle,
+                                    color: AppColors.textHint, size: 20),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -1644,7 +1986,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
         // --- Supporting Docs ---
         _buildLabel('Supporting Documentation (Optional — max 3)'),
         const SizedBox(height: AppSpacing.sm),
-        _buildImageGrid(_supportingDocs, 3, _pickSupportingDocs),
+        _buildSupportingDocsGrid(),
         const SizedBox(height: AppSpacing.xl),
 
         // --- Privacy notice ---
@@ -1769,6 +2111,77 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     if (files.isNotEmpty) {
       setState(() => onPicked(files.first));
     }
+  }
+
+  Widget _buildSupportingDocsGrid() {
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: [
+        ..._supportingDocs.map((f) => _buildDocThumb(f, () {
+              setState(() => _supportingDocs.remove(f));
+            })),
+        if (_supportingDocs.length < 3)
+          GestureDetector(
+            onTap: _pickSupportingDocs,
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.4),
+                    width: 1.5,
+                    strokeAlign: BorderSide.strokeAlignInside),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                color: AppColors.primary.withValues(alpha: 0.05),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_photo_alternate_outlined,
+                      color: AppColors.primary, size: 28),
+                  SizedBox(height: 2),
+                  Text('Add',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDocThumb(XFile file, VoidCallback onDelete) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          child: SizedBox(
+            width: 90,
+            height: 90,
+            child: kIsWeb
+                ? _PickedImageTile(file: file)
+                : Image.file(File(file.path), fit: BoxFit.cover),
+          ),
+        ),
+        Positioned(
+          top: 2,
+          right: 2,
+          child: GestureDetector(
+            onTap: onDelete,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(
+                  shape: BoxShape.circle, color: AppColors.error),
+              child: const Icon(Icons.close, color: Colors.white, size: 14),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _pickSupportingDocs() async {
@@ -2668,6 +3081,92 @@ class _SearchResult {
   final double lon;
   const _SearchResult(
       {required this.displayName, required this.lat, required this.lon});
+}
+
+class _FullScreenImagePreview extends StatefulWidget {
+  final List<XFile> images;
+  final int initialIndex;
+  const _FullScreenImagePreview({
+    required this.images,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_FullScreenImagePreview> createState() =>
+      _FullScreenImagePreviewState();
+}
+
+class _FullScreenImagePreviewState extends State<_FullScreenImagePreview> {
+  late PageController _pageCtrl;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageCtrl = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          '${_currentIndex + 1} of ${widget.images.length}',
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+      body: GestureDetector(
+        onTap: () => Navigator.pop(context),
+        child: PageView.builder(
+          controller: _pageCtrl,
+          itemCount: widget.images.length,
+          onPageChanged: (i) => setState(() => _currentIndex = i),
+          itemBuilder: (_, i) {
+            final file = widget.images[i];
+            return InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: Center(
+                child: ClipRRect(
+                  child: kIsWeb
+                      ? _PickedImageTile(file: file)
+                      : Image.file(File(file.path),
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.broken_image_outlined,
+                                      color: Colors.white54, size: 64),
+                                  SizedBox(height: 8),
+                                  Text('Could not load image',
+                                      style: TextStyle(color: Colors.white54)),
+                                ],
+                              )),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 }
 
 class _ExpiryFormatter extends TextInputFormatter {

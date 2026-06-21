@@ -18,7 +18,7 @@ class PropertyImageCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final clampedHeight = (MediaQuery.of(context).size.height * 0.35).clamp(220, 400).toDouble();
+    final clampedHeight = (MediaQuery.of(context).size.height * 0.38).clamp(260, 420).toDouble();
     return SliverAppBar(
       expandedHeight: clampedHeight,
       pinned: false,
@@ -57,26 +57,53 @@ class PropertyImageCarousel extends StatelessWidget {
         Positioned(
           left: 0,
           right: 0,
-          bottom: 16,
-          child: _buildDots(),
+          bottom: 0,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.55),
+                ],
+              ),
+            ),
+            child: Column(
+              children: [
+                _buildProgressBar(),
+                const SizedBox(height: 6),
+                Text(
+                  '${currentIndex + 1} / ${images.length}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildDots() {
+  Widget _buildProgressBar() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(images.length, (index) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          width: 8,
-          height: 8,
+      children: List.generate(images.length, (i) {
+        final isActive = i == currentIndex;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
+          width: isActive ? 24 : 8,
+          height: 3,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: index == currentIndex
-                ? AppColors.primary
-                : Colors.white.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(2),
+            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
           ),
         );
       }),

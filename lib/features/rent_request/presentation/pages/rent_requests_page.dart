@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aqar/core/theme/app_colors.dart';
@@ -5,28 +6,46 @@ import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.d
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_event.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_state.dart';
 import 'package:aqar/features/rent_request/presentation/pages/rent_request_detail_page.dart';
+import 'package:aqar/features/purchase_request/presentation/bloc/purchase_request_bloc.dart';
+import 'package:aqar/features/purchase_request/presentation/pages/purchase_request_detail_page.dart';
+import 'package:aqar/features/purchase_request/domain/entities/purchase_request_entity.dart';
 
-class RentRequestsPage extends StatefulWidget {
+class MyRequestsPage extends StatefulWidget {
   final int initialTab;
-  const RentRequestsPage({super.key, this.initialTab = 0});
+  const MyRequestsPage({super.key, this.initialTab = 0});
 
   @override
-  State<RentRequestsPage> createState() => _RentRequestsPageState();
+  State<MyRequestsPage> createState() => _MyRequestsPageState();
 }
 
-class _RentRequestsPageState extends State<RentRequestsPage>
+class _MyRequestsPageState extends State<MyRequestsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
-    context.read<RentRequestBloc>().add(const LoadRentRequests());
+    _tabController = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
+    _loadAll();
+    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _loadAll();
+    });
+  }
+
+  void _loadAll() {
+    try {
+      context.read<RentRequestBloc>().add(const LoadRentRequests());
+    } catch (_) {}
+    try {
+      context.read<PurchaseRequestBloc>().add(GetMyRequests());
+      context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _tabController.dispose();
     super.dispose();
   }
@@ -34,186 +53,438 @@ class _RentRequestsPageState extends State<RentRequestsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('My Requests'),
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        centerTitle: true,
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.primary,
+          indicatorWeight: 3,
+          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          isScrollable: true,
           tabs: const [
-            Tab(text: 'Sent'),
-            Tab(text: 'Received'),
+            Tab(text: 'Rent Sent'),
+            Tab(text: 'Rent Received'),
+            Tab(text: 'Purchase Sent'),
+            Tab(text: 'Purchase Received'),
           ],
         ),
       ),
-      body: BlocConsumer<RentRequestBloc, RentRequestState>(
-        listener: (context, state) {
-          if (state is RentRequestError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-          }
-          if (state is RentRequestActionSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is RentRequestLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is RentRequestsLoaded) {
-            return TabBarView(
-              controller: _tabController,
-              children: [
-                _buildList(state.sent, isSent: true),
-                _buildList(state.received, isSent: false),
-              ],
-            );
-          }
-          return _buildErrorRetry(state);
-        },
-      ),
-    );
-  }
-
-  Widget _buildErrorRetry(RentRequestState state) {
-    final message = state is RentRequestError ? state.message : 'Something went wrong';
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      body: TabBarView(
+        controller: _tabController,
         children: [
-          const Icon(Icons.error_outline, size: 48, color: AppColors.textHint),
-          const SizedBox(height: 16),
-          Text(message, style: const TextStyle(color: AppColors.textSecondary)),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () => context.read<RentRequestBloc>().add(const LoadRentRequests()),
-            child: const Text('Retry'),
-          ),
+          _buildRentSentTab(),
+          _buildRentReceivedTab(),
+          _buildPurchaseSentTab(),
+          _buildPurchaseReceivedTab(),
         ],
       ),
     );
   }
 
-  Widget _buildList(List list, {required bool isSent}) {
-    if (list.isEmpty) {
-      return Center(
+  Widget _buildRentSentTab() {
+    return BlocConsumer<RentRequestBloc, RentRequestState>(
+      listener: _rentListener,
+      builder: (context, state) {
+        if (state is RentRequestLoading) return _loader();
+        if (state is RentRequestsLoaded) {
+          return _buildRentList(state.sent, isSent: true);
+        }
+        return _buildErrorRetry(() {
+          context.read<RentRequestBloc>().add(const LoadRentRequests());
+        }, state is RentRequestError ? state.message : null);
+      },
+    );
+  }
+
+  Widget _buildRentReceivedTab() {
+    return BlocConsumer<RentRequestBloc, RentRequestState>(
+      listener: _rentListener,
+      builder: (context, state) {
+        if (state is RentRequestLoading) return _loader();
+        if (state is RentRequestsLoaded) {
+          return _buildRentList(state.received, isSent: false);
+        }
+        return _buildErrorRetry(() {
+          context.read<RentRequestBloc>().add(const LoadRentRequests());
+        }, state is RentRequestError ? state.message : null);
+      },
+    );
+  }
+
+  void _rentListener(BuildContext context, RentRequestState state) {
+    if (state is RentRequestError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+      );
+    }
+    if (state is RentRequestActionSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(state.message), backgroundColor: AppColors.success),
+      );
+    }
+  }
+
+  Widget _buildPurchaseSentTab() {
+    return BlocConsumer<PurchaseRequestBloc, PurchaseRequestState>(
+      listener: _purchaseListener,
+      builder: (context, state) {
+        if (state is PurchaseRequestLoading) return _loader();
+        if (state is MyRequestsLoaded) {
+          return _buildPurchaseList(state.requests, isSent: true);
+        }
+        if (state is PurchaseRequestError) {
+          return _buildErrorRetry(() {
+            context.read<PurchaseRequestBloc>().add(GetMyRequests());
+          }, state.message);
+        }
+        context.read<PurchaseRequestBloc>().add(GetMyRequests());
+        return _loader();
+      },
+    );
+  }
+
+  Widget _buildPurchaseReceivedTab() {
+    return BlocConsumer<PurchaseRequestBloc, PurchaseRequestState>(
+      listener: _purchaseListener,
+      builder: (context, state) {
+        if (state is PurchaseRequestLoading) return _loader();
+        if (state is ReceivedRequestsLoaded) {
+          return _buildPurchaseList(state.requests, isSent: false);
+        }
+        if (state is PurchaseRequestError) {
+          return _buildErrorRetry(() {
+            context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
+          }, state.message);
+        }
+        context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
+        return _loader();
+      },
+    );
+  }
+
+  void _purchaseListener(BuildContext context, PurchaseRequestState state) {
+    if (state is PurchaseRequestError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+      );
+    }
+    if (state is PurchaseRequestSuccess) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(state.message), backgroundColor: AppColors.success),
+      );
+      context.read<PurchaseRequestBloc>().add(GetMyRequests());
+      context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
+    }
+  }
+
+  Widget _loader() {
+    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+  }
+
+  Widget _buildErrorRetry(VoidCallback onRetry, String? message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isSent ? Icons.send_outlined : Icons.inbox_outlined,
-              size: 64,
-              color: AppColors.textHint,
-            ),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.textHint),
             const SizedBox(height: 16),
             Text(
-              isSent ? 'No sent requests' : 'No received requests',
+              message ?? 'Something went wrong',
+              textAlign: TextAlign.center,
               style: const TextStyle(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 8),
-            Text(
-              isSent ? 'Browse properties and send a rent request' : 'Requests from renters will appear here',
-              style: const TextStyle(fontSize: 13, color: AppColors.textHint),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Retry', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRentList(List list, {required bool isSent}) {
+    if (list.isEmpty) {
+      return _emptyState(
+        icon: isSent ? Icons.send_outlined : Icons.inbox_outlined,
+        title: isSent ? 'No sent requests' : 'No received requests',
+        subtitle: isSent ? 'Browse properties and send a rent request' : 'Requests from renters will appear here',
       );
     }
     return RefreshIndicator(
       onRefresh: () async {
         context.read<RentRequestBloc>().add(const LoadRentRequests());
       },
+      color: AppColors.primary,
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         itemCount: list.length,
         itemBuilder: (context, index) {
-          final request = list[index];
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(12),
-              title: Text(
-                request.propertyName ?? 'Property #${request.propertyId}',
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Text(
-                    '${request.checkInDate.toString().substring(0, 10)} — ${request.checkOutDate.toString().substring(0, 10)}',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '\$${request.totalPrice.toStringAsFixed(0)} · ${request.rentingType.label}',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ],
-              ),
-              trailing: _buildStatusChip(request.state.label),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => BlocProvider.value(
-                      value: context.read<RentRequestBloc>(),
-                      child: RentRequestDetailPage(
-                        requestId: request.requestId,
-                        isSent: isSent,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
+          final r = list[index];
+          return _buildRentCard(r, isSent);
         },
       ),
     );
   }
 
-  Widget _buildStatusChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: _statusColor(label).withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: _statusColor(label),
+  Widget _buildRentCard(dynamic r, bool isSent) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 0,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: context.read<RentRequestBloc>(),
+                child: RentRequestDetailPage(
+                  requestId: r.requestId,
+                  isSent: isSent,
+                ),
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _rentStatusColor(r.state.label).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.home_work_outlined, size: 22, color: _rentStatusColor(r.state.label)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      r.propertyName ?? 'Property #${r.propertyId}',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 11, color: AppColors.textHint),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${r.checkInDate.toString().substring(0, 10)} — ${r.checkOutDate.toString().substring(0, 10)}',
+                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '\$${r.totalPrice.toStringAsFixed(0)} · ${r.rentingType.label}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _statusChip(r.state.label, _rentStatusColor(r.state.label)),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Color _statusColor(String label) {
+  Color _rentStatusColor(String label) {
     switch (label) {
-      case 'Pending':
-        return Colors.orange;
-      case 'Accepted':
-        return Colors.green;
-      case 'Rejected':
-        return Colors.red;
-      case 'Cancelled':
-        return Colors.grey;
-      case 'Payment Pending':
-        return Colors.amber;
-      case 'Paid':
-        return Colors.teal;
-      default:
-        return AppColors.textSecondary;
+      case 'Pending': return Colors.orange;
+      case 'Accepted': return Colors.green;
+      case 'Rejected': return Colors.red;
+      case 'Cancelled': return Colors.grey;
+      case 'Payment Pending': return Colors.amber;
+      case 'Paid': return Colors.teal;
+      default: return AppColors.textSecondary;
     }
+  }
+
+  Widget _buildPurchaseList(List<PurchaseRequestEntity> list, {required bool isSent}) {
+    if (list.isEmpty) {
+      return _emptyState(
+        icon: isSent ? Icons.shopping_cart_outlined : Icons.store_outlined,
+        title: isSent ? 'No sent requests' : 'No received requests',
+        subtitle: isSent ? 'Browse properties and send a purchase request' : 'Purchase requests for your properties will appear here',
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: () async {
+        context.read<PurchaseRequestBloc>().add(GetMyRequests());
+        context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
+      },
+      color: AppColors.primary,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: list.length,
+        itemBuilder: (context, index) {
+          final r = list[index];
+          return _buildPurchaseCard(r, isSent);
+        },
+      ),
+    );
+  }
+
+  Widget _buildPurchaseCard(PurchaseRequestEntity r, bool isSent) {
+    final statusLabel = _purchaseStatusLabel(r.status);
+    final color = _purchaseStatusColor(r.status);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 0,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: context.read<PurchaseRequestBloc>(),
+                child: PurchaseRequestDetailPage(
+                  requestId: r.requestId,
+                  isSent: isSent,
+                  contactUnlocked: r.contactUnlocked,
+                  buyerName: r.buyerName,
+                  buyerEmail: r.buyerEmail,
+                ),
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.sell_outlined, size: 22, color: color),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      r.propertyName ?? 'Property #${r.propertyId}',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isSent ? 'To: ${r.ownerName}' : 'From: ${r.buyerName}',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _formatDate(r.createdAt),
+                      style: const TextStyle(fontSize: 12, color: AppColors.textHint),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _statusChip(statusLabel, color),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _purchaseStatusLabel(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING': return 'Pending';
+      case 'ACCEPTED': return 'Accepted';
+      case 'REJECTED': return 'Rejected';
+      case 'CANCELLED': return 'Cancelled';
+      default: return status;
+    }
+  }
+
+  Color _purchaseStatusColor(String status) {
+    switch (status.toUpperCase()) {
+      case 'PENDING': return Colors.orange;
+      case 'ACCEPTED': return Colors.green;
+      case 'REJECTED': return Colors.red;
+      case 'CANCELLED': return Colors.grey;
+      default: return AppColors.textSecondary;
+    }
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+
+  Widget _statusChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+      ),
+    );
+  }
+
+  Widget _emptyState({required IconData icon, required String title, required String subtitle}) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.borderLight),
+              ),
+              child: Icon(icon, size: 36, color: AppColors.textHint),
+            ),
+            const SizedBox(height: 20),
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            const SizedBox(height: 8),
+            Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          ],
+        ),
+      ),
+    );
   }
 }

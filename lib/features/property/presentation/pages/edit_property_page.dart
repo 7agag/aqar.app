@@ -167,9 +167,44 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                 },
               ),
               const SizedBox(height: 24),
+              _buildSectionTitle('Property Type'),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_outline, size: 18, color: AppColors.textHint),
+                    const SizedBox(width: 10),
+                    Text(
+                      widget.property.listingType.label,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'Locked',
+                        style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
               _buildSectionTitle('Listing Status'),
               const SizedBox(height: 8),
               Container(
+                width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -188,8 +223,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                       child: Row(
                         children: [
                           Container(
-                            width: 10,
-                            height: 10,
+                            width: 10, height: 10,
                             decoration: BoxDecoration(
                               color: s.color,
                               shape: BoxShape.circle,

@@ -34,46 +34,82 @@ class ProfileInfoPage extends StatelessWidget {
       body: user == null
           ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 children: [
-                  _buildHeader(user),
-                  const SizedBox(height: AppSpacing.xl),
-                  _buildInfoCard(context, user),
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildChangePasswordRow(context),
+                  _buildHeader(context, user),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: AppSpacing.lg),
+                        _buildInfoCard(context, user),
+                        const SizedBox(height: AppSpacing.md),
+                        _buildChangePasswordRow(context),
+                        const SizedBox(height: AppSpacing.xxl),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildHeader(UserEntity user) {
+  Widget _buildHeader(BuildContext context, UserEntity user) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.12),
+            AppColors.primary.withValues(alpha: 0.02),
+            Colors.white,
+          ],
+        ),
+      ),
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + AppSpacing.sm,
+        bottom: AppSpacing.lg,
+      ),
       child: Column(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.3),
-                width: 3,
-              ),
-            ),
-            child: CircleAvatar(
-              radius: 48,
-              backgroundColor: AppColors.surfaceLight,
-              child: Text(
-                _initials(user),
-                style: const TextStyle(
-                  fontSize: 36,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+          const SizedBox(height: AppSpacing.sm),
+          Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3),
+                    width: 3,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 48,
+                  backgroundColor: AppColors.surfaceLight,
+                  child: Text(
+                    _initials(user),
+                    style: const TextStyle(
+                      fontSize: 36,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
-            ),
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(Icons.edit, color: Colors.white, size: 14),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
@@ -85,9 +121,23 @@ class ProfileInfoPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
-          Text(
-            user.email,
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                user.isVerified ? Icons.verified_outlined : Icons.info_outline,
+                color: user.isVerified ? const Color(0xFF2E7D32) : AppColors.textHint,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                user.isVerified ? 'Verified account' : 'Not verified',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: user.isVerified ? const Color(0xFF2E7D32) : AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -110,13 +160,13 @@ class ProfileInfoPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _infoRow('First Name', user.firstName),
+          _infoRow(Icons.person_outline, 'First Name', user.firstName),
           const Divider(height: 1, indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-          _infoRow('Second Name', user.secondName),
+          _infoRow(Icons.person_outline, 'Second Name', user.secondName),
           const Divider(height: 1, indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-          _infoRow('Email', user.email),
+          _infoRow(Icons.email_outlined, 'Email', user.email),
           const Divider(height: 1, indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-          _infoRow('Status', user.isVerified ? 'Verified' : 'Not verified'),
+          _infoRow(Icons.phone_outlined, 'Phone', user.email),
           const SizedBox(height: AppSpacing.md),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -149,31 +199,43 @@ class ProfileInfoPage extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Row(
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textHint,
-              ),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              shape: BoxShape.circle,
             ),
+            child: Icon(icon, size: 18, color: AppColors.primary),
           ),
-          Expanded(
-            child: Text(
-              value.isNotEmpty ? value : '—',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
+          const SizedBox(width: AppSpacing.md),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textHint,
+                  letterSpacing: 0.3,
+                ),
               ),
-            ),
+              const SizedBox(height: 2),
+              Text(
+                value.isNotEmpty ? value : '—',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -2,6 +2,8 @@
 
 import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/core/network/socket_service.dart';
+import 'package:aqar/core/services/escrow_service.dart';
+import 'package:aqar/core/services/notification_service.dart';
 import 'package:aqar/core/theme/app_theme.dart';
 import 'package:aqar/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:aqar/features/auth/presentation/bloc/auth_event.dart';
@@ -181,6 +183,9 @@ class _AqarAppState extends State<AqarApp> {
         BlocProvider<PurchaseRequestBloc>(
           create: (context) => di.sl<PurchaseRequestBloc>(),
         ),
+        BlocProvider<RentRequestBloc>(
+          create: (context) => di.sl<RentRequestBloc>(),
+        ),
         BlocProvider<ReviewBloc>(
           create: (context) => di.sl<ReviewBloc>(),
         ),
@@ -191,8 +196,12 @@ class _AqarAppState extends State<AqarApp> {
       child: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           final socketService = di.sl<SocketService>();
+          final escrowService = di.sl<EscrowService>();
+          final notificationService = di.sl<NotificationService>();
           if (state is AuthProfileLoaded) {
             socketService.connect();
+            escrowService.init();
+            notificationService.init();
           } else if (state is AuthUnauthenticated) {
             socketService.disconnect();
           }

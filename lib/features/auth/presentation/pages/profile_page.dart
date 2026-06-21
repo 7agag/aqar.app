@@ -9,10 +9,9 @@ import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../../domain/entities/user_entity.dart';
 import 'profile_info_page.dart';
-import 'package:aqar/features/property/presentation/pages/my_properties_page.dart';
-import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
+import 'package:aqar/features/property/presentation/bloc/property_bloc.dart';
+import 'package:aqar/features/property/presentation/widgets/profile_properties_widget.dart';
 import 'package:aqar/features/rent_request/presentation/pages/rent_requests_page.dart';
-import 'package:aqar/features/purchase_request/presentation/pages/purchase_request_list_page.dart';
 import 'package:aqar/features/payment/presentation/pages/invoices_page.dart';
 import 'package:aqar/features/payment/presentation/pages/wallet_page.dart';
 import 'package:aqar/features/chat/presentation/pages/chat_list_page.dart';
@@ -30,6 +29,7 @@ class _ProfilePageState extends State<ProfilePage>
     with SingleTickerProviderStateMixin {
   bool _profileRequested = false;
   bool _isRefreshing = false;
+  String? _profileError;
   late final AnimationController _staggerCtrl;
 
   @override
@@ -71,19 +71,20 @@ class _ProfilePageState extends State<ProfilePage>
         listener: (context, state) {
           if (state is AuthLoginSuccess && !_profileRequested) {
             _profileRequested = true;
+            _profileError = null;
             context.read<AuthBloc>().add(GetProfileRequested());
           }
           if (state is AuthProfileLoaded) {
             _staggerCtrl.forward();
+            _profileError = null;
+          }
+          if (state is AuthUnauthenticated || state is AuthInitial) {
+            _profileRequested = false;
+            _profileError = null;
           }
           if (state is AuthError) {
             _profileRequested = false;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
+            _profileError = state.message;
           }
         },
         builder: (context, state) {
@@ -100,39 +101,105 @@ class _ProfilePageState extends State<ProfilePage>
               child: CircularProgressIndicator(color: AppColors.primary),
             );
           }
+          if (state is AuthUnauthenticated || state is AuthInitial) {
+            return _buildNotLoggedInView(context);
+          }
+          if (state is AuthError) {
+            return _buildNotLoggedInView(context, errorMessage: _profileError);
+          }
           return _buildNotLoggedInView(context);
         },
       ),
     );
   }
 
-  Widget _buildNotLoggedInView(BuildContext context) {
+  Widget _buildNotLoggedInView(BuildContext context, {String? errorMessage}) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.person_outline, size: 64, color: AppColors.textHint),
-          const SizedBox(height: AppSpacing.lg),
-          const Text(
-            'You are not logged in',
-            style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          ElevatedButton(
-            onPressed: () => Navigator.pushReplacementNamed(context, '/auth'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.borderLight),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.person_outline_rounded, size: 44, color: AppColors.textHint),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Welcome to AQAR',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
               ),
             ),
-            child: const Text(
-              'Login / Sign Up',
-              style: TextStyle(color: Colors.white),
+            const SizedBox(height: 8),
+            const Text(
+              'Log in or create an account\nto manage your listings & requests.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
             ),
-          ),
-        ],
+            if (errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 16, color: AppColors.error),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        errorMessage,
+                        style: const TextStyle(fontSize: 13, color: AppColors.error),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pushReplacementNamed(context, '/auth'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'Login / Sign Up',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -175,65 +242,50 @@ class _ProfilePageState extends State<ProfilePage>
                       MaterialPageRoute(builder: (_) => const ProfileInfoPage()),
                     ),
                   ),
-                  _buildMenuRow(
-                    Icons.business_center_outlined,
-                    'My Property',
-                    '${user.propertiesCount} active saved listing${user.propertiesCount == 1 ? '' : 's'}',
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const MyPropertiesPage()),
-                    ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Divider(color: AppColors.borderLight.withValues(alpha: 0.5), height: 1),
+                  const SizedBox(height: AppSpacing.md),
+                  BlocProvider.value(
+                    value: di.sl<PropertyBloc>(),
+                    child: const ProfilePropertiesWidget(),
                   ),
+                  const SizedBox(height: AppSpacing.md),
+                  Divider(color: AppColors.borderLight.withValues(alpha: 0.5), height: 1),
+                  const SizedBox(height: AppSpacing.lg),
                   _buildMenuRow(
                     Icons.inbox_outlined,
                     'My Request',
-                    'View sent & received rent requests',
-                    () => Navigator.push(
+                    'Rent & purchase requests',
+                    () => _navigateIfAuthenticated(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => BlocProvider(
-                          create: (_) => di.sl<RentRequestBloc>(),
-                          child: const RentRequestsPage(),
-                        ),
-                      ),
-                    ),
-                  ),
-                  _buildMenuRow(
-                    Icons.shopping_cart_outlined,
-                    'Purchase Requests',
-                    'Buy & sell requests',
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const PurchaseRequestsPage(),
-                      ),
+                      const MyRequestsPage(),
                     ),
                   ),
                   _buildMenuRow(
                     Icons.receipt_outlined,
                     'Invoices',
                     'View your invoices',
-                    () => Navigator.push(
+                    () => _navigateIfAuthenticated(
                       context,
-                      MaterialPageRoute(builder: (_) => const InvoicesPage()),
+                      const InvoicesPage(),
                     ),
                   ),
                   _buildMenuRow(
                     Icons.wallet_outlined,
                     'Wallet',
                     'View your wallet & transactions',
-                    () => Navigator.push(
+                    () => _navigateIfAuthenticated(
                       context,
-                      MaterialPageRoute(builder: (_) => const WalletPage()),
+                      const WalletPage(),
                     ),
                   ),
                   _buildMenuRow(
                     Icons.chat_outlined,
                     'My Chats',
                     'Messages with owners & tenants',
-                    () => Navigator.push(
+                    () => _navigateIfAuthenticated(
                       context,
-                      MaterialPageRoute(builder: (_) => const ChatListPage()),
+                      const ChatListPage(),
                     ),
                   ),
                   _buildMenuRow(
@@ -261,6 +313,18 @@ class _ProfilePageState extends State<ProfilePage>
         ),
       ),
     );
+  }
+
+  void _navigateIfAuthenticated(BuildContext context, Widget page) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthProfileLoaded) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => page),
+      );
+    } else {
+      Navigator.pushReplacementNamed(context, '/auth');
+    }
   }
 
   Widget _buildGradientHeader(

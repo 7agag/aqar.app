@@ -50,7 +50,15 @@ class AppTheme {
         appBarTheme: const AppBarTheme(
           elevation: 0,
           centerTitle: true,
-          iconTheme: IconThemeData(color: AppColors.primary), // أضف هذا السطر
+          iconTheme: IconThemeData(color: AppColors.primary),
+        ),
+        pageTransitionsTheme: PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: const FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.iOS: const FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.windows: const FadeUpwardsPageTransitionsBuilder(),
+            TargetPlatform.macOS: const FadeUpwardsPageTransitionsBuilder(),
+          },
         ),
       );
 }

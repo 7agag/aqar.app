@@ -30,6 +30,14 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
   @override
   void initState() {
     super.initState();
+    final uri = Uri.tryParse(widget.url);
+    if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
+      _hasError = true;
+      _errorMessage = 'Invalid payment URL';
+      _isLoading = false;
+      _controller = WebViewController();
+      return;
+    }
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
@@ -58,7 +66,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
           },
         ),
       )
-      ..loadRequest(Uri.parse(widget.url));
+      ..loadRequest(uri);
   }
 
   Future<void> _retry() async {

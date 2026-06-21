@@ -6,7 +6,9 @@ import 'package:aqar/features/property/data/datasources/property_remote_datasour
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:aqar/core/network/api_client.dart';
+import 'package:aqar/core/services/notification_service.dart';
 import 'package:aqar/core/network/socket_service.dart';
+import 'package:aqar/core/services/escrow_service.dart';
 import 'package:aqar/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:aqar/features/auth/domain/repositories/auth_repository.dart';
 import 'package:aqar/features/auth/domain/usecases/login_usecase.dart';
@@ -150,6 +152,8 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl<InternetConnectionChecker>()));
   sl.registerLazySingleton<ApiClient>(() => ApiClient(sl<FlutterSecureStorage>()));
   sl.registerLazySingleton<SocketService>(() => SocketService(sl<FlutterSecureStorage>()));
+  sl.registerLazySingleton<EscrowService>(() => EscrowService());
+  sl.registerLazySingleton<NotificationService>(() => NotificationService());
 
   // ========== AUTH ==========
   sl.registerLazySingleton<AuthRemoteDataSource>(() => AuthRemoteDataSourceImpl(sl()));
