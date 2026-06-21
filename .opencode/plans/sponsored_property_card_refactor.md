@@ -1,3 +1,8 @@
+# SponsoredPropertyCard Refactor
+
+Replace the entire contents of `lib/features/property/presentation/widgets/sponsored_property_card.dart` with the code below:
+
+```dart
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/property_entity.dart';
@@ -20,6 +25,7 @@ class SponsoredPropertyCard extends StatelessWidget {
   static const Color _gold = Color(0xFFD4AF37);
   static const Color _goldLight = Color(0xFFE5C45A);
 
+  // Estimated space needed for content section (padding + rows + gaps)
   static const double _contentEstimate = 104;
 
   @override
@@ -36,12 +42,14 @@ class SponsoredPropertyCard extends StatelessWidget {
           if (cardWidth < 180) cardWidth = 180;
         }
 
+        // --- Height-aware sizing ---
         final bool heightConstrained =
             constraints.maxHeight.isFinite && constraints.maxHeight > 0;
 
         double imageHeight;
         double compactScale;
         if (heightConstrained) {
+          // Reserve ~104px for content, give rest to image (min 60px, max width*0.6)
           final availableForImage =
               (constraints.maxHeight - _contentEstimate).clamp(60, cardWidth * 0.6);
           imageHeight = availableForImage;
@@ -52,6 +60,7 @@ class SponsoredPropertyCard extends StatelessWidget {
           compactScale = 1.0;
         }
 
+        // Scale fonts and gaps proportionally when compact
         final double titleFontSize = (cardWidth < 180 ? 11.0 : 14.0) * compactScale;
         final double priceFontSize = (cardWidth < 180 ? 11.0 : 14.0) * compactScale;
         final double locationFontSize = (cardWidth < 180 ? 10.0 : 11.0) * compactScale;
@@ -87,6 +96,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // --- Image section ---
                   Stack(
                     children: [
                       ClipRRect(
@@ -176,12 +186,14 @@ class SponsoredPropertyCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // --- Info section ---
                   Padding(
                     padding: EdgeInsets.all((10 * gapScale).clamp(6, 10)),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Title + price
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           crossAxisAlignment: CrossAxisAlignment.end,
@@ -216,6 +228,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                           ],
                         ),
                         SizedBox(height: (4 * gapScale).clamp(2, 4)),
+                        // Location
                         Row(
                           children: [
                             Icon(Icons.location_on_outlined,
@@ -236,6 +249,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                           ],
                         ),
                         SizedBox(height: (6 * gapScale).clamp(3, 6)),
+                        // Beds / Baths / Area — Wrap when very tight
                         heightConstrained && compactScale < 0.75
                             ? Wrap(
                                 spacing: 6,
@@ -262,6 +276,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                                 ],
                               ),
                         SizedBox(height: (4 * gapScale).clamp(2, 4)),
+                        // Status chip
                         Align(
                           alignment: Alignment.centerLeft,
                           child: Container(
@@ -327,3 +342,16 @@ class SponsoredPropertyCard extends StatelessWidget {
     );
   }
 }
+```
+
+## What changed
+
+| Change | Why |
+|--------|-----|
+| Height-aware `LayoutBuilder` | Reads `constraints.maxHeight`; when finite, distributes image/content proportionally instead of deriving image from width alone |
+| `compactScale` computed from available vs desired height | Scales all font sizes, icon sizes, and gaps down when the parent squeezes the card |
+| `_contentEstimate` constant (104px) | Reserves predictable space for the content section; image gets whatever is left (min 60px) |
+| Padding scaled by `compactScale` | `EdgeInsets.all(10)` → `EdgeInsets.all((10 * gapScale).clamp(6, 10))` |
+| `SizedBox` gaps scaled | `SizedBox(height: 4)` → `SizedBox(height: (4 * gapScale).clamp(2, 4))` |
+| `Wrap` fallback for info row | When `compactScale < 0.75`, icons use `Wrap` instead of `Row` so they flow to a second line instead of clipping |
+| Status chip font scaled | `fontSize: 9` → `fontSize: (9 * compactScale).clamp(7, 9)` |
