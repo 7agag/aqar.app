@@ -1664,7 +1664,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                   height: 300,
                   child: ReorderableListView.builder(
                     itemCount: _propertyImages.length,
-                    onReorderItem: (oldI, newI) {
+                    onReorder: (oldI, newI) {
                       setState(() {
                         final item = _propertyImages.removeAt(oldI);
                         _propertyImages.insert(newI, item);

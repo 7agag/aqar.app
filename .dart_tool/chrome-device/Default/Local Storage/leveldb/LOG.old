@@ -1,11 +1,2 @@
-2026/06/21-21:51:57.078 681c Reusing MANIFEST C:\Users\ElSaYaD\AppData\Local\Temp\flutter_tools.73ec50a8\flutter_tools_chrome_device.ac20de71\Default\Local Storage\leveldb/MANIFEST-000001
-2026/06/21-21:51:57.088 681c Recovering log #3
-2026/06/21-21:51:57.089 681c Level-0 table #3: started
-2026/06/21-21:51:57.099 681c Level-0 table #3: 10343 bytes OK
-2026/06/21-21:51:57.099 681c Recovering log #4
-2026/06/21-21:51:57.102 681c Reusing old log C:\Users\ElSaYaD\AppData\Local\Temp\flutter_tools.73ec50a8\flutter_tools_chrome_device.ac20de71\Default\Local Storage\leveldb/000004.log 
-2026/06/21-21:51:57.120 681c Delete type=0 #3
-2026/06/21-21:51:57.120 681c Delete type=2 #5
-2026/06/21-23:46:23.537 730 Level-0 table #6: started
-2026/06/21-23:46:23.549 730 Level-0 table #6: 20390 bytes OK
-2026/06/21-23:46:23.555 730 Delete type=0 #4
+2026/06/21-14:18:00.239 1d80 Creating DB C:\Users\Jovek\AppData\Local\Temp\flutter_tools.e195210e\flutter_tools_chrome_device.821c8061\Default\Local Storage\leveldb since it was missing.
+2026/06/21-14:18:00.294 1d80 Reusing MANIFEST C:\Users\Jovek\AppData\Local\Temp\flutter_tools.e195210e\flutter_tools_chrome_device.821c8061\Default\Local Storage\leveldb/MANIFEST-000001

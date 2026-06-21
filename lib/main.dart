@@ -18,6 +18,7 @@ import 'package:aqar/features/payment/presentation/bloc/wallet_bloc.dart';
 import 'package:aqar/features/payment/presentation/bloc/payment_bloc.dart';
 import 'package:aqar/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:aqar/features/purchase_request/presentation/bloc/purchase_request_bloc.dart';
+import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
 import 'package:aqar/features/review/presentation/bloc/review_bloc.dart';
 import 'package:aqar/features/subscription/presentation/bloc/subscription_bloc.dart';
 import 'package:aqar/features/property/presentation/bloc/property_bloc.dart';
