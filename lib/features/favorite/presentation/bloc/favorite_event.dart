@@ -21,3 +21,10 @@ class RemoveFavoriteEvent extends FavoriteEvent {
 }
 
 class GetFavoritesEvent extends FavoriteEvent {}
+
+class CompareFavoritesEvent extends FavoriteEvent {
+  final List<int> propertyIds;
+  const CompareFavoritesEvent({required this.propertyIds});
+  @override
+  List<Object?> get props => [propertyIds];
+}

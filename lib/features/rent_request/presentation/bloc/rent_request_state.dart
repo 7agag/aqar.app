@@ -27,6 +27,13 @@ class RentRequestActionSuccess extends RentRequestState {
   List<Object?> get props => [message];
 }
 
+class RentRequestDetailLoaded extends RentRequestState {
+  final RentRequestEntity request;
+  RentRequestDetailLoaded(this.request);
+  @override
+  List<Object?> get props => [request];
+}
+
 class RentRequestError extends RentRequestState {
   final String message;
   RentRequestError(this.message);

@@ -8,6 +8,7 @@ abstract class FavoriteRemoteDataSource {
   Future<void> addToFavorites(int propertyId);
   Future<void> removeFromFavorites(int propertyId);
   Future<List<PropertyModel>> getUserFavorites();
+  Future<List<PropertyModel>> compareFavorites(List<int> propertyIds);
 }
 
 @Injectable(as: FavoriteRemoteDataSource)
@@ -56,6 +57,29 @@ class FavoriteRemoteDataSourceImpl implements FavoriteRemoteDataSource {
     } on DioException catch (e) {
       throw ServerException(
         e.response?.data['message'] ?? 'Failed to fetch favorites',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<List<PropertyModel>> compareFavorites(List<int> propertyIds) async {
+    try {
+      final response = await apiClient.dio.post(
+        '/favorites/compare',
+        data: {'propertyIds': propertyIds},
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic> && data['properties'] is List) {
+        return (data['properties'] as List)
+            .map((e) => PropertyModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      throw const ServerException('Unexpected response format');
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw UnauthorizedException();
+      throw ServerException(
+        e.response?.data['message'] ?? 'Failed to compare favorites',
         statusCode: e.response?.statusCode,
       );
     }

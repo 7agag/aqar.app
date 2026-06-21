@@ -47,4 +47,16 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
       return Left(UnauthorizedFailure());
     }
   }
+
+  @override
+  Future<Either<Failure, List<PropertyEntity>>> compareFavorites(List<int> propertyIds) async {
+    try {
+      final result = await remoteDataSource.compareFavorites(propertyIds);
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message, statusCode: e.statusCode));
+    } on UnauthorizedException {
+      return Left(UnauthorizedFailure());
+    }
+  }
 }

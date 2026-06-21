@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class AqarButton extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool isLoading;
   final Widget? suffix;
 

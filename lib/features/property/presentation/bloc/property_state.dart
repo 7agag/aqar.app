@@ -1,4 +1,3 @@
-// lib/features/property/presentation/bloc/property_state.dart
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/property_entity.dart';
 
@@ -32,6 +31,13 @@ class MyPropertiesLoaded extends PropertyState {
   MyPropertiesLoaded(this.properties);
   @override
   List<Object?> get props => [properties];
+}
+
+class PropertyOperationSuccess extends PropertyState {
+  final String message;
+  PropertyOperationSuccess(this.message);
+  @override
+  List<Object?> get props => [message];
 }
 
 class PropertyError extends PropertyState {

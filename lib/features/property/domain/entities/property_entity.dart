@@ -59,6 +59,16 @@ class PropertyEntity {
     this.ownerEmail,
   });
 
+  PropertyStatus get status {
+    if (isSponsored) return PropertyStatus.sponsored;
+    switch (listingType) {
+      case ListingType.forRent:
+        return PropertyStatus.forRent;
+      case ListingType.forSale:
+        return PropertyStatus.forSale;
+    }
+  }
+
   String get pricingUnitSuffix {
     if (listingType == ListingType.forSale) return '';
     switch (pricingUnit) {

@@ -38,6 +38,15 @@ class AuthPasswordResetSent extends AuthState {}
 
 class AuthPasswordResetSuccess extends AuthState {}
 
+class AuthResetTokenVerified extends AuthState {}
+
+class AuthResetTokenInvalid extends AuthState {
+  final String message;
+  const AuthResetTokenInvalid(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
 class AuthError extends AuthState {
   final String message;
   const AuthError(this.message);
@@ -53,3 +62,12 @@ class AuthProfileLoaded extends AuthState {
   @override
   List<Object?> get props => [user];
 }
+
+class AuthProfileUpdateSuccess extends AuthState {
+  final UserEntity user;
+  const AuthProfileUpdateSuccess(this.user);
+  @override
+  List<Object?> get props => [user];
+}
+
+class AuthPasswordChangeSuccess extends AuthState {}

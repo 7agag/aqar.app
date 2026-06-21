@@ -94,4 +94,16 @@ class RentRequestRepositoryImpl implements RentRequestRepository {
       return Left(ServerFailure(e.message));
     }
   }
+
+  @override
+  Future<Either<Failure, RentRequestEntity>> getRequestById(String requestId) async {
+    try {
+      final result = await remoteDataSource.getRequestById(requestId);
+      return Right(result);
+    } on UnauthorizedException {
+      return const Left(UnauthorizedFailure());
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
 }

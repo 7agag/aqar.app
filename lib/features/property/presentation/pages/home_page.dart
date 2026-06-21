@@ -7,6 +7,14 @@ import 'package:aqar/features/property/presentation/pages/search_page.dart';
 import 'package:aqar/features/auth/presentation/pages/profile_page.dart';
 import 'package:aqar/features/property/presentation/pages/all_properties_page.dart';
 import 'package:aqar/features/property/presentation/pages/property_detail_page.dart';
+import 'package:aqar/features/ai/presentation/pages/ai_assistant_page.dart';
+import 'package:aqar/features/notifications/presentation/pages/notifications_page.dart';
+import 'package:aqar/features/chat/presentation/pages/chat_list_page.dart';
+import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
+import 'package:aqar/features/rent_request/presentation/pages/rent_requests_page.dart';
+import 'package:aqar/features/auth/presentation/widgets/auth_guard.dart';
+import 'package:aqar/core/navigation/property_detail_navigator.dart';
+import 'package:aqar/injection_container.dart' as di;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -54,6 +62,9 @@ class _HomePageState extends State<HomePage>
   String? _activeRentalDuration;
   double? _activeMinSize;
   double? _activeMaxSize;
+
+  PropertyEntity? _detailProperty;
+  bool _showDetail = false;
 
   // Loading
   bool _isLoading = false;
@@ -252,11 +263,25 @@ class _HomePageState extends State<HomePage>
     _loadProperties();
     _loadCounts();
     _loadFavorites();
+    propertyDetailNavigator.addListener(_onDetailNavigatorChanged);
   }
 
   @override
   void dispose() {
+    propertyDetailNavigator.removeListener(_onDetailNavigatorChanged);
     super.dispose();
+  }
+
+  void _onDetailNavigatorChanged() {
+    final value = propertyDetailNavigator.value;
+    setState(() {
+      if (value != null) {
+        _detailProperty = value;
+        _showDetail = true;
+      } else {
+        _showDetail = false;
+      }
+    });
   }
 
   // ========== تحميل الأعداد والمفضلة ==========
@@ -376,12 +401,38 @@ class _HomePageState extends State<HomePage>
               ),
             ],
           ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: AppColors.textPrimary,
-            ),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  _loadProperties();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BlocProvider(
+                        create: (_) => di.sl<RentRequestBloc>(),
+                        child: const RentRequestsPage(),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.inbox_outlined, color: AppColors.textPrimary),
+              ),
+              IconButton(
+                onPressed: () {
+                  _loadProperties();
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatListPage()));
+                },
+                icon: const Icon(Icons.chat_outlined, color: AppColors.textPrimary),
+              ),
+              IconButton(
+                onPressed: () {
+                  _loadProperties();
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage()));
+                },
+                icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
+              ),
+            ],
           ),
         ],
       ),
@@ -590,13 +641,9 @@ class _HomePageState extends State<HomePage>
                   padding: const EdgeInsets.only(right: 16),
                   child: SponsoredPropertyCard(
                     property: property,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            PropertyDetailPage(property: property),
-                      ),
-                    ),
+                    onTap: () {
+                      propertyDetailNavigator.value = property;
+                    },
                     onFavTap: () => _toggleFavorite(property.propertyId),
                     isFavorite: _favoriteIds.contains(property.propertyId),
                   ),
@@ -694,12 +741,7 @@ class _HomePageState extends State<HomePage>
             final property = nearby[index];
             return NearbyPropertyCard(
               property: property,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PropertyDetailPage(property: property),
-                ),
-              ),
+              onTap: () => propertyDetailNavigator.value = property,
               onFavTap: () => _toggleFavorite(property.propertyId),
               isFavorite: _favoriteIds.contains(property.propertyId),
             );
@@ -719,18 +761,38 @@ class _HomePageState extends State<HomePage>
       onRefresh: _loadProperties,
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: IndexedStack(
-          index: _currentIndex,
+        body: Stack(
           children: [
-            _buildHomeContent(),
-            const SearchPage(),
-            const MapPage(),
-            const FavoritesPage(),
-            const ProfilePage(),
+            IndexedStack(
+              index: _currentIndex,
+              children: [
+                _buildHomeContent(),
+                const SearchPage(),
+                const MapPage(),
+                const FavoritesPage(),
+                const ProfilePage(),
+              ],
+            ),
+            if (_detailProperty != null)
+              Positioned.fill(
+                child: Visibility(
+                  visible: _showDetail,
+                  maintainState: true,
+                  child: PropertyDetailPage(
+                    property: _detailProperty!,
+                    onBack: () {
+                      propertyDetailNavigator.value = null;
+                    },
+                  ),
+                ),
+              ),
           ],
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () {},
+          onPressed: () => requireVerifiedUser(
+            context,
+            onAllowed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiAssistantPage())),
+          ),
           backgroundColor: AppColors.textPrimary,
           shape: const CircleBorder(),
           child: const Icon(

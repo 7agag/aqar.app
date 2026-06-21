@@ -2,6 +2,8 @@ class PropertyFilterParams {
   final String? location;
   final double? minPrice;
   final double? maxPrice;
+  final double? minSize;
+  final double? maxSize;
   final int? bedrooms;
   final int? bathrooms;
   final double? latitude;
@@ -12,6 +14,8 @@ class PropertyFilterParams {
     this.location,
     this.minPrice,
     this.maxPrice,
+    this.minSize,
+    this.maxSize,
     this.bedrooms,
     this.bathrooms,
     this.latitude,
@@ -24,6 +28,8 @@ class PropertyFilterParams {
       'location': location,
       'minPrice': minPrice,
       'maxPrice': maxPrice,
+      'minSize': minSize,
+      'maxSize': maxSize,
       'bedrooms': bedrooms,
       'bathrooms': bathrooms,
       'latitude': latitude,
@@ -36,6 +42,8 @@ class PropertyFilterParams {
     String? location,
     double? minPrice,
     double? maxPrice,
+    double? minSize,
+    double? maxSize,
     int? bedrooms,
     int? bathrooms,
     double? latitude,
@@ -46,6 +54,8 @@ class PropertyFilterParams {
       location: location ?? this.location,
       minPrice: minPrice ?? this.minPrice,
       maxPrice: maxPrice ?? this.maxPrice,
+      minSize: minSize ?? this.minSize,
+      maxSize: maxSize ?? this.maxSize,
       bedrooms: bedrooms ?? this.bedrooms,
       bathrooms: bathrooms ?? this.bathrooms,
       latitude: latitude ?? this.latitude,

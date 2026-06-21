@@ -2,13 +2,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aqar/core/navigation/property_detail_navigator.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../property/presentation/pages/property_detail_page.dart';
 import '../../../property/presentation/widgets/sponsored_property_card.dart';
 import '../bloc/favorite_bloc.dart';
 
-class FavoritesPage extends StatelessWidget {
+class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
+
+  @override
+  State<FavoritesPage> createState() => _FavoritesPageState();
+}
+
+class _FavoritesPageState extends State<FavoritesPage> {
+  bool _isRefreshing = false;
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +47,18 @@ class FavoritesPage extends StatelessWidget {
               );
             }
             return RefreshIndicator(
-              onRefresh: () async { context.read<FavoriteBloc>().add(GetFavoritesEvent()); },
+              onRefresh: () async {
+                if (_isRefreshing) return;
+                _isRefreshing = true;
+                context.read<FavoriteBloc>().add(GetFavoritesEvent());
+                await context.read<FavoriteBloc>().stream.firstWhere(
+                  (s) => s is FavoriteLoaded || s is FavoriteError,
+                );
+                if (mounted) _isRefreshing = false;
+              },
               color: AppColors.primary,
               child: GridView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
@@ -55,7 +71,7 @@ class FavoritesPage extends StatelessWidget {
                   final property = favorites[index];
                   return SponsoredPropertyCard(
                     property: property,
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PropertyDetailPage(property: property))),
+                    onTap: () => propertyDetailNavigator.value = property,
                     onFavTap: () { context.read<FavoriteBloc>().add(RemoveFavoriteEvent(property.propertyId)); },
                     isFavorite: true,
                   );

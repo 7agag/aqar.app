@@ -6,6 +6,7 @@ import '../../domain/usecases/accept_rent_request_usecase.dart';
 import '../../domain/usecases/cancel_rent_request_usecase.dart';
 import '../../domain/usecases/create_rent_request_usecase.dart';
 import '../../domain/usecases/get_received_requests_usecase.dart';
+import '../../domain/usecases/get_rent_request_by_id_usecase.dart';
 import '../../domain/usecases/get_sent_requests_usecase.dart';
 import '../../domain/usecases/reject_rent_request_usecase.dart';
 import 'rent_request_event.dart';
@@ -19,6 +20,7 @@ class RentRequestBloc extends Bloc<RentRequestEvent, RentRequestState> {
   final AcceptRentRequestUseCase acceptRequest;
   final RejectRentRequestUseCase rejectRequest;
   final CancelRentRequestUseCase cancelRequest;
+  final GetRentRequestByIdUseCase getRentRequestByIdUseCase;
 
   RentRequestBloc({
     required this.getSentRequests,
@@ -27,12 +29,14 @@ class RentRequestBloc extends Bloc<RentRequestEvent, RentRequestState> {
     required this.acceptRequest,
     required this.rejectRequest,
     required this.cancelRequest,
+    required this.getRentRequestByIdUseCase,
   }) : super(RentRequestInitial()) {
     on<LoadRentRequests>(_onLoadRequests);
     on<CreateRentRequest>(_onCreateRequest);
     on<AcceptRentRequest>(_onAcceptRequest);
     on<RejectRentRequest>(_onRejectRequest);
     on<CancelRentRequest>(_onCancelRequest);
+    on<GetRentRequestById>(_onGetRentRequestById);
   }
 
   Future<void> _onLoadRequests(
@@ -114,6 +118,20 @@ class RentRequestBloc extends Bloc<RentRequestEvent, RentRequestState> {
         emit(RentRequestActionSuccess('Request rejected'));
         add(const LoadRentRequests());
       },
+    );
+  }
+
+  Future<void> _onGetRentRequestById(
+    GetRentRequestById event,
+    Emitter<RentRequestState> emit,
+  ) async {
+    emit(RentRequestLoading());
+    final result = await getRentRequestByIdUseCase(
+      GetRentRequestByIdParams(requestId: event.requestId),
+    );
+    result.fold(
+      (failure) => emit(RentRequestError(failure.message)),
+      (request) => emit(RentRequestDetailLoaded(request)),
     );
   }
 

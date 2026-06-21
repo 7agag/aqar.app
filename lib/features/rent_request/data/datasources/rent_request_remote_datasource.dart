@@ -15,6 +15,7 @@ abstract class RentRequestRemoteDataSource {
   Future<void> acceptRequest(String requestId);
   Future<void> rejectRequest(String requestId);
   Future<void> cancelRequest(String requestId);
+  Future<RentRequestModel> getRequestById(String requestId);
 }
 
 @Injectable(as: RentRequestRemoteDataSource)
@@ -94,6 +95,20 @@ class RentRequestRemoteDataSourceImpl implements RentRequestRemoteDataSource {
       if (e.response?.statusCode == 401) throw UnauthorizedException();
       throw ServerException(
         e.response?.data['msg'] ?? 'Failed to cancel request',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<RentRequestModel> getRequestById(String requestId) async {
+    try {
+      final response = await apiClient.dio.get('/rent-requests/$requestId');
+      return RentRequestModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw UnauthorizedException();
+      throw ServerException(
+        e.response?.data['msg'] ?? 'Failed to fetch request',
         statusCode: e.response?.statusCode,
       );
     }

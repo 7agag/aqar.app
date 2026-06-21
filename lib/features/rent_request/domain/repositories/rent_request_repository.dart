@@ -14,4 +14,5 @@ abstract class RentRequestRepository {
   Future<Either<Failure, void>> acceptRequest(String requestId);
   Future<Either<Failure, void>> rejectRequest(String requestId);
   Future<Either<Failure, void>> cancelRequest(String requestId);
+  Future<Either<Failure, RentRequestEntity>> getRequestById(String requestId);
 }

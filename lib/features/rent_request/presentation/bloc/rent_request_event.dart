@@ -47,3 +47,10 @@ class CancelRentRequest extends RentRequestEvent {
   @override
   List<Object?> get props => [requestId];
 }
+
+class GetRentRequestById extends RentRequestEvent {
+  final String requestId;
+  const GetRentRequestById({required this.requestId});
+  @override
+  List<Object?> get props => [requestId];
+}

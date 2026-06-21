@@ -1,5 +1,3 @@
-// lib/features/auth/presentation/bloc/auth_bloc.dart
-
 import 'package:aqar/features/auth/presentation/bloc/auth_event.dart';
 import 'package:aqar/features/auth/presentation/bloc/auth_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +12,9 @@ import '../../domain/usecases/reset_password_usecase.dart';
 import '../../domain/usecases/verify_otp_usecase.dart';
 import '../../domain/usecases/request_otp_usecase.dart';
 import '../../domain/usecases/get_profile_usecase.dart';
+import '../../domain/usecases/update_profile_usecase.dart';
+import '../../domain/usecases/change_password_usecase.dart';
+import '../../domain/usecases/verify_reset_token_usecase.dart';
 
 @injectable
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -25,6 +26,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final VerifyOtpUseCase verifyOtpUseCase;
   final RequestOtpUseCase requestOtpUseCase;
   final GetProfileUseCase getProfileUseCase;
+  final UpdateProfileUseCase updateProfileUseCase;
+  final ChangePasswordUseCase changePasswordUseCase;
+  final VerifyResetTokenUseCase verifyResetTokenUseCase;
   final FlutterSecureStorage secureStorage;
 
   AuthBloc({
@@ -36,6 +40,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.verifyOtpUseCase,
     required this.requestOtpUseCase,
     required this.getProfileUseCase,
+    required this.updateProfileUseCase,
+    required this.changePasswordUseCase,
+    required this.verifyResetTokenUseCase,
     required this.secureStorage,
   }) : super(AuthInitial()) {
     on<LoginRequested>(_onLogin);
@@ -47,6 +54,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<ResetPasswordRequested>(_onResetPassword);
     on<GetProfileRequested>(_onGetProfile);
     on<CheckAuthStatus>(_onCheckAuthStatus);
+    on<UpdateProfileRequested>(_onUpdateProfile);
+    on<ChangePasswordRequested>(_onChangePassword);
+    on<VerifyResetTokenRequested>(_onVerifyResetToken);
   }
 
   Future<void> _onLogin(LoginRequested event, Emitter<AuthState> emit) async {
@@ -129,10 +139,54 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onCheckAuthStatus(CheckAuthStatus event, Emitter<AuthState> emit) async {
     final token = await secureStorage.read(key: 'access_token');
-    if (token != null && token.isNotEmpty) {
-      emit(AuthLoginSuccess(token));
-    } else {
-      emit(AuthUnauthenticated());
+    if (token == null || token.isEmpty) {
+      return emit(AuthUnauthenticated());
     }
+    final result = await getProfileUseCase(NoParams());
+    result.fold(
+      (_) {
+        secureStorage.delete(key: 'access_token');
+        emit(AuthUnauthenticated());
+      },
+      (user) => emit(AuthProfileLoaded(user)),
+    );
+  }
+
+  Future<void> _onUpdateProfile(UpdateProfileRequested event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    final result = await updateProfileUseCase(UpdateProfileParams(
+      firstName: event.firstName,
+      secondName: event.secondName,
+      email: event.email,
+    ));
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (user) => emit(AuthProfileUpdateSuccess(user)),
+    );
+  }
+
+  Future<void> _onVerifyResetToken(
+      VerifyResetTokenRequested event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    final result = await verifyResetTokenUseCase(
+      VerifyResetTokenParams(token: event.token),
+    );
+    result.fold(
+      (failure) => emit(AuthResetTokenInvalid(failure.message)),
+      (_) => emit(AuthResetTokenVerified()),
+    );
+  }
+
+  Future<void> _onChangePassword(ChangePasswordRequested event, Emitter<AuthState> emit) async {
+    emit(AuthLoading());
+    final result = await changePasswordUseCase(ChangePasswordParams(
+      email: event.email,
+      currentPassword: event.currentPassword,
+      newPassword: event.newPassword,
+    ));
+    result.fold(
+      (failure) => emit(AuthError(failure.message)),
+      (_) => emit(AuthPasswordChangeSuccess()),
+    );
   }
 }

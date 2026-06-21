@@ -232,6 +232,26 @@ class SponsoredPropertyCard extends StatelessWidget {
                                 iconSize, infoFontSize),
                           ],
                         ),
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: property.status.color.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              property.status.label,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: property.status.color,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

@@ -30,8 +30,22 @@ abstract class AuthRepository {
   /// NEW: Request password reset email
   Future<Either<Failure, void>> requestPasswordReset({required String email});
 
+  Future<Either<Failure, void>> verifyResetToken({required String token});
+
   Future<Either<Failure, void>> resetPassword({
     required String token,
+    required String newPassword,
+  });
+
+  Future<Either<Failure, UserEntity>> updateProfile({
+    String? firstName,
+    String? secondName,
+    String? email,
+  });
+
+  Future<Either<Failure, void>> changePassword({
+    required String email,
+    required String currentPassword,
     required String newPassword,
   });
 }

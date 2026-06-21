@@ -32,23 +32,7 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
   }
 
   void _loadRequest() {
-    setState(() => _isFetching = true);
-
-    final state = context.read<RentRequestBloc>().state;
-    if (state is RentRequestsLoaded) {
-      final requests = widget.isSent ? state.sent : state.received;
-      final found = requests.cast<RentRequestEntity?>().firstWhere(
-        (r) => r!.requestId == widget.requestId,
-        orElse: () => null,
-      );
-      if (found != null) {
-        _request = found;
-        _isFetching = false;
-        return;
-      }
-    }
-
-    context.read<RentRequestBloc>().add(const LoadRentRequests());
+    context.read<RentRequestBloc>().add(GetRentRequestById(requestId: widget.requestId));
   }
 
   @override
@@ -65,28 +49,16 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
             );
             Navigator.pop(context);
           }
+          if (state is RentRequestDetailLoaded && mounted) {
+            setState(() {
+              _request = state.request;
+              _isFetching = false;
+            });
+          }
           if (state is RentRequestError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
-          }
-          if (state is RentRequestsLoaded) {
-            final requests = widget.isSent ? state.sent : state.received;
-            final found = requests.cast<RentRequestEntity?>().firstWhere(
-              (r) => r!.requestId == widget.requestId,
-              orElse: () => null,
-            );
-            if (found != null && mounted) {
-              setState(() {
-                _request = found;
-                _isFetching = false;
-              });
-            } else if (mounted) {
-              setState(() {
-                _request = null;
-                _isFetching = false;
-              });
-            }
           }
         },
         child: _buildBody(),

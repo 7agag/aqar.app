@@ -1,6 +1,6 @@
 // lib/features/property/presentation/pages/search_page.dart
 
-import 'package:aqar/features/property/presentation/pages/property_detail_page.dart';
+import 'package:aqar/core/navigation/property_detail_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -40,6 +40,7 @@ class _SearchPageState extends State<SearchPage> {
 
   bool _isBuy = true;
   bool _isBuyFilterActive = false;
+  bool _isRefreshing = false;
   Set<int> _favoriteIds = {};
 
   bool get _hasActiveAdvancedFilters =>
@@ -60,7 +61,9 @@ class _SearchPageState extends State<SearchPage> {
     _loadFavorites();
   }
 
-  void _loadProperties() {
+  Future<void> _loadProperties() async {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
     context.read<PropertyBloc>().add(
           GetPropertiesRequested(
             params: const PropertyFilterParams(),
@@ -354,12 +357,16 @@ class _SearchPageState extends State<SearchPage> {
           BlocListener<PropertyBloc, PropertyState>(
             listener: (context, state) {
               if (state is PropertiesLoaded) {
+                _isRefreshing = false;
                 if (_allProperties != state.allProperties) {
                   _allProperties = state.allProperties;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     _applyFilters();
                   });
                 }
+              }
+              if (state is PropertyError) {
+                _isRefreshing = false;
               }
             },
           ),
@@ -419,11 +426,12 @@ class _SearchPageState extends State<SearchPage> {
                     }
                     return RefreshIndicator(
                       onRefresh: () async {
-                        _loadProperties();
+                        await _loadProperties();
                         _loadFavorites();
                       },
                       color: AppColors.primary,
                       child: GridView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
                         padding: const EdgeInsets.all(16),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
@@ -437,13 +445,7 @@ class _SearchPageState extends State<SearchPage> {
                           final property = _filteredProperties[index];
                           return SponsoredPropertyCard(
                             property: property,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    PropertyDetailPage(property: property),
-                              ),
-                            ),
+                            onTap: () => propertyDetailNavigator.value = property,
                             onFavTap: () {
                               final isFav =
                                   _favoriteIds.contains(property.propertyId);

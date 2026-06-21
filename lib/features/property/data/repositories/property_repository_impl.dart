@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../../core/error/exceptions.dart';
 import '../../../../../core/error/failures.dart';
@@ -50,4 +51,61 @@ class PropertyRepositoryImpl implements PropertyRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, void>> addProperty(FormData formData) async {
+    try {
+      await remoteDataSource.addProperty(formData);
+      return const Right(null);
+    } on UnauthorizedException {
+      return const Left(UnauthorizedFailure());
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> editProperty(int id, Map<String, dynamic> data) async {
+    try {
+      await remoteDataSource.editProperty(id, data);
+      return const Right(null);
+    } on UnauthorizedException {
+      return const Left(UnauthorizedFailure());
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> editPropertyImages(int id, FormData formData) async {
+    try {
+      await remoteDataSource.editPropertyImages(id, formData);
+      return const Right(null);
+    } on UnauthorizedException {
+      return const Left(UnauthorizedFailure());
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteProperty(int id) async {
+    try {
+      await remoteDataSource.deleteProperty(id);
+      return const Right(null);
+    } on UnauthorizedException {
+      return const Left(UnauthorizedFailure());
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> getBookedDates(int id) async {
+    try {
+      final result = await remoteDataSource.getBookedDates(id);
+      return Right(result);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
 }

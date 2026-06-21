@@ -22,4 +22,7 @@ class AppColors {
   // Status
   static const Color error = Color(0xFFE24B4A);
   static const Color success = Color(0xFF1D9E75);
+
+  // Accent
+  static const Color navyBlue = Color(0xFF1A2744);
 }

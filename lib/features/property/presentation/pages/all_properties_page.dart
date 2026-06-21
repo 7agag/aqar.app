@@ -158,7 +158,7 @@ class _AllPropertiesPageState extends State<AllPropertiesPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'No sponsored properties found',
+              'No properties found',
               style: const TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondary,

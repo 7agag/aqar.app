@@ -30,3 +30,10 @@ class FavoriteError extends FavoriteState {
   @override
   List<Object?> get props => [message];
 }
+
+class FavoritesComparisonLoaded extends FavoriteState {
+  final List<PropertyEntity> properties;
+  const FavoritesComparisonLoaded(this.properties);
+  @override
+  List<Object?> get props => [properties];
+}

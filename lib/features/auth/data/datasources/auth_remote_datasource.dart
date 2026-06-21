@@ -28,10 +28,20 @@ abstract class AuthRemoteDataSource {
 
   Future<void> requestPasswordReset({required String email});
 
+  Future<void> verifyResetToken({required String token});
+
   Future<void> resetPassword({
     required String token,
     required String newPassword,
   });
+
+  Future<UserModel> updateProfile({
+    String? firstName,
+    String? secondName,
+    String? email,
+  });
+
+  Future<void> changePassword(String newPassword);
 }
 
 @Injectable(as: AuthRemoteDataSource)
@@ -169,6 +179,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
+  Future<void> verifyResetToken({required String token}) async {
+    try {
+      await apiClient.dio.get('/auth/verify-reset/$token');
+    } on DioException catch (e) {
+      final errMsg = e.response?.data is Map
+          ? e.response?.data['msg'] as String?
+          : e.response?.data?.toString();
+      throw ServerException(
+        errMsg ?? 'Invalid or expired reset token',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
   Future<void> resetPassword({
     required String token,
     required String newPassword,
@@ -181,6 +206,42 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on DioException catch (e) {
       throw ServerException(
         e.response?.data['msg'] ?? 'Failed to reset password',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<UserModel> updateProfile({
+    String? firstName,
+    String? secondName,
+    String? email,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (firstName != null) body['firstName'] = firstName;
+      if (secondName != null) body['secondName'] = secondName;
+      if (email != null) body['email'] = email;
+
+      await apiClient.dio.put('/auth/profile', data: body);
+      return await getProfile();
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw UnauthorizedException();
+      throw ServerException(
+        e.response?.data['msg'] ?? 'Failed to update profile',
+        statusCode: e.response?.statusCode,
+      );
+    }
+  }
+
+  @override
+  Future<void> changePassword(String newPassword) async {
+    try {
+      await apiClient.dio.put('/auth/profile', data: {'password': newPassword});
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw UnauthorizedException();
+      throw ServerException(
+        e.response?.data['msg'] ?? 'Failed to change password',
         statusCode: e.response?.statusCode,
       );
     }

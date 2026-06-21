@@ -68,4 +68,33 @@ class ResetPasswordRequested extends AuthEvent {
 
 class GetProfileRequested extends AuthEvent {}
 
+class VerifyResetTokenRequested extends AuthEvent {
+  final String token;
+  const VerifyResetTokenRequested({required this.token});
+  @override
+  List<Object?> get props => [token];
+}
+
 class CheckAuthStatus extends AuthEvent {}
+
+class UpdateProfileRequested extends AuthEvent {
+  final String? firstName;
+  final String? secondName;
+  final String? email;
+  const UpdateProfileRequested({this.firstName, this.secondName, this.email});
+  @override
+  List<Object?> get props => [firstName, secondName, email];
+}
+
+class ChangePasswordRequested extends AuthEvent {
+  final String email;
+  final String currentPassword;
+  final String newPassword;
+  const ChangePasswordRequested({
+    required this.email,
+    required this.currentPassword,
+    required this.newPassword,
+  });
+  @override
+  List<Object?> get props => [email, currentPassword, newPassword];
+}

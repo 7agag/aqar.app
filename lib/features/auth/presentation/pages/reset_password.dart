@@ -26,6 +26,16 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   bool get _hasToken => widget.token != null && widget.token!.isNotEmpty;
 
   @override
+  void initState() {
+    super.initState();
+    if (_hasToken) {
+      context.read<AuthBloc>().add(
+        VerifyResetTokenRequested(token: widget.token!),
+      );
+    }
+  }
+
+  @override
   void dispose() {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -45,6 +55,14 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           );
           Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
         }
+        if (state is AuthResetTokenInvalid) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
         if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -56,6 +74,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       },
       builder: (context, state) {
         final isLoading = state is AuthLoading;
+        final isVerifying = isLoading && _hasToken;
+        final showForm = state is AuthResetTokenVerified || isLoading && !isVerifying;
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -85,9 +105,16 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: _hasToken
-                  ? _buildResetForm(isLoading)
-                  : const _InvalidResetLink(),
+              child: isVerifying
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(top: 80),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : _hasToken && showForm
+                      ? _buildResetForm(isLoading)
+                      : const _InvalidResetLink(),
             ),
           ),
         );

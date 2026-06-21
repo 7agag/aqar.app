@@ -23,6 +23,23 @@ class UserEntity extends Equatable {
 
   String get fullName => '$firstName $secondName'.trim();
 
+  UserEntity copyWith({
+    String? firstName,
+    String? secondName,
+    String? email,
+  }) {
+    return UserEntity(
+      id: id,
+      firstName: firstName ?? this.firstName,
+      secondName: secondName ?? this.secondName,
+      email: email ?? this.email,
+      propertiesCount: propertiesCount,
+      favoritesCount: favoritesCount,
+      isOnline: isOnline,
+      isVerified: isVerified,
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,

@@ -6,6 +6,7 @@ import '../../../property/domain/entities/property_entity.dart';
 import '../../domain/usecases/add_to_favorite_usecase.dart';
 import '../../domain/usecases/remove_from_favorite_usecase.dart';
 import '../../domain/usecases/get_favorites_usecase.dart';
+import '../../domain/usecases/compare_favorites_usecase.dart';
 
 part 'favorite_event.dart';
 part 'favorite_state.dart';
@@ -15,15 +16,18 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
   final AddToFavoriteUseCase addToFavorite;
   final RemoveFromFavoriteUseCase removeFromFavorite;
   final GetFavoritesUseCase getFavorites;
+  final CompareFavoritesUseCase compareFavoritesUseCase;
 
   FavoriteBloc({
     required this.addToFavorite,
     required this.removeFromFavorite,
     required this.getFavorites,
+    required this.compareFavoritesUseCase,
   }) : super(FavoriteInitial()) {
     on<AddFavoriteEvent>(_onAddFavorite);
     on<RemoveFavoriteEvent>(_onRemoveFavorite);
     on<GetFavoritesEvent>(_onGetFavorites);
+    on<CompareFavoritesEvent>(_onCompareFavorites);
   }
 
   Future<void> _onAddFavorite(
@@ -54,6 +58,18 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
     result.fold(
       (failure) => emit(FavoriteError(failure.message)),
       (favorites) => emit(FavoriteLoaded(favorites)),
+    );
+  }
+
+  Future<void> _onCompareFavorites(
+      CompareFavoritesEvent event, Emitter<FavoriteState> emit) async {
+    emit(FavoriteLoading());
+    final result = await compareFavoritesUseCase(
+      CompareFavoritesParams(propertyIds: event.propertyIds),
+    );
+    result.fold(
+      (failure) => emit(FavoriteError(failure.message)),
+      (properties) => emit(FavoritesComparisonLoaded(properties)),
     );
   }
 }
