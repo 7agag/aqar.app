@@ -423,7 +423,7 @@ class _SearchPageState extends State<SearchPage> {
                           return SponsoredPropertyCard(
                             property: property,
                             onTap: () =>
-                                propertyDetailNavigator.value = property,
+                                propertyDetailNavigator.value = property.propertyId,
                             onFavTap: () {
                               final isFav =
                                   _favoriteIds.contains(property.propertyId);

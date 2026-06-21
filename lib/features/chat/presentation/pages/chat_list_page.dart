@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/network/socket_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/aqar_button.dart';
 import '../../../../core/widgets/refreshable_widget.dart';
+import '../../../../injection_container.dart' as di;
 import '../../domain/entities/chat_thread_entity.dart';
 import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
@@ -26,6 +29,8 @@ class _ChatListPageState extends State<ChatListPage>
 
   late final AnimationController _skeletonController;
   late final AnimationController _staggerController;
+  StreamSubscription<Map<String, dynamic>>? _socketSub;
+  Timer? _inboxDebounce;
 
   List<ChatThreadEntity> get _sortedThreads {
     final result = List<ChatThreadEntity>.from(_inbox);
@@ -64,10 +69,21 @@ class _ChatListPageState extends State<ChatListPage>
     );
 
     context.read<ChatBloc>().add(const GetInboxRequested());
+
+    _socketSub = di.sl<SocketService>().onMessage.listen((_) {
+      _inboxDebounce?.cancel();
+      _inboxDebounce = Timer(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          context.read<ChatBloc>().add(const GetInboxRequested());
+        }
+      });
+    });
   }
 
   @override
   void dispose() {
+    _socketSub?.cancel();
+    _inboxDebounce?.cancel();
     _searchController.dispose();
     _skeletonController.dispose();
     _staggerController.dispose();

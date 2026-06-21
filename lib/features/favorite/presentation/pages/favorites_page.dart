@@ -71,7 +71,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   final property = favorites[index];
                   return SponsoredPropertyCard(
                     property: property,
-                    onTap: () => propertyDetailNavigator.value = property,
+                    onTap: () => propertyDetailNavigator.value = property.propertyId,
                     onFavTap: () { context.read<FavoriteBloc>().add(RemoveFavoriteEvent(property.propertyId)); },
                     isFavorite: true,
                   );

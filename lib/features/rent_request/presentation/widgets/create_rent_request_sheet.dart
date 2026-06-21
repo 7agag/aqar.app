@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/property/domain/entities/property_entity.dart';
+import 'package:aqar/features/property/domain/entities/property_enums.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_event.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_state.dart';
@@ -21,8 +22,9 @@ class CreateRentRequestSheet extends StatefulWidget {
 class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
   DateTime? _checkIn;
   DateTime? _checkOut;
-  bool _isMonthly = false;
   bool _isSubmitting = false;
+
+  bool get _isMonthly => widget.property.pricingUnit == PricingUnit.month;
 
   double get _totalPrice {
     if (_checkIn == null || _checkOut == null) return 0;
@@ -172,24 +174,6 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 24),
-
-              const Text(
-                'Renting Type',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _typeToggle('Daily', !_isMonthly, () => setState(() => _isMonthly = false)),
-                  const SizedBox(width: 12),
-                  _typeToggle('Monthly', _isMonthly, () => setState(() => _isMonthly = true)),
-                ],
-              ),
               const SizedBox(height: 20),
 
               const Text(
@@ -256,7 +240,7 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
                         ),
                       ),
                       Text(
-                        '\$${_totalPrice.toStringAsFixed(2)}',
+                        'EGP ${_totalPrice.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -293,33 +277,6 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _typeToggle(String label, bool active, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? AppColors.primary : AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: active ? AppColors.primary : AppColors.borderLight,
-            ),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: active ? Colors.white : AppColors.textSecondary,
-            ),
           ),
         ),
       ),

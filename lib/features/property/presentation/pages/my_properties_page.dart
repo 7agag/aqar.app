@@ -178,7 +178,7 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
         itemCount: properties.length,
         itemBuilder: (context, index) => _PropertyCard(
           property: properties[index],
-          onTap: () => propertyDetailNavigator.value = properties[index],
+          onTap: () => propertyDetailNavigator.value = properties[index].propertyId,
         ),
       ),
     );

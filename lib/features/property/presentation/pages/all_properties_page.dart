@@ -192,7 +192,7 @@ class _AllPropertiesPageState extends State<AllPropertiesPage> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => PropertyDetailPage(property: property),
+                builder: (_) => PropertyDetailPage(propertyId: property.propertyId),
               ),
             ),
             onFavTap: () {

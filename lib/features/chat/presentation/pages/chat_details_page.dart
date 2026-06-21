@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/network/socket_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../injection_container.dart' as di;
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../domain/entities/chat_message_entity.dart';
@@ -34,6 +37,8 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
   late final ScrollController _scrollController;
   final List<ChatMessageEntity> _messages = [];
   String? _currentUserId;
+  String? _chatId;
+  StreamSubscription<Map<String, dynamic>>? _socketSub;
 
   @override
   void initState() {
@@ -48,13 +53,42 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     }
 
     if (widget.threadId != null) {
+      _chatId = widget.threadId;
       context.read<ChatBloc>().add(GetChatHistoryRequested(chatId: widget.threadId!));
       context.read<ChatBloc>().add(MarkAsReadRequested(chatId: widget.threadId!));
     }
+
+    _socketSub = di.sl<SocketService>().onMessage.listen(_handleSocketMessage);
+  }
+
+  void _handleSocketMessage(Map<String, dynamic> data) {
+    if (_chatId == null) return;
+    final msgChatId = data['chat_id']?.toString();
+    if (msgChatId != _chatId) return;
+    if (!mounted) return;
+
+    final senderId = data['sender_id']?.toString() ?? '';
+    if (senderId == _currentUserId) return;
+
+    final message = ChatMessageEntity(
+      messageId: data['message_id']?.toString() ?? '',
+      senderId: senderId,
+      content: data['content']?.toString() ?? '',
+      isRead: false,
+      createdAt: data['created_at'] != null
+          ? DateTime.tryParse(data['created_at'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+    );
+
+    setState(() {
+      _messages.insert(0, message);
+    });
+    _scrollToTop();
   }
 
   @override
   void dispose() {
+    _socketSub?.cancel();
     _messageController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
@@ -177,7 +211,8 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
       ),
       body: BlocListener<ChatBloc, ChatState>(
         listener: (context, state) {
-          if (state is ChatHistoryLoaded && state.chatId == widget.threadId) {
+          if (state is ChatHistoryLoaded && (widget.threadId == null || state.chatId == widget.threadId)) {
+            _chatId = state.chatId;
             setState(() {
               _messages.clear();
               _messages.addAll(state.messages.reversed);

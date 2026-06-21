@@ -60,8 +60,7 @@ enum RentPeriod {
 
 enum PricingUnit {
   day('DAY', 'day'),
-  month('MONTH', 'month'),
-  year('YEAR', 'year');
+  month('MONTH', 'month');
 
   final String value;
   final String label;

@@ -74,8 +74,6 @@ class PropertyEntity {
         return '/day';
       case PricingUnit.month:
         return '/mo';
-      case PricingUnit.year:
-        return '/yr';
     }
   }
 }

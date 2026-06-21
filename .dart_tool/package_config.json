@@ -596,6 +596,12 @@
       "languageVersion": "3.3"
     },
     {
+      "name": "js",
+      "rootUri": "file:///C:/Users/ElSaYaD/AppData/Local/Pub/Cache/hosted/pub.dev/js-0.6.7",
+      "packageUri": "lib/",
+      "languageVersion": "2.19"
+    },
+    {
       "name": "json_annotation",
       "rootUri": "file:///C:/Users/ElSaYaD/AppData/Local/Pub/Cache/hosted/pub.dev/json_annotation-4.11.0",
       "packageUri": "lib/",
@@ -990,6 +996,18 @@
       "rootUri": "file:///D:/Fci/flutter/flutter/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
       "languageVersion": "3.10"
+    },
+    {
+      "name": "socket_io_client",
+      "rootUri": "file:///C:/Users/ElSaYaD/AppData/Local/Pub/Cache/hosted/pub.dev/socket_io_client-2.0.3+1",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "socket_io_common",
+      "rootUri": "file:///C:/Users/ElSaYaD/AppData/Local/Pub/Cache/hosted/pub.dev/socket_io_common-2.0.3",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
     },
     {
       "name": "source_gen",

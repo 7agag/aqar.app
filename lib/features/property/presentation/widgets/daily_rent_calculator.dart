@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/localization/app_strings.dart';
+import '../../../auth/presentation/widgets/auth_guard.dart';
+import '../../../rent_request/presentation/widgets/create_rent_request_sheet.dart';
 import '../../domain/entities/property_entity.dart';
 
 class DailyRentCalculator extends StatefulWidget {
@@ -63,6 +65,17 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
   }
 
   bool get _hasError => _endDate != null && _startDate != null && _endDate!.isBefore(_startDate!);
+
+  void _openRentRequestSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => CreateRentRequestSheet(property: widget.property),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +158,35 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
               hint,
               style: const TextStyle(color: AppColors.textHint, fontSize: 14),
             ),
+          if (_startDate != null && _endDate != null && !_hasError) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () => requireVerifiedUser(
+                  context,
+                  onAllowed: _openRentRequestSheet,
+                ),
+                icon: const Icon(Icons.send_rounded, size: 18),
+                label: Text(
+                  'Request to Rent',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.navyBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

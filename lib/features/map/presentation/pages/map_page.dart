@@ -261,7 +261,7 @@ class _MapPageState extends State<MapPage> {
               child: PropertyBottomCard(
                 property: _selectedProperty!,
                 onTap: () =>
-                    propertyDetailNavigator.value = _selectedProperty,
+                    propertyDetailNavigator.value = _selectedProperty!.propertyId,
               ),
             ),
         ],

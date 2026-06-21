@@ -62,7 +62,7 @@ class _HomePageState extends State<HomePage>
   double? _activeMinSize;
   double? _activeMaxSize;
 
-  PropertyEntity? _detailProperty;
+  int? _detailPropertyId;
   bool _showDetail = false;
 
   // Loading
@@ -298,7 +298,7 @@ class _HomePageState extends State<HomePage>
     final value = propertyDetailNavigator.value;
     setState(() {
       if (value != null) {
-        _detailProperty = value;
+        _detailPropertyId = value;
         _showDetail = true;
       } else {
         _showDetail = false;
@@ -670,7 +670,7 @@ class _HomePageState extends State<HomePage>
                   child: SponsoredPropertyCard(
                     property: property,
                     onTap: () {
-                      propertyDetailNavigator.value = property;
+                      propertyDetailNavigator.value = property.propertyId;
                     },
                     onFavTap: () => _toggleFavorite(property.propertyId),
                     isFavorite: _favoriteIds.contains(property.propertyId),
@@ -769,7 +769,7 @@ class _HomePageState extends State<HomePage>
             final property = nearby[index];
             return NearbyPropertyCard(
               property: property,
-              onTap: () => propertyDetailNavigator.value = property,
+              onTap: () => propertyDetailNavigator.value = property.propertyId,
               onFavTap: () => _toggleFavorite(property.propertyId),
               isFavorite: _favoriteIds.contains(property.propertyId),
             );
@@ -801,13 +801,13 @@ class _HomePageState extends State<HomePage>
                 const ProfilePage(),
               ],
             ),
-            if (_detailProperty != null)
+            if (_detailPropertyId != null)
               Positioned.fill(
                 child: Visibility(
                   visible: _showDetail,
                   maintainState: true,
                   child: PropertyDetailPage(
-                    property: _detailProperty!,
+                    propertyId: _detailPropertyId!,
                     onBack: () {
                       propertyDetailNavigator.value = null;
                     },

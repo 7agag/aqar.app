@@ -336,7 +336,6 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
       {'label': 'All', 'value': 'all'},
       {'label': 'Daily', 'value': 'DAY'},
       {'label': 'Monthly', 'value': 'MONTH'},
-      {'label': 'Yearly', 'value': 'YEAR'},
     ];
 
     return Wrap(
