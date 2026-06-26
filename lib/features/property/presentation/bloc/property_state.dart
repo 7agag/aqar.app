@@ -40,6 +40,14 @@ class PropertyOperationSuccess extends PropertyState {
   List<Object?> get props => [message];
 }
 
+class PropertyDeleted extends PropertyState {
+  final int propertyId;
+  final String message;
+  PropertyDeleted(this.propertyId, this.message);
+  @override
+  List<Object?> get props => [propertyId, message];
+}
+
 class PropertyError extends PropertyState {
   final String message;
   PropertyError(this.message);

@@ -25,9 +25,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<List<ChatThreadEntity>> getInbox() async {
     try {
       final response = await apiClient.dio.get('/chat/inbox');
-      final data = response.data as Map<String, dynamic>;
-      final rawList = data['data'] as List?;
-      if (rawList == null) return [];
+      final rawData = response.data;
+      List rawList;
+      if (rawData is List) {
+        rawList = rawData;
+      } else if (rawData is Map<String, dynamic>) {
+        rawList = (rawData['data'] as List?) ?? [];
+      } else {
+        return [];
+      }
       return rawList.map((e) => ChatThreadEntity.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) throw UnauthorizedException();
@@ -35,6 +41,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         e.response?.data?['message'] ?? 'Failed to fetch inbox',
         statusCode: e.response?.statusCode,
       );
+    } catch (e) {
+      throw ServerException('Unexpected error fetching inbox: $e');
     }
   }
 
@@ -42,9 +50,15 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<List<ChatMessageEntity>> getChatHistory(String chatId) async {
     try {
       final response = await apiClient.dio.get('/chat/history/$chatId');
-      final data = response.data as Map<String, dynamic>;
-      final rawList = data['data'] as List?;
-      if (rawList == null) return [];
+      final rawData = response.data;
+      List rawList;
+      if (rawData is List) {
+        rawList = rawData;
+      } else if (rawData is Map<String, dynamic>) {
+        rawList = (rawData['data'] as List?) ?? [];
+      } else {
+        return [];
+      }
       return rawList.map((e) => ChatMessageEntity.fromJson(e as Map<String, dynamic>)).toList();
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) throw UnauthorizedException();
@@ -52,6 +66,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         e.response?.data?['message'] ?? 'Failed to fetch chat history',
         statusCode: e.response?.statusCode,
       );
+    } catch (e) {
+      throw ServerException('Unexpected error fetching chat history: $e');
     }
   }
 
@@ -75,6 +91,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         e.response?.data?['message'] ?? 'Failed to send message',
         statusCode: e.response?.statusCode,
       );
+    } catch (e) {
+      throw ServerException('Unexpected error sending message: $e');
     }
   }
 
@@ -88,6 +106,8 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         e.response?.data?['message'] ?? 'Failed to mark as read',
         statusCode: e.response?.statusCode,
       );
+    } catch (e) {
+      throw ServerException('Unexpected error marking as read: $e');
     }
   }
 }

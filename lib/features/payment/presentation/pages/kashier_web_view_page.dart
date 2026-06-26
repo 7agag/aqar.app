@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,10 +11,45 @@ class KashierWebViewPage extends StatefulWidget {
   const KashierWebViewPage({super.key, required this.url});
 
   static Future<bool?> open(BuildContext context, {required String url}) {
+    if (kIsWeb) {
+      return _openWeb(context, url);
+    }
     return Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (_) => KashierWebViewPage(url: url),
+      ),
+    );
+  }
+
+  static Future<bool?> _openWeb(BuildContext context, String url) async {
+    await launchUrl(
+      Uri.parse(url),
+      webOnlyWindowName: 'kashier_payment',
+    );
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Payment'),
+        content: const Text(
+          'A new tab opened for payment.\nComplete it there, then press Done.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.navyBlue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Done'),
+          ),
+        ],
       ),
     );
   }
@@ -26,6 +63,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
+  Timer? _loadingTimer;
 
   @override
   void initState() {
@@ -43,7 +81,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
       ..setNavigationDelegate(
         NavigationDelegate(
           onNavigationRequest: (request) {
-            if (request.url.startsWith('aqar://')) {
+            if (request.url.contains('payment-callback')) {
               Navigator.pop(context, true);
               return NavigationDecision.prevent;
             }
@@ -53,9 +91,11 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
             if (mounted) setState(() => _isLoading = true);
           },
           onPageFinished: (_) {
+            _loadingTimer?.cancel();
             if (mounted) setState(() => _isLoading = false);
           },
           onWebResourceError: (error) {
+            _loadingTimer?.cancel();
             if (mounted) {
               setState(() {
                 _hasError = true;
@@ -67,13 +107,39 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
         ),
       )
       ..loadRequest(uri);
+
+    _loadingTimer = Timer(const Duration(seconds: 30), () {
+      if (mounted && _isLoading) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Payment page took too long to load';
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _loadingTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _retry() async {
+    _loadingTimer?.cancel();
     setState(() {
       _hasError = false;
       _errorMessage = '';
       _isLoading = true;
+    });
+    _loadingTimer = Timer(const Duration(seconds: 30), () {
+      if (mounted && _isLoading) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Payment page took too long to load';
+          _isLoading = false;
+        });
+      }
     });
     await _controller.loadRequest(Uri.parse(widget.url));
   }

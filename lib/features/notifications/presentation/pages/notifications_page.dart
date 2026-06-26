@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../property/presentation/pages/my_properties_page.dart';
 import '../bloc/notification_bloc.dart';
 import '../bloc/notification_event.dart';
 import '../bloc/notification_state.dart';
 import '../../domain/entities/notification_entity.dart';
 
-IconData _iconForType(String type) {
+({IconData icon, Color? color}) _iconForType(String type) {
   switch (type) {
     case 'chat':
-      return Icons.chat_outlined;
+      return (icon: Icons.chat_outlined, color: null);
     case 'invoice':
-      return Icons.receipt_outlined;
+      return (icon: Icons.receipt_outlined, color: null);
     case 'rent':
-      return Icons.inbox_outlined;
+      return (icon: Icons.inbox_outlined, color: null);
+    case 'property_rejection':
+      return (icon: Icons.shield_outlined, color: AppColors.error);
+    case 'property_acception':
+      return (icon: Icons.verified_outlined, color: AppColors.success);
     default:
-      return Icons.notifications_outlined;
+      return (icon: Icons.notifications_outlined, color: null);
   }
 }
 
@@ -67,7 +72,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
         elevation: 0,
         centerTitle: true,
       ),
-      body: BlocBuilder<NotificationBloc, NotificationState>(
+      body: BlocConsumer<NotificationBloc, NotificationState>(
+        listener: (ctx, state) {
+          // Rejection detection handled by My Properties page
+          // using is_verified field from property API
+        },
         builder: (context, state) {
           if (state is NotificationLoading) {
             return _buildShimmer();
@@ -236,13 +245,133 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: _kGap),
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           if (!notif.viewed) {
             context
                 .read<NotificationBloc>()
                 .add(MarkNotificationReadRequested(
                   notificationId: notif.notificationId,
                 ));
+          }
+          if (notif.type == 'property_rejection') {
+            showModalBottomSheet(
+              context: context,
+              shape: const RoundedRectangleBorder(
+                borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              builder: (_) => SingleChildScrollView(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.borderLight,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color:
+                            AppColors.error.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        color: AppColors.error,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Verification Declined',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary)),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: AppColors.error
+                            .withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.error
+                              .withValues(alpha: 0.15),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.format_quote,
+                            size: 16,
+                            color: AppColors.error
+                                .withValues(alpha: 0.5),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(notif.body,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary
+                                      .withValues(alpha: 0.9),
+                                  height: 1.4,
+                                )),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const MyPropertiesPage(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.navyBlue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text('View My Properties',
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Dismiss'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
           }
         },
         borderRadius: BorderRadius.circular(_kRadiusCard),
@@ -274,9 +403,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        _iconForType(notif.type),
+                        _iconForType(notif.type).icon,
                         size: 22,
-                        color: AppColors.primary,
+                        color: _iconForType(notif.type).color ?? AppColors.primary,
                       ),
                     ),
                     if (!notif.viewed)

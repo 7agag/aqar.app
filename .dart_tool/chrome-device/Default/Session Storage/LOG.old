@@ -1,2 +1,7 @@
-2026/06/21-14:18:00.911 1d80 Creating DB C:\Users\Jovek\AppData\Local\Temp\flutter_tools.e195210e\flutter_tools_chrome_device.821c8061\Default\Session Storage since it was missing.
-2026/06/21-14:18:00.943 1d80 Reusing MANIFEST C:\Users\Jovek\AppData\Local\Temp\flutter_tools.e195210e\flutter_tools_chrome_device.821c8061\Default\Session Storage/MANIFEST-000001
+2026/06/26-07:43:27.600 10bc Reusing MANIFEST C:\Users\Jovek\AppData\Local\Temp\flutter_tools.fe77c216\flutter_tools_chrome_device.8acc3bd1\Default\Session Storage/MANIFEST-000001
+2026/06/26-07:43:27.603 10bc Recovering log #5
+2026/06/26-07:43:27.609 10bc Reusing old log C:\Users\Jovek\AppData\Local\Temp\flutter_tools.fe77c216\flutter_tools_chrome_device.8acc3bd1\Default\Session Storage/000005.log 
+2026/06/26-07:43:27.610 10bc Delete type=0 #3
+2026/06/26-07:43:27.611 10bc Delete type=0 #4
+2026/06/26-07:43:27.611 10bc Delete type=2 #5
+2026/06/26-07:43:27.611 10bc Delete type=2 #6

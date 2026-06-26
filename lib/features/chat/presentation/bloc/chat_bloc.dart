@@ -24,20 +24,28 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
     on<GetInboxRequested>((event, emit) async {
       emit(ChatLoading());
-      final result = await getInbox(NoParams());
-      result.fold(
-        (failure) => emit(ChatError(failure.message)),
-        (threads) => emit(InboxLoaded(threads: threads)),
-      );
+      try {
+        final result = await getInbox(NoParams());
+        result.fold(
+          (failure) => emit(ChatError(failure.message)),
+          (threads) => emit(InboxLoaded(threads: threads)),
+        );
+      } catch (e) {
+        emit(ChatError('Unexpected error: $e'));
+      }
     });
 
     on<GetChatHistoryRequested>((event, emit) async {
       emit(ChatLoading());
-      final result = await getChatHistory(event.chatId);
-      result.fold(
-        (failure) => emit(ChatError(failure.message)),
-        (messages) => emit(ChatHistoryLoaded(chatId: event.chatId, messages: messages)),
-      );
+      try {
+        final result = await getChatHistory(event.chatId);
+        result.fold(
+          (failure) => emit(ChatError(failure.message)),
+          (messages) => emit(ChatHistoryLoaded(chatId: event.chatId, messages: messages)),
+        );
+      } catch (e) {
+        emit(ChatError('Unexpected error: $e'));
+      }
     });
 
     on<SendMessageRequested>((event, emit) async {

@@ -21,6 +21,8 @@ class PropertyEntity {
   final bool isAvailable;
   final bool isFurnished;
   final bool isSponsored;
+  final bool isVisible;
+  final String? verificationStatus;
   final ListingType listingType;
   final double? rate;
   final ListingStatus? listingStatus;
@@ -49,6 +51,8 @@ class PropertyEntity {
     required this.isAvailable,
     required this.isFurnished,
     this.isSponsored = false,
+    this.isVisible = true,
+    this.verificationStatus,
     required this.listingType,
     this.rate,
     this.listingStatus,
@@ -56,6 +60,12 @@ class PropertyEntity {
     this.ownerSecondName,
     this.ownerEmail,
   });
+
+  bool get isPubliclyVisible =>
+      isVerified == true &&
+      listingStatus != ListingStatus.inactive &&
+      listingStatus != ListingStatus.expired &&
+      listingStatus != ListingStatus.sold;
 
   PropertyStatus get status {
     if (isSponsored) return PropertyStatus.sponsored;

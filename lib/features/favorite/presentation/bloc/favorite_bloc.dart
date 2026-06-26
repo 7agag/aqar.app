@@ -57,7 +57,7 @@ class FavoriteBloc extends Bloc<FavoriteEvent, FavoriteState> {
     final result = await getFavorites(NoParams());
     result.fold(
       (failure) => emit(FavoriteError(failure.message)),
-      (favorites) => emit(FavoriteLoaded(favorites)),
+      (favorites) => emit(FavoriteLoaded(favorites.where((p) => p.isPubliclyVisible).toList())),
     );
   }
 

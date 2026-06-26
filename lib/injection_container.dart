@@ -69,7 +69,6 @@ import 'package:aqar/features/payment/domain/usecases/request_refund_usecase.dar
 import 'package:aqar/features/payment/domain/usecases/cancel_refund_request_usecase.dart';
 import 'package:aqar/features/payment/domain/usecases/get_transfer_status_usecase.dart';
 import 'package:aqar/features/payment/presentation/bloc/wallet_bloc.dart';
-import 'package:aqar/features/payment/presentation/bloc/payment_bloc.dart';
 
 // ========== INVOICE IMPORTS ==========
 import 'package:aqar/features/invoice/data/datasources/invoice_remote_datasource.dart';
@@ -242,9 +241,6 @@ Future<void> configureDependencies() async {
     getBalance: sl(),
     getTransactions: sl(),
     requestWithdrawal: sl(),
-  ));
-  sl.registerFactory(() => PaymentBloc(
-    getPaymentLink: sl(),
   ));
 
   // ========== INVOICE ==========

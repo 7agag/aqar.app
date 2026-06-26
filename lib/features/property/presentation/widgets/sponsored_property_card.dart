@@ -43,7 +43,7 @@ class SponsoredPropertyCard extends StatelessWidget {
         double compactScale;
         if (heightConstrained) {
           final availableForImage =
-              (constraints.maxHeight - _contentEstimate).clamp(60, cardWidth * 0.6);
+              (constraints.maxHeight - _contentEstimate).clamp(60.0, cardWidth * 0.6);
           imageHeight = availableForImage;
           compactScale = (constraints.maxHeight / (cardWidth * 0.6 + _contentEstimate))
               .clamp(0.65, 1.0);

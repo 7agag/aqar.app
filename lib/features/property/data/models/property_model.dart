@@ -27,6 +27,8 @@ class PropertyModel extends PropertyEntity {
     required super.isAvailable,
     required super.isFurnished,
     super.isSponsored,
+    super.isVisible,
+    super.verificationStatus,
     required super.listingType,
     super.rate,
     super.listingStatus,
@@ -90,6 +92,10 @@ class PropertyModel extends PropertyEntity {
       isAvailable: json['is_available'] == true || json['is_available'] == 1,
       isFurnished: json['is_furnished'] == true || json['is_furnished'] == 1,
       isSponsored: json['is_sponsored'] == true || json['is_sponsored'] == 1,
+      isVisible: json.containsKey('is_visible')
+          ? json['is_visible'] == true || json['is_visible'] == 1
+          : true,
+      verificationStatus: json['verification_status']?.toString(),
       listingType: ListingType.fromValue(
           json['property_type']?.toString() ?? 'for_rent'),
       rate: parseNullableDouble(json['rate']),
@@ -122,6 +128,7 @@ class PropertyModel extends PropertyEntity {
         'is_available': isAvailable,
         'is_furnished': isFurnished,
         'is_sponsored': isSponsored,
+        'is_visible': isVisible,
         'property_type': listingType.value,
         'rate': rate,
         'listing_status': listingStatus?.value,

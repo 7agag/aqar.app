@@ -130,8 +130,6 @@ import 'package:aqar/features/payment/domain/usecases/request_refund_usecase.dar
     as _i454;
 import 'package:aqar/features/payment/domain/usecases/request_withdrawal_usecase.dart'
     as _i521;
-import 'package:aqar/features/payment/presentation/bloc/payment_bloc.dart'
-    as _i375;
 import 'package:aqar/features/payment/presentation/bloc/wallet_bloc.dart'
     as _i759;
 import 'package:aqar/features/property/data/datasources/property_remote_datasource.dart'
@@ -437,8 +435,6 @@ extension GetItInjectableX on _i174.GetIt {
           cancelRequest: gh<_i363.CancelRentRequestUseCase>(),
           getRentRequestByIdUseCase: gh<_i653.GetRentRequestByIdUseCase>(),
         ));
-    gh.factory<_i375.PaymentBloc>(() =>
-        _i375.PaymentBloc(getPaymentLink: gh<_i546.GetPaymentLinkUseCase>()));
     gh.factory<_i955.GetNotificationsUseCase>(() =>
         _i955.GetNotificationsUseCase(gh<_i457.NotificationRepository>()));
     gh.factory<_i755.MarkNotificationReadUseCase>(() =>

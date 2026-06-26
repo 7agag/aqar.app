@@ -64,5 +64,7 @@
         <key>NSAllowsArbitraryLoads</key>
         <true/>
     </dict>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Authenticate to delete your property</string>
 </dict>
 </plist>

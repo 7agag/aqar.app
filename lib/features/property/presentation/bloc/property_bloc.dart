@@ -41,7 +41,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
       final result = await getProperties(event.params);
       result.fold(
         (failure) => emit(PropertyError(failure.message)),
-        (properties) => emit(PropertiesLoaded(allProperties: properties)),
+        (properties) => emit(PropertiesLoaded(allProperties: properties.where((p) => p.isPubliclyVisible).toList())),
       );
     });
 
@@ -95,7 +95,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
       final result = await deleteProperty(event.id);
       result.fold(
         (failure) => emit(PropertyError(failure.message)),
-        (_) => emit(PropertyOperationSuccess('Property deleted successfully')),
+        (_) => emit(PropertyDeleted(event.id, 'Property deleted successfully')),
       );
     });
   }

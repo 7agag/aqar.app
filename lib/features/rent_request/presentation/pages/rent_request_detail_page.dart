@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aqar/core/services/biometric_auth_guard.dart';
 import 'package:aqar/core/services/escrow_service.dart';
 import 'package:aqar/core/theme/app_colors.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_state.dart';
+import 'package:aqar/features/payment/domain/usecases/get_payment_link_usecase.dart';
 import 'package:aqar/features/payment/presentation/pages/payment_gateway_page.dart';
 import 'package:aqar/features/rent_request/domain/entities/rent_request_entity.dart';
 import 'package:aqar/features/rent_request/domain/entities/rent_request_enums.dart' as enums;
@@ -258,6 +262,52 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
     }
   }
 
+  Future<void> _proceedToPayment(RentRequestEntity request) async {
+    final guardOk = await BiometricAuthGuard.guard(
+      context,
+      reason: 'Authenticate to confirm your rental payment',
+    );
+    if (!guardOk) return;
+    if (!mounted) return;
+    final getPaymentLink = di.sl<GetPaymentLinkUseCase>();
+    final linkResult = await getPaymentLink(
+      GetPaymentLinkParams(requestId: request.requestId),
+    );
+
+    if (!mounted) return;
+
+    await linkResult.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(failure.message)),
+        );
+      },
+      (link) async {
+        final ok = await PaymentGatewayPage.open(
+          context,
+          itemName: request.propertyName ?? 'Property #${request.propertyId}',
+          amount: request.totalPrice,
+          generatePaymentUrl: () async => link.url,
+        );
+
+        if (ok == true && mounted) {
+          final authState = di.sl<AuthBloc>().state;
+          if (authState is AuthProfileLoaded) {
+            await di.sl<EscrowService>().createLease(
+              requestId: request.requestId,
+              propertyId: request.propertyId,
+              renterId: authState.user.id,
+              ownerId: request.ownerId ?? '',
+            );
+            if (mounted) {
+              context.read<RentRequestBloc>().add(const LoadRentRequests());
+            }
+          }
+        }
+      },
+    );
+  }
+
   Widget _buildProceedToPayment(BuildContext context, RentRequestEntity request) {
     return SizedBox(
       width: double.infinity,
@@ -270,20 +320,7 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
             borderRadius: BorderRadius.circular(12),
           ),
         ),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PaymentGatewayPage(
-                itemName: request.propertyName ?? 'Property #${request.propertyId}',
-                amount: request.totalPrice,
-                propertyId: request.propertyId,
-                requestId: request.requestId,
-                ownerId: request.ownerId,
-              ),
-            ),
-          );
-        },
+        onPressed: () => _proceedToPayment(request),
         child: const Text('Proceed to Payment'),
       ),
     );

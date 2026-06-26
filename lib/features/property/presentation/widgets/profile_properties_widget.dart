@@ -113,7 +113,8 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
   }
 
   Widget _buildContent(List<PropertyEntity> properties) {
-    final count = properties.length;
+    final visible = properties.where((p) => p.isVisible).toList();
+    final count = visible.length;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -130,41 +131,50 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
                   color: AppColors.textPrimary,
                 ),
               ),
-              if (count > 3)
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const MyPropertiesPage()),
-                  ),
-                  child: Text(
-                    'See All',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary.withValues(alpha: 0.8),
-                    ),
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyPropertiesPage()),
+                ),
+                child: Text(
+                  'See All',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary.withValues(alpha: 0.8),
                   ),
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 8),
           if (count == 0)
             _buildEmpty()
           else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: count > 3 ? 3 : count,
-              itemBuilder: (context, index) => _PropertyCard(
-                property: properties[index],
-                onTap: () => propertyDetailNavigator.value = properties[index].propertyId,
-                onEdit: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => _EditPropertyPageWrapper(property: properties[index]),
+            Builder(
+              builder: (context) {
+                final cardWidth = (MediaQuery.of(context).size.width * 0.4).clamp(140, 220).toDouble();
+                final cardHeight = (cardWidth * 1.15).clamp(160, 230).toDouble();
+                return SizedBox(
+                  height: cardHeight,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: count,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (context, index) => _PropertyCardHorizontal(
+                      property: visible[index],
+                      cardWidth: cardWidth,
+                      onTap: () => propertyDetailNavigator.value = visible[index].propertyId,
+                      onEdit: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => _EditPropertyPageWrapper(property: visible[index]),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
         ],
       ),
@@ -302,13 +312,15 @@ class _ShimmerCard extends StatelessWidget {
   }
 }
 
-class _PropertyCard extends StatelessWidget {
+class _PropertyCardHorizontal extends StatelessWidget {
   final PropertyEntity property;
+  final double cardWidth;
   final VoidCallback onTap;
   final VoidCallback onEdit;
 
-  const _PropertyCard({
+  const _PropertyCardHorizontal({
     required this.property,
+    required this.cardWidth,
     required this.onTap,
     required this.onEdit,
   });
@@ -328,113 +340,94 @@ class _PropertyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = _status;
+    final imageHeight = cardWidth * 0.58;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
+        width: cardWidth,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.borderLight.withValues(alpha: 0.3)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               child: SizedBox(
-                width: 90,
-                height: 100,
+                width: cardWidth,
+                height: imageHeight,
                 child: property.images.isNotEmpty
                     ? Image.network(property.images.first, fit: BoxFit.cover)
                     : Container(
                         color: AppColors.surfaceLight,
-                        child: const Icon(Icons.home, color: AppColors.textHint, size: 32),
+                        child: const Icon(Icons.home, color: AppColors.textHint, size: 28),
                       ),
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      property.propertyName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                    Flexible(
+                      child: Text(
+                        property.propertyName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      property.location,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary.withValues(alpha: 0.7),
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 5, height: 5,
+                          decoration: BoxDecoration(color: status.color, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          status.label,
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: status.color),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const Spacer(),
                     Row(
                       children: [
-                        Text(
-                          'EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.navyBlue,
+                        Flexible(
+                          child: Text(
+                            'EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.navyBlue,
+                            ),
                           ),
                         ),
-                        const Spacer(),
-                        _StatusDot(status: status),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: onEdit,
+                          child: Icon(Icons.edit_outlined, size: 16, color: AppColors.textHint.withValues(alpha: 0.6)),
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(right: 4),
-              child: IconButton(
-                icon: Icon(Icons.edit_outlined, size: 18, color: AppColors.textHint.withValues(alpha: 0.6)),
-                onPressed: onEdit,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  final PropertyStatus status;
-  const _StatusDot({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 6, height: 6,
-          decoration: BoxDecoration(
-            color: status.color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          status.label,
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: status.color),
-        ),
-      ],
     );
   }
 }

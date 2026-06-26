@@ -4,7 +4,6 @@ import 'package:aqar/core/widgets/aqar_button.dart';
 import 'package:aqar/core/network/api_client.dart';
 import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/injection_container.dart' as di;
-import 'package:aqar/features/payment/presentation/pages/payment_gateway_page.dart';
 import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
 import 'package:dio/dio.dart';
 
@@ -72,7 +71,7 @@ class _SelectSellingPlanPageState extends State<SelectSellingPlanPage> {
         data: {
           'property_id': widget.propertyId,
           'duration': _selectedDuration,
-          'redirect': 'aqar://payment-callback',
+          'redirect': 'https://aqar.app/payment-callback',
         },
       );
 
@@ -125,85 +124,7 @@ class _SelectSellingPlanPageState extends State<SelectSellingPlanPage> {
               ),
             ),
           ),
-          if (_selectedPlan != -1) ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(child: Divider(color: Color(0xFFEEEEEE))),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'أو',
-                      style: TextStyle(fontSize: 13, color: Color(0xFFB0B0B0)),
-                    ),
-                  ),
-                  Expanded(child: Divider(color: Color(0xFFEEEEEE))),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Material(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    final plan = _plans[_selectedPlan];
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PaymentGatewayPage(
-                          itemName: 'Sponsorship - ${plan.name}',
-                          amount: double.parse(plan.price),
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFEEEEEE)),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1A2744).withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(Icons.credit_card_rounded, color: Color(0xFF1A2744), size: 22),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'الدفع ببطاقة (محاكي)',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'مدفوعات آمنة عبر بوابة الدفع',
-                                style: TextStyle(fontSize: 12, color: const Color(0xFF999999)),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.chevron_left, color: Color(0xFFB0B0B0)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
+          if (_selectedPlan != -1) const SizedBox(height: 12),
           _buildBottomBar(),
         ],
       ),

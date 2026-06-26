@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:aqar/features/payment/domain/usecases/get_payment_link_usecase.dart';
+import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
+import 'package:aqar/features/subscription/domain/usecases/create_subscription_usecase.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,6 +16,7 @@ import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/core/theme/app_spacing.dart';
 import 'package:aqar/core/network/api_client.dart';
 import 'package:aqar/features/property/domain/entities/property_enums.dart';
+import 'package:aqar/core/services/biometric_auth_guard.dart';
 import 'package:aqar/features/property/presentation/widgets/photo_tips_card.dart';
 import 'package:aqar/injection_container.dart' as di;
 
@@ -29,6 +33,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   int _currentStep = 0;
   late final PageController _pageCtrl;
   bool _isSubmitting = false;
+  bool _isSubmittingProperty = false;
 
   // -- Step 0: Basic Info --
   final _basicKey = GlobalKey<FormState>();
@@ -336,6 +341,9 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
             if (double.tryParse(v.trim()) == null ||
                 double.parse(v.trim()) <= 0) {
               return 'Enter a valid price';
+            }
+            if (double.parse(v.trim()) > 99999999) {
+              return 'Max price is 99,999,999 EGP';
             }
             return null;
           }),
@@ -1292,29 +1300,6 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
           children: [
             _buildLabel('Property Images * (3–10)'),
             const Spacer(),
-            if (_propertyImages.length >= 2)
-              GestureDetector(
-                onTap: () => _showReorderSheet(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.swap_vert, size: 14, color: AppColors.primary),
-                      SizedBox(width: 4),
-                      Text('Reorder',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
-              ),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -1354,42 +1339,59 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   }
 
   Widget _buildImageGrid() {
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
-      children: [
-        ..._propertyImages.asMap().entries.map((e) =>
-            _buildImageThumb(e.key, e.value)),
-        if (_propertyImages.length < 10)
-          GestureDetector(
-            onTap: _showImageSourceSheet,
-            child: Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.4),
-                    width: 1.5,
-                    strokeAlign: BorderSide.strokeAlignInside),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                color: AppColors.primary.withValues(alpha: 0.05),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_photo_alternate_outlined,
-                      color: AppColors.primary, size: 28),
-                  SizedBox(height: 2),
-                  Text('Add',
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600)),
-                ],
+    return SizedBox(
+      height: 100,
+      child: ReorderableListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _propertyImages.length + (_propertyImages.length < 10 ? 1 : 0),
+        onReorder: (oldI, newI) {
+          setState(() {
+            final item = _propertyImages.removeAt(oldI);
+            _propertyImages.insert(newI, item);
+          });
+        },
+        itemBuilder: (_, i) {
+          if (i < _propertyImages.length) {
+            return Padding(
+              key: ValueKey(_propertyImages[i].path),
+              padding: const EdgeInsets.only(left: AppSpacing.sm),
+              child: _buildImageThumb(i, _propertyImages[i]),
+            );
+          }
+          return Padding(
+            key: const ValueKey('add-image-button'),
+            padding: const EdgeInsets.only(left: AppSpacing.sm),
+            child: GestureDetector(
+              onTap: _showImageSourceSheet,
+              child: Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.4),
+                      width: 1.5,
+                      strokeAlign: BorderSide.strokeAlignInside),
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  color: AppColors.primary.withValues(alpha: 0.05),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_photo_alternate_outlined,
+                        color: AppColors.primary, size: 28),
+                    SizedBox(height: 2),
+                    Text('Add',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
               ),
             ),
-          ),
-      ],
+          );
+        },
+      ),
     );
   }
 
@@ -1444,23 +1446,6 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
               ),
             ),
           ),
-          if (_propertyImages.length > 1)
-            Positioned(
-              bottom: 2,
-              right: 2,
-              child: GestureDetector(
-                onTap: () => _showReorderSheet(),
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.drag_handle,
-                      color: Colors.white, size: 14),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -1603,151 +1588,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     );
   }
 
-  void _showReorderSheet() {
-    HapticFeedback.mediumImpact();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.textHint.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Text('Reorder Images',
-                        style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary)),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () {
-                        final current = List<XFile>.from(_propertyImages);
-                        Navigator.pop(ctx);
-                        setState(() => _propertyImages
-                          ..clear()
-                          ..addAll(current));
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text('Done',
-                            style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 300,
-                  child: ReorderableListView.builder(
-                    itemCount: _propertyImages.length,
-                    onReorder: (oldI, newI) {
-                      setState(() {
-                        final item = _propertyImages.removeAt(oldI);
-                        _propertyImages.insert(newI, item);
-                      });
-                      setSheetState(() {});
-                    },
-                    itemBuilder: (_, i) {
-                      final file = _propertyImages[i];
-                      return Padding(
-                        key: ValueKey(file.path),
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.borderLight),
-                          ),
-                          child: ListTile(
-                            leading: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: SizedBox(
-                                width: 52,
-                                height: 52,
-                                child: Image.file(File(file.path),
-                                    fit: BoxFit.cover),
-                              ),
-                            ),
-                            title: Text('Image ${i + 1}',
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600)),
-                            subtitle: Text(
-                                '${(File(file.path).lengthSync() / 1024).toStringAsFixed(0)} KB',
-                                style: const TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.textSecondary)),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (i > 0)
-                                  IconButton(
-                                    icon: const Icon(Icons.keyboard_arrow_up,
-                                        size: 20),
-                                    onPressed: () {
-                                      setState(() {
-                                        final item =
-                                            _propertyImages.removeAt(i);
-                                        _propertyImages.insert(i - 1, item);
-                                      });
-                                      setSheetState(() {});
-                                    },
-                                  ),
-                                if (i < _propertyImages.length - 1)
-                                  IconButton(
-                                    icon: const Icon(
-                                        Icons.keyboard_arrow_down,
-                                        size: 20),
-                                    onPressed: () {
-                                      setState(() {
-                                        final item =
-                                            _propertyImages.removeAt(i);
-                                        _propertyImages.insert(i + 1, item);
-                                      });
-                                      setSheetState(() {});
-                                    },
-                                  ),
-                                Icon(Icons.drag_handle,
-                                    color: AppColors.textHint, size: 20),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
 
   // ---------------------------------------------------------------------------
   // STEP 2: PLAN  (sale: 1/3/6 months at 120/360/600; rent: free)
@@ -2030,9 +1871,9 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
             }
             if (_isForRent) {
               setState(() => _isSubmitting = true);
-              _submitProperty().then((ok) {
+              _submitProperty().then((data) {
                 if (mounted) setState(() => _isSubmitting = false);
-                if (ok) _showPropertyAddedDialog();
+                if (data != null) _showPropertyAddedDialog();
               });
             } else {
               _goToStep(5);
@@ -2362,7 +2203,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
           child: ElevatedButton.icon(
             onPressed: _isSubmitting
                 ? null
-                : () => _showPaymentSheet(planFee, planMonths),
+                : () => _processSalePayment(),
             icon: _isSubmitting
                 ? const SizedBox(
                     width: 22,
@@ -2460,20 +2301,25 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     return null;
   }
 
-  Future<bool> _submitProperty() async {
+  Future<Map<String, dynamic>?> _submitProperty() async {
+    if (_isSubmittingProperty) return null;
+    _isSubmittingProperty = true;
     if (_lat == null || _lng == null) {
+      _isSubmittingProperty = false;
       _showError(
           'Please go back to the Map step and confirm your property location');
-      return false;
+      return null;
     }
     if (_resolvedAddress.isEmpty) {
+      _isSubmittingProperty = false;
       _showError(
           'Verified address is missing. Please go back to the Map step.');
-      return false;
+      return null;
     }
     if (_propertyImages.isEmpty) {
+      _isSubmittingProperty = false;
       _showError('Please upload at least one property image');
-      return false;
+      return null;
     }
 
     try {
@@ -2532,21 +2378,24 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
       }
 
       final response = await dio.post('/property', data: formData);
-      if (!mounted) return false;
+      _isSubmittingProperty = false;
+      if (!mounted) return null;
 
       if (response.statusCode == 201) {
-        return true;
+        return response.data as Map<String, dynamic>?;
       } else {
         _showError(_extractMsg(response.data) ?? 'Failed to list property');
-        return false;
+        return null;
       }
     } on DioException catch (e) {
+      _isSubmittingProperty = false;
       _showError(_extractMsg(e.response?.data) ??
           'No internet connection. Please try again.');
-      return false;
+      return null;
     } catch (e) {
+      _isSubmittingProperty = false;
       _showError('Error: ${e.runtimeType}: $e');
-      return false;
+      return null;
     }
   }
 
@@ -2572,7 +2421,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
             ),
             const SizedBox(height: 20),
             const Text(
-              'تم رفع العقار ودفع الرسوم بنجاح',
+              'تم رفع العقار بنجاح',
               textAlign: TextAlign.center,
               style: TextStyle(
                   fontSize: 16,
@@ -2581,7 +2430,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
             ),
             const SizedBox(height: 8),
             Text(
-              'Your property has been added and is ready to appear in My Properties.',
+              'Your property has been submitted for admin review.\nYou will be notified once it is approved.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
@@ -2611,242 +2460,96 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     );
   }
 
-  Future<void> _showPaymentSheet(int planFee, int planMonths) async {
-    final nameCtl = TextEditingController();
-    final cardCtl = TextEditingController();
-    final expiryCtl = TextEditingController();
-    final cvvCtl = TextEditingController();
-    final obscureCvv = ValueNotifier<bool>(true);
-    final isLoading = ValueNotifier<bool>(false);
-    final formKey = GlobalKey<FormState>();
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-            left: 20,
-            right: 20,
-            top: 20,
-          ),
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // --- Handle ---
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                        color: AppColors.borderLight,
-                        borderRadius: BorderRadius.circular(2)),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // --- Title ---
-                const Text('Card Payment',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary)),
-                const SizedBox(height: 4),
-                Text(
-                  'Pay EGP $planFee for $planMonths Month${planMonths > 1 ? 's' : ''} Plan',
-                  style:
-                      const TextStyle(fontSize: 13, color: AppColors.textHint),
-                ),
-                const SizedBox(height: 24),
-
-                // --- Cardholder Name ---
-                _buildSheetField(
-                  label: 'اسم صاحب الكارت',
-                  hint: 'Cardholder Name',
-                  ctl: nameCtl,
-                  validator: (v) =>
-                      v == null || v.trim().isEmpty ? 'Name is required' : null,
-                ),
-                const SizedBox(height: 14),
-
-                // --- Card Number ---
-                _buildSheetField(
-                  label: 'رقم الكارت',
-                  hint: '0000 0000 0000 0000',
-                  ctl: cardCtl,
-                  keyboardType: TextInputType.number,
-                  maxLength: 16,
-                  formatters: [FilteringTextInputFormatter.digitsOnly],
-                  validator: (v) => v == null || v.trim().length < 16
-                      ? 'Enter a valid 16-digit card number'
-                      : null,
-                ),
-                const SizedBox(height: 14),
-
-                // --- Expiry + CVV ---
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildSheetField(
-                        label: 'MM/YY',
-                        hint: 'MM/YY',
-                        ctl: expiryCtl,
-                        keyboardType: TextInputType.number,
-                        maxLength: 5,
-                        formatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          _ExpiryFormatter(),
-                        ],
-                        validator: (v) => v == null || v.trim().length < 5
-                            ? 'Enter a valid expiry date'
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: ValueListenableBuilder<bool>(
-                        valueListenable: obscureCvv,
-                        builder: (_, obscure, __) {
-                          return _buildSheetField(
-                            label: 'CVV',
-                            hint: 'CVV',
-                            ctl: cvvCtl,
-                            keyboardType: TextInputType.number,
-                            maxLength: 4,
-                            obscureText: obscure,
-                            formatters: [
-                              FilteringTextInputFormatter.digitsOnly
-                            ],
-                            suffix: GestureDetector(
-                              onTap: () => obscureCvv.value = !obscure,
-                              child: Icon(
-                                obscure
-                                    ? Icons.visibility_off_outlined
-                                    : Icons.visibility_outlined,
-                                color: AppColors.textHint,
-                                size: 20,
-                              ),
-                            ),
-                            validator: (v) => v == null || v.trim().length < 3
-                                ? 'Invalid CVV'
-                                : null,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 28),
-
-                // --- Pay Button ---
-                ValueListenableBuilder<bool>(
-                  valueListenable: isLoading,
-                  builder: (_, loading, __) {
-                    return SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: loading
-                            ? null
-                            : () async {
-                                if (!formKey.currentState!.validate()) return;
-                                isLoading.value = true;
-                                await Future.delayed(
-                                    const Duration(seconds: 2));
-                                setState(() => _isSubmitting = true);
-                                final ok = await _submitProperty();
-                                setState(() => _isSubmitting = false);
-                                isLoading.value = false;
-                                if (!ctx.mounted) return;
-                                Navigator.of(ctx).pop();
-                                if (ok) _showPropertyAddedDialog();
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14)),
-                        ),
-                        child: loading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    color: Colors.white, strokeWidth: 2.5))
-                            : Text('Pay EGP $planFee',
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.bold)),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      },
+  Future<void> _processSalePayment() async {
+    if (_isSubmitting) return;
+    final guardOk = await BiometricAuthGuard.guard(
+      context,
+      reason: 'Authenticate to confirm your payment',
     );
+    if (!guardOk) return;
+    if (!mounted) return;
+    final planMonths = _salePlanMonths ?? 1;
+    setState(() => _isSubmitting = true);
+    try {
+      final responseData = await _submitProperty();
+      if (!mounted) return;
+      if (responseData == null) {
+        setState(() => _isSubmitting = false);
+        return;
+      }
 
-    nameCtl.dispose();
-    cardCtl.dispose();
-    expiryCtl.dispose();
-    cvvCtl.dispose();
-  }
+      final propertyId = _parseInt(responseData['property_id'], fallback: -1);
+      if (propertyId <= 0) {
+        setState(() => _isSubmitting = false);
+        _showError('Could not determine property ID');
+        return;
+      }
 
-  Widget _buildSheetField({
-    required String label,
-    required String hint,
-    required TextEditingController ctl,
-    TextInputType? keyboardType,
-    int? maxLength,
-    List<TextInputFormatter>? formatters,
-    String? Function(String?)? validator,
-    bool obscureText = false,
-    Widget? suffix,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary)),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: ctl,
-          obscureText: obscureText,
-          keyboardType: keyboardType,
-          maxLength: maxLength,
-          inputFormatters: formatters,
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            filled: true,
-            fillColor: AppColors.surfaceLight,
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            suffixIcon: suffix != null
-                ? Padding(
-                    padding: const EdgeInsets.only(right: 8), child: suffix)
-                : null,
-            counterText: '',
-          ),
+      final subscriptionResult = await di.sl<CreateSubscriptionUseCase>()(
+        CreateSubscriptionParams(
+          propertyId: propertyId,
+          planMonths: planMonths,
         ),
-      ],
-    );
+      );
+      if (!mounted) return;
+
+      final subscriptionId = subscriptionResult.fold(
+        (failure) {
+          setState(() => _isSubmitting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(failure.message)),
+          );
+          return null;
+        },
+        (sub) => sub.subscriptionId,
+      );
+
+      if (subscriptionId == null || subscriptionId.isEmpty) return;
+
+      final linkResult = await di.sl<GetPaymentLinkUseCase>()(
+        GetPaymentLinkParams(
+          subscriptionId: subscriptionId,
+          redirect: 'https://aqar.app/payment-callback',
+        ),
+      );
+      if (!mounted) return;
+
+      linkResult.fold(
+        (failure) {
+          setState(() => _isSubmitting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(failure.message)),
+          );
+        },
+        (link) async {
+          final ok = await KashierWebViewPage.open(context, url: link.url);
+          if (!mounted) return;
+          setState(() => _isSubmitting = false);
+          if (ok == true && mounted) {
+            _showPropertyAddedDialog();
+          } else if (ok != true && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Payment cancelled or failed'),
+                action: SnackBarAction(
+                  label: 'Retry',
+                  onPressed: _processSalePayment,
+                ),
+              ),
+            );
+          }
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment failed: $e')),
+      );
+    }
   }
+
+
 
   // ---------------------------------------------------------------------------
   // HELPERS
@@ -2860,6 +2563,13 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   }
 
   String _nonNull(dynamic v) => v?.toString().trim() ?? '';
+
+  int _parseInt(dynamic value, {int fallback = 0}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? fallback;
+    return fallback;
+  }
 
   void _showError(String message) {
     if (!mounted) return;
@@ -3169,16 +2879,4 @@ class _FullScreenImagePreviewState extends State<_FullScreenImagePreview> {
   }
 }
 
-class _ExpiryFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-    if (digits.length > 4) return oldValue;
-    if (digits.length < 2) return newValue.copyWith(text: digits);
-    final formatted = '${digits.substring(0, 2)}/${digits.substring(2)}';
-    return newValue.copyWith(
-        text: formatted,
-        selection: TextSelection.collapsed(offset: formatted.length));
-  }
-}
+

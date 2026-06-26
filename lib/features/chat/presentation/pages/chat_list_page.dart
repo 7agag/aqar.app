@@ -24,6 +24,7 @@ class _ChatListPageState extends State<ChatListPage>
   final _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isLoading = true;
+  String? _errorMessage;
   final Set<String> _pinnedIds = {};
   List<ChatThreadEntity> _inbox = [];
 
@@ -31,6 +32,7 @@ class _ChatListPageState extends State<ChatListPage>
   late final AnimationController _staggerController;
   StreamSubscription<Map<String, dynamic>>? _socketSub;
   Timer? _inboxDebounce;
+  Timer? _loadingTimeout;
 
   List<ChatThreadEntity> get _sortedThreads {
     final result = List<ChatThreadEntity>.from(_inbox);
@@ -68,7 +70,26 @@ class _ChatListPageState extends State<ChatListPage>
       duration: const Duration(milliseconds: 500),
     );
 
-    context.read<ChatBloc>().add(const GetInboxRequested());
+    final bloc = context.read<ChatBloc>();
+    final currentState = bloc.state;
+    if (currentState is InboxLoaded) {
+      _inbox = currentState.threads;
+      _isLoading = false;
+      _staggerController.forward();
+    } else if (currentState is ChatError) {
+      _isLoading = false;
+      _errorMessage = currentState.message;
+    } else {
+      bloc.add(const GetInboxRequested());
+      _loadingTimeout = Timer(const Duration(seconds: 8), () {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'Connection timed out';
+          });
+        }
+      });
+    }
 
     _socketSub = di.sl<SocketService>().onMessage.listen((_) {
       _inboxDebounce?.cancel();
@@ -82,6 +103,7 @@ class _ChatListPageState extends State<ChatListPage>
 
   @override
   void dispose() {
+    _loadingTimeout?.cancel();
     _socketSub?.cancel();
     _inboxDebounce?.cancel();
     _searchController.dispose();
@@ -116,6 +138,7 @@ class _ChatListPageState extends State<ChatListPage>
     final removed = _inbox.removeAt(index);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        duration: const Duration(seconds: 5),
         content: Text('${removed.partnerName} deleted'),
         action: SnackBarAction(
           label: 'Undo',
@@ -197,13 +220,19 @@ class _ChatListPageState extends State<ChatListPage>
     return BlocListener<ChatBloc, ChatState>(
       listener: (context, state) {
         if (state is InboxLoaded) {
+          _loadingTimeout?.cancel();
           setState(() {
             _inbox = state.threads;
             _isLoading = false;
+            _errorMessage = null;
           });
           _staggerController.forward();
         } else if (state is ChatError) {
-          setState(() => _isLoading = false);
+          _loadingTimeout?.cancel();
+          setState(() {
+            _isLoading = false;
+            _errorMessage = state.message;
+          });
         }
       },
       child: Scaffold(
@@ -400,6 +429,9 @@ class _ChatListPageState extends State<ChatListPage>
   }
 
   Widget _buildBody() {
+    if (_errorMessage != null) {
+      return _buildErrorState();
+    }
     final threads = _sortedThreads;
     if (threads.isEmpty && _searchQuery.isNotEmpty) {
       return _buildNoResultsState();
@@ -663,6 +695,69 @@ class _ChatListPageState extends State<ChatListPage>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.3),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.wifi_off_rounded,
+                size: 44,
+                color: AppColors.error,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Something went wrong',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Unable to load messages. Please try again.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 180,
+              child: AqarButton(
+                text: 'Retry',
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                    _errorMessage = null;
+                  });
+                  context.read<ChatBloc>().add(const GetInboxRequested());
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

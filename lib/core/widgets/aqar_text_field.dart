@@ -10,6 +10,7 @@ class AqarTextField extends StatelessWidget {
   final TextEditingController controller;
   final String? Function(String?)? validator;
   final TextInputType keyboardType;
+  final int? maxLines;
 
   const AqarTextField({
     super.key,
@@ -21,6 +22,7 @@ class AqarTextField extends StatelessWidget {
     this.obscureText = false,
     this.validator,
     this.keyboardType = TextInputType.text,
+    this.maxLines,
   });
 
   @override
@@ -42,6 +44,7 @@ class AqarTextField extends StatelessWidget {
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
+          maxLines: maxLines,
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,

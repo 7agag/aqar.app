@@ -15,7 +15,6 @@ import 'package:aqar/features/favorite/presentation/bloc/favorite_bloc.dart';
 import 'package:aqar/features/invoice/presentation/bloc/invoice_bloc.dart';
 import 'package:aqar/features/lease/presentation/bloc/lease_bloc.dart';
 import 'package:aqar/features/payment/presentation/bloc/wallet_bloc.dart';
-import 'package:aqar/features/payment/presentation/bloc/payment_bloc.dart';
 import 'package:aqar/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:aqar/features/purchase_request/presentation/bloc/purchase_request_bloc.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
@@ -177,9 +176,6 @@ class _AqarAppState extends State<AqarApp> {
         ),
         BlocProvider<WalletBloc>(
           create: (context) => di.sl<WalletBloc>(),
-        ),
-        BlocProvider<PaymentBloc>(
-          create: (context) => di.sl<PaymentBloc>(),
         ),
         BlocProvider<PurchaseRequestBloc>(
           create: (context) => di.sl<PurchaseRequestBloc>(),

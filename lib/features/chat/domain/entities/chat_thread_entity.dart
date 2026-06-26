@@ -30,7 +30,9 @@ class ChatThreadEntity extends Equatable {
       id: json['chat_id'] as String,
       propertyId: json['property_id'] as int,
       propertyName: json['property_name'] as String? ?? '',
-      propertyImages: json['property_images'] as String?,
+      propertyImages: json['property_images'] is List
+          ? (json['property_images'] as List).first?.toString()
+          : json['property_images'] as String?,
       partnerName: json['partner_name'] as String? ?? '',
       partnerId: json['partner_id'] as String? ?? '',
       lastMessage: json['last_message'] as String?,

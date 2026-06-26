@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/navigation/property_detail_navigator.dart';
+import '../../../../core/services/biometric_auth_guard.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/property_bloc.dart';
 import '../bloc/property_event.dart';
 import '../bloc/property_state.dart';
 import '../../domain/entities/property_entity.dart';
 import '../../domain/entities/property_enums.dart';
+import 'rejected_property_page.dart';
 import 'select_selling_plan_page.dart';
 import 'edit_property_page.dart';
 import 'add_property_stepper_page.dart';
@@ -21,6 +23,7 @@ class MyPropertiesPage extends StatefulWidget {
 class _MyPropertiesPageState extends State<MyPropertiesPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _shimmerCtrl;
+  final Set<int> _deletedIds = {};
 
   void _loadMyProperties() {
     context.read<PropertyBloc>().add(const GetMyPropertiesRequested());
@@ -75,7 +78,15 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
       ),
       body: BlocConsumer<PropertyBloc, PropertyState>(
         listener: (context, state) {
-          if (state is PropertyOperationSuccess) {
+          if (state is PropertyDeleted) {
+            _deletedIds.add(state.propertyId);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.success),
+            );
+            _loadMyProperties();
+          } else if (state is PropertyOperationSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                   content: Text(state.message),
@@ -95,8 +106,11 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
             return _buildShimmer();
           }
           if (state is MyPropertiesLoaded) {
-            if (state.properties.isEmpty) return _buildEmpty();
-            return _buildList(state.properties);
+            final filtered = state.properties
+                .where((p) => !_deletedIds.contains(p.propertyId) && p.isVisible)
+                .toList();
+            if (filtered.isEmpty) return _buildEmpty();
+            return _buildList(filtered);
           }
           if (state is PropertyError) {
             return _buildError(state.message);
@@ -176,10 +190,14 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: properties.length,
-        itemBuilder: (context, index) => _PropertyCard(
-          property: properties[index],
-          onTap: () => propertyDetailNavigator.value = properties[index].propertyId,
-        ),
+        itemBuilder: (context, index) {
+          final property = properties[index];
+          return _PropertyCard(
+            property: property,
+            onTap: () =>
+                propertyDetailNavigator.value = property.propertyId,
+          );
+        },
       ),
     );
   }
@@ -263,8 +281,10 @@ class _PropertyCard extends StatelessWidget {
 
   PropertyStatus get _status {
     if (property.isSponsored) return PropertyStatus.sponsored;
-    if (property.listingStatus == ListingStatus.inactive ||
-        property.listingStatus == ListingStatus.expired) {
+    if (property.listingStatus == ListingStatus.inactive) {
+      return PropertyStatus.pending;
+    }
+    if (property.listingStatus == ListingStatus.expired) {
       return PropertyStatus.archived;
     }
     if (property.listingType == ListingType.forSale) {
@@ -276,6 +296,9 @@ class _PropertyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = _status;
+    final vStatus = property.verificationStatus;
+    final isRejected = vStatus == 'rejected';
+    final isPending = !property.isVerified && !isRejected;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -290,97 +313,155 @@ class _PropertyCard extends StatelessWidget {
                 offset: const Offset(0, 2)),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Row(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius:
-                      const BorderRadius.horizontal(left: Radius.circular(14)),
-                  child: SizedBox(
-                    width: 120,
-                    height: 130,
-                    child: property.images.isNotEmpty
-                        ? Image.network(property.images.first,
-                            fit: BoxFit.cover)
-                        : Container(
-                            color: AppColors.surfaceLight,
-                            child: const Icon(Icons.home,
-                                color: AppColors.textHint)),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(property.propertyName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary)),
-                        const SizedBox(height: 4),
-                        Text(property.location,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary
-                                    .withValues(alpha: 0.7))),
-                        const SizedBox(height: 8),
-                        Text(
-                            'EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.navyBlue)),
-                        const SizedBox(height: 6),
-                        _StatusChip(status: status),
-                      ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(14)),
+                      child: SizedBox(
+                        width: 120,
+                        height: 130,
+                        child: property.images.isNotEmpty
+                            ? Image.network(property.images.first,
+                                fit: BoxFit.cover)
+                            : Container(
+                                color: AppColors.surfaceLight,
+                                child: const Icon(Icons.home,
+                                    color: AppColors.textHint)),
+                      ),
                     ),
-                  ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(property.propertyName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary)),
+                            const SizedBox(height: 4),
+                            Text(property.location,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary
+                                        .withValues(alpha: 0.7))),
+                            const SizedBox(height: 8),
+                            Text(
+                                'EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.navyBlue)),
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: (isRejected
+                                        ? AppColors.error
+                                        : isPending
+                                            ? const Color(0xFFF59E0B)
+                                            : status.color)
+                                    .withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: (isRejected
+                                          ? AppColors.error
+                                          : isPending
+                                              ? const Color(0xFFF59E0B)
+                                              : status.color)
+                                      .withValues(alpha: 0.2),
+                                ),
+                              ),
+                              child: Text(
+                                isRejected
+                                    ? 'Rejected'
+                                    : isPending
+                                        ? 'Pending'
+                                        : status.label,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: isRejected
+                                      ? AppColors.error
+                                      : isPending
+                                          ? const Color(0xFFF59E0B)
+                                          : status.color,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Visibility(
+                              maintainState: true,
+                              visible: isRejected,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.description_outlined,
+                                      size: 12,
+                                      color: AppColors.textHint),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      'Requires re-verification. Tap Re-upload to submit documents.',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textHint,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10, right: 10),
+                      child: Icon(Icons.chevron_right,
+                          color: AppColors.textHint.withValues(alpha: 0.5),
+                          size: 20),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 10, right: 10),
-                  child: Icon(Icons.chevron_right,
-                      color: AppColors.textHint.withValues(alpha: 0.5),
-                      size: 20),
+                const Divider(height: 1, color: AppColors.borderLight),
+                _ActionRow(
+                  property: property,
+                  status: status,
                 ),
               ],
             ),
-            const Divider(height: 1, color: AppColors.borderLight),
-            _ActionRow(property: property, status: status),
+            if (vStatus == 'rejected')
+              Positioned(
+                left: 0, top: 0, bottom: 0,
+                child: Container(
+                  width: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(14),
+                      bottomLeft: Radius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// STATUS CHIP
-// ---------------------------------------------------------------------------
-class _StatusChip extends StatelessWidget {
-  final PropertyStatus status;
-  const _StatusChip({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: status.color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: status.color.withValues(alpha: 0.2)),
-      ),
-      child: Text(status.label,
-          style: TextStyle(
-              fontSize: 11, fontWeight: FontWeight.w600, color: status.color)),
     );
   }
 }
@@ -400,15 +481,28 @@ class _ActionRow extends StatelessWidget {
       child: Row(
         children: [
           _ActionButton(
-            icon: Icons.auto_awesome,
-            label: 'Sponsor',
-            color: AppColors.primary,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) =>
-                      SelectSellingPlanPage(propertyId: property.propertyId)),
-            ),
+            icon: property.verificationStatus == 'rejected'
+                ? Icons.cloud_upload_outlined
+                : Icons.auto_awesome,
+            label: property.verificationStatus == 'rejected'
+                ? 'Re-upload'
+                : 'Sponsor',
+            color: property.verificationStatus == 'rejected'
+                ? AppColors.navyBlue
+                : AppColors.primary,
+            onTap: property.verificationStatus == 'rejected'
+                ? () => RejectionSheet.show(
+                      context,
+                      propertyId: property.propertyId,
+                      rejectionReason: 'Your property requires re-verification. '
+                          'Please upload a valid ownership document.',
+                    )
+                : () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => SelectSellingPlanPage(
+                              propertyId: property.propertyId)),
+                    ),
           ),
           const SizedBox(width: 8),
           _ActionButton(
@@ -460,7 +554,12 @@ class _ActionRow extends StatelessWidget {
     );
   }
 
-  void _deleteProperty(BuildContext context) {
+  void _deleteProperty(BuildContext context) async {
+    final ok = await BiometricAuthGuard.guard(
+      context,
+      reason: 'Verify your identity to delete this property',
+    );
+    if (!ok || !context.mounted) return;
     context
         .read<PropertyBloc>()
         .add(DeletePropertyRequested(id: property.propertyId));

@@ -5,11 +5,9 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../../core/services/escrow_service.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../injection_container.dart' as di;
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import '../../../chat/presentation/pages/chat_details_page.dart';
@@ -82,6 +80,24 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     context.read<PropertyBloc>().add(GetPropertyByIdRequested(id: widget.propertyId));
     context.read<FavoriteBloc>().add(GetFavoritesEvent());
     context.read<ReviewBloc>().add(GetReviews(propertyId: widget.propertyId));
+  }
+
+  @override
+  void didUpdateWidget(covariant PropertyDetailPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.propertyId != widget.propertyId) {
+      setState(() {
+        _isLoading = true;
+        _property = null;
+        _currentImageIndex = 0;
+        _aboutExpanded = false;
+        _rentCheckIn = null;
+        _rentDays = 1;
+        _rentMonths = 1;
+      });
+      context.read<PropertyBloc>().add(GetPropertyByIdRequested(id: widget.propertyId));
+      context.read<ReviewBloc>().add(GetReviews(propertyId: widget.propertyId));
+    }
   }
 
   void _toggleFavorite() {
@@ -251,9 +267,9 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppColors.background,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
     }
     if (_property == null) {
@@ -373,9 +389,6 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
 
   // ── 2. Basic Info ──
   Widget _buildBasicInfo(PropertyEntity property) {
-    final lease = di.sl<EscrowService>().getLeaseByProperty(property.propertyId);
-    final isRented = property.listingType == ListingType.forRent && lease != null &&
-        (lease.status == LeaseStatus.escrowActive || lease.status == LeaseStatus.tenantConfirmed || lease.status == LeaseStatus.completed);
     String priceText;
     if (_isForSale(property)) {
       priceText = '${AppStrings.egp} ${_fmt(property.priceValue)}';
@@ -390,36 +403,23 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            property.propertyName,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, height: 1.2),
-          ),
-          const SizedBox(height: 8),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Expanded(
+                child: Text(
+                  property.propertyName,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary, height: 1.2),
+                ),
+              ),
               Text(priceText, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.primary)),
-              const Spacer(),
-              if (isRented) _buildRentedBadge()
-              else ListingStatusBadge(property: property),
             ],
           ),
-          const SizedBox(height: 12),
           OwnerTrustBanner(property: property),
         ],
       ),
     );
   }
 
-  Widget _buildRentedBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-      child: const Text('Rented', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success)),
-    );
-  }
-
-  // ── 3. Location ──
   Widget _buildLocation(PropertyEntity property) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -477,48 +477,6 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
             Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
             const SizedBox(height: 2),
             Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textHint)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── 5. About with Read More ──
-  Widget _buildAbout(PropertyEntity property) {
-    final desc = property.propertyDesc;
-    if (desc.isEmpty) return const SizedBox.shrink();
-    const maxLines = 3;
-    final needsToggle = desc.split('\n').length > maxLines || desc.length > 150;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFEEEEEE))),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionTitle(AppStrings.aboutProperty),
-            const SizedBox(height: 10),
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 250),
-              crossFadeState: _aboutExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-              firstChild: Text(desc, maxLines: maxLines, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14, height: 1.6, color: AppColors.textSecondary)),
-              secondChild: Text(desc, style: const TextStyle(fontSize: 14, height: 1.6, color: AppColors.textSecondary)),
-            ),
-            if (needsToggle)
-              GestureDetector(
-                onTap: () => setState(() => _aboutExpanded = !_aboutExpanded),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    _aboutExpanded ? 'Show less' : 'Read more',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -594,7 +552,49 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     }
   }
 
-  // ── 7. Conditional Section (Owner, Sold, Installment) ──
+  // ── 5. About with Read More ──
+  Widget _buildAbout(PropertyEntity property) {
+    final desc = property.propertyDesc;
+    if (desc.isEmpty) return const SizedBox.shrink();
+    const maxLines = 3;
+    final needsToggle = desc.split('\n').length > maxLines || desc.length > 150;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFEEEEEE))),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle(AppStrings.aboutProperty),
+            const SizedBox(height: 10),
+            AnimatedCrossFade(
+              duration: const Duration(milliseconds: 250),
+              crossFadeState: _aboutExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+              firstChild: Text(desc, maxLines: maxLines, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 14, height: 1.6, color: AppColors.textSecondary)),
+              secondChild: Text(desc, style: const TextStyle(fontSize: 14, height: 1.6, color: AppColors.textSecondary)),
+            ),
+            if (needsToggle)
+              GestureDetector(
+                onTap: () => setState(() => _aboutExpanded = !_aboutExpanded),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _aboutExpanded ? 'Show less' : 'Read more',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── 6. Property Details Grid ──
   Widget _buildConditionalSection(PropertyEntity property) {
     if (_isOwner && property.listingStatus != ListingStatus.sold) {
       return Padding(
@@ -915,7 +915,6 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     }
 
     if (isOwner) {
-      // Owner: show "View Leases" button to match the hierarchy
       return Container(
         padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).padding.bottom + 12),
         decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, -2))]),
@@ -949,7 +948,6 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       );
     }
 
-    // Rent property: dual action bar
     return Container(
       padding: EdgeInsets.only(left: 20, right: 20, top: 12, bottom: MediaQuery.of(context).padding.bottom + 12),
       decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, -2))]),

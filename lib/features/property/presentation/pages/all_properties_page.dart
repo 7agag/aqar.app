@@ -64,7 +64,7 @@ class _AllPropertiesPageState extends State<AllPropertiesPage> {
   void _applyLocalFilter(List<PropertyEntity> allProperties) {
     setState(() {
       _filteredProperties = allProperties
-          .where((p) => p.listingType == (widget.pageType == PageType.sale ? ListingType.forSale : ListingType.forRent))
+          .where((p) => p.listingType == (widget.pageType == PageType.sale ? ListingType.forSale : ListingType.forRent)).where((p) => p.isPubliclyVisible)
           .toList();
     });
   }
