@@ -46,12 +46,18 @@ class _FavoritesPageState extends State<FavoritesPage> {
             _hasDispatched = false;
           }
         },
-        child: BlocBuilder<FavoriteBloc, FavoriteState>(
-          builder: (context, state) {
-            if (state is FavoriteLoading) {
-              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+        child: Builder(
+          builder: (context) {
+            final authState = context.watch<AuthBloc>().state;
+            if (authState is! AuthProfileLoaded) {
+              return _buildGuest();
             }
-            if (state is FavoriteLoaded) {
+            return BlocBuilder<FavoriteBloc, FavoriteState>(
+              builder: (context, state) {
+                if (state is FavoriteLoading) {
+                  return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                }
+                if (state is FavoriteLoaded) {
               final favorites = state.favorites;
               if (favorites.isEmpty) {
                 return _buildEmpty();
@@ -129,8 +135,63 @@ class _FavoritesPageState extends State<FavoritesPage> {
                 ),
               );
             }
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+            },
+          );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuest() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.borderLight),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.favorite_border_rounded, size: 42, color: AppColors.textHint),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Sign in to see your favorites',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your favorite properties will appear here once you sign in.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary.withValues(alpha: 0.8), height: 1.5),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pushReplacementNamed(context, '/auth'),
+              icon: const Icon(Icons.login_rounded, size: 18),
+              label: const Text('Sign In'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ],
         ),
       ),
     );

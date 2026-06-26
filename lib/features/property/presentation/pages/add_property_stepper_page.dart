@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:aqar/features/payment/domain/usecases/get_payment_link_usecase.dart';
 import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
-import 'package:aqar/features/subscription/domain/usecases/create_subscription_usecase.dart';
+
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -15,6 +15,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/core/theme/app_spacing.dart';
 import 'package:aqar/core/network/api_client.dart';
+import 'package:aqar/features/property/domain/usecases/delete_property_usecase.dart';
 import 'package:aqar/features/property/domain/entities/property_enums.dart';
 import 'package:aqar/core/services/biometric_auth_guard.dart';
 import 'package:aqar/features/property/presentation/widgets/photo_tips_card.dart';
@@ -2460,6 +2461,81 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     );
   }
 
+  void _showPaymentFailedDialog(int propertyId) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.error_outline, color: AppColors.error, size: 40),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Payment Not Confirmed',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'We could not confirm your payment.\nYour card may have been charged.\nPlease check your bank before retrying.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                _processSalePayment();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text('Try Again', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () async {
+                Navigator.of(ctx).pop();
+                await di.sl<DeletePropertyUseCase>()(propertyId);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Draft property removed.')),
+                );
+                Navigator.of(context).pop(true);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.error,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text('Cancel & Remove Draft', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _processSalePayment() async {
     if (_isSubmitting) return;
     final guardOk = await BiometricAuthGuard.guard(
@@ -2468,7 +2544,6 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     );
     if (!guardOk) return;
     if (!mounted) return;
-    final planMonths = _salePlanMonths ?? 1;
     setState(() => _isSubmitting = true);
     try {
       final responseData = await _submitProperty();
@@ -2478,38 +2553,24 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
         return;
       }
 
-      final propertyId = _parseInt(responseData['property_id'], fallback: -1);
+      final propertyId = _parseInt(responseData['propertyId'], fallback: -1);
+      final subscriptionId = responseData['subscriptionId'] as String?;
+
       if (propertyId <= 0) {
         setState(() => _isSubmitting = false);
         _showError('Could not determine property ID');
         return;
       }
-
-      final subscriptionResult = await di.sl<CreateSubscriptionUseCase>()(
-        CreateSubscriptionParams(
-          propertyId: propertyId,
-          planMonths: planMonths,
-        ),
-      );
-      if (!mounted) return;
-
-      final subscriptionId = subscriptionResult.fold(
-        (failure) {
-          setState(() => _isSubmitting = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(failure.message)),
-          );
-          return null;
-        },
-        (sub) => sub.subscriptionId,
-      );
-
-      if (subscriptionId == null || subscriptionId.isEmpty) return;
+      if (subscriptionId == null || subscriptionId.isEmpty) {
+        setState(() => _isSubmitting = false);
+        _showError('Could not determine subscription ID');
+        return;
+      }
 
       final linkResult = await di.sl<GetPaymentLinkUseCase>()(
         GetPaymentLinkParams(
           subscriptionId: subscriptionId,
-          redirect: 'https://aqar.app/payment-callback',
+          redirect: '${kIsWeb ? Uri.base.origin : 'https://aqar.dpdns.org'}/callback.html',
         ),
       );
       if (!mounted) return;
@@ -2528,15 +2589,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
           if (ok == true && mounted) {
             _showPropertyAddedDialog();
           } else if (ok != true && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Payment cancelled or failed'),
-                action: SnackBarAction(
-                  label: 'Retry',
-                  onPressed: _processSalePayment,
-                ),
-              ),
-            );
+            _showPaymentFailedDialog(propertyId);
           }
         },
       );

@@ -4,6 +4,7 @@ import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/core/network/socket_service.dart';
 import 'package:aqar/core/services/escrow_service.dart';
 import 'package:aqar/core/services/notification_service.dart';
+import 'package:aqar/core/services/payment_listener.dart';
 import 'package:aqar/core/theme/app_theme.dart';
 import 'package:aqar/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:aqar/features/auth/presentation/bloc/auth_event.dart';
@@ -37,6 +38,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   await di.configureDependencies();
+  PaymentListener.start();
 
   final prefs = await SharedPreferences.getInstance();
   final savedLocale = prefs.getString('locale') ?? '';

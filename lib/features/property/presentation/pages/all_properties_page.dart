@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/refreshable_widget.dart';
+import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../../../features/auth/presentation/bloc/auth_state.dart';
 import '../../../favorite/presentation/bloc/favorite_bloc.dart';
 import '../../domain/entities/property_entity.dart';
 import '../../domain/entities/property_enums.dart';
@@ -58,7 +60,10 @@ class _AllPropertiesPageState extends State<AllPropertiesPage> {
   }
 
   void _loadFavorites() {
-    context.read<FavoriteBloc>().add(GetFavoritesEvent());
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthProfileLoaded) {
+      context.read<FavoriteBloc>().add(GetFavoritesEvent());
+    }
   }
 
   void _applyLocalFilter(List<PropertyEntity> allProperties) {
@@ -128,6 +133,14 @@ class _AllPropertiesPageState extends State<AllPropertiesPage> {
                 _favoriteIds = state.favorites.map((p) => p.propertyId).toSet();
               } else if (state is FavoriteOperationSuccess) {
                 _loadFavorites();
+              } else if (state is FavoriteError && mounted) {
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.message.contains('401') ? 'Session expired. Please sign in again.' : state.message),
+                    backgroundColor: AppColors.error,
+                  ),
+                );
               }
             },
           ),
@@ -196,6 +209,11 @@ class _AllPropertiesPageState extends State<AllPropertiesPage> {
               ),
             ),
             onFavTap: () {
+              final authState = context.read<AuthBloc>().state;
+              if (authState is! AuthProfileLoaded) {
+                Navigator.pushNamed(context, '/auth');
+                return;
+              }
               final isFav = _favoriteIds.contains(property.propertyId);
               if (isFav) {
                 context

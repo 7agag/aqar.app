@@ -192,6 +192,7 @@ class PurchaseRequestBloc
 
   String _mapFailure(Failure failure) {
     if (failure is ServerFailure) return failure.message;
+    if (failure is UnauthorizedFailure) return 'Session expired. Please sign in again.';
     return 'Something went wrong';
   }
 }

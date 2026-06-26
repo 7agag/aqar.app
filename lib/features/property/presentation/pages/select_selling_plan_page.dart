@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/core/widgets/aqar_button.dart';
@@ -71,14 +72,15 @@ class _SelectSellingPlanPageState extends State<SelectSellingPlanPage> {
         data: {
           'property_id': widget.propertyId,
           'duration': _selectedDuration,
-          'redirect': 'https://aqar.app/payment-callback',
+          'redirect': '${kIsWeb ? Uri.base.origin : 'https://aqar.dpdns.org'}/callback.html',
         },
       );
 
       final kashierUrl = response.data['url'] as String?;
       if (kashierUrl != null && mounted) {
         final result = await KashierWebViewPage.open(context, url: kashierUrl);
-        if (result == true && mounted) {
+        if (!mounted) return;
+        if (result == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('تم تفعيل الإعلان بنجاح'),
@@ -86,6 +88,18 @@ class _SelectSellingPlanPageState extends State<SelectSellingPlanPage> {
             ),
           );
           Navigator.pop(context, true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Payment not completed.'),
+              backgroundColor: AppColors.error,
+              action: SnackBarAction(
+                label: 'Retry',
+                textColor: Colors.white,
+                onPressed: _handleConfirm,
+              ),
+            ),
+          );
         }
       }
     } on DioException catch (e) {

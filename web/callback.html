@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment Processing</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f9fafb;
+    }
+    .card {
+      text-align: center;
+      padding: 48px 40px 40px;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.06);
+      max-width: 360px;
+      width: 90%;
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+    .icon.success { background: #e8f5e9; color: #2e7d32; }
+    .icon.failure { background: #fce4ec; color: #c62828; }
+    .icon.pending { background: #fff3e0; color: #ef6c00; }
+    h2 { font-size: 20px; font-weight: 700; color: #020617; margin-bottom: 8px; }
+    p { font-size: 14px; color: #64748b; line-height: 1.5; }
+    .status-label { font-size: 13px; color: #94a3b8; margin-top: 16px; }
+    .btn {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 12px 32px;
+      border-radius: 10px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #1A2744;
+      color: #fff;
+    }
+    .btn:hover { opacity: 0.9; }
+    .hint { font-size: 12px; color: #b0b0b0; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon pending" id="statusIcon">&#9203;</div>
+    <h2 id="title">Payment Processed</h2>
+    <p id="message">Your payment result has been received.<br>Return to the app to continue.</p>
+    <div class="status-label" id="statusLabel"></div>
+    <button class="btn" id="closeBtn" onclick="closeTab()">Close This Tab</button>
+    <p class="hint" id="hint">This tab will close automatically...</p>
+  </div>
+  <script>
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var status = params.get('status') || params.get('cardStatus') || '';
+      var id = params.get('id') || params.get('merchantOrderId') || '';
+      var isSuccess = status === 'Y' || status === 'approved' || status === 'SUCCESS' || status === '1';
+
+      // Update UI based on status
+      var iconEl = document.getElementById('statusIcon');
+      var titleEl = document.getElementById('title');
+      var msgEl = document.getElementById('message');
+      var labelEl = document.getElementById('statusLabel');
+      if (isSuccess) {
+        iconEl.className = 'icon success';
+        iconEl.innerHTML = '&#10003;';
+        titleEl.textContent = 'Payment Successful!';
+        msgEl.innerHTML = 'Your payment was completed successfully.<br>Return to the app to continue.';
+        labelEl.textContent = 'Status: ' + status + (id ? ' | Ref: ' + id : '');
+      } else if (status) {
+        iconEl.className = 'icon failure';
+        iconEl.innerHTML = '&#10007;';
+        titleEl.textContent = 'Payment ' + status;
+        msgEl.innerHTML = 'The payment returned status "' + status + '".<br>Return to the app for details.';
+        labelEl.textContent = 'Status: ' + status;
+      } else {
+        iconEl.className = 'icon success';
+        iconEl.innerHTML = '&#10003;';
+        labelEl.textContent = 'No status code received — check the app.';
+      }
+
+      // 1. Primary: postMessage to opener (app tab)
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({
+            type: 'kashier_payment',
+            status: status,
+            id: id,
+            timestamp: Date.now()
+          }, '*');
+          console.log('postMessage sent to opener');
+        } else {
+          console.log('No opener available (tab may have been opened directly)');
+        }
+      } catch(e) {
+        console.error('postMessage error:', e);
+      }
+
+      // 2. Fallback: BroadcastChannel
+      try {
+        var channel = new BroadcastChannel('kashier_payment');
+        channel.postMessage({
+          status: status,
+          id: id,
+          timestamp: Date.now()
+        });
+        console.log('BroadcastChannel message sent');
+      } catch(e) {
+        console.error('BroadcastChannel error:', e);
+      }
+
+      // 3. Try to focus the app tab
+      try {
+        if (window.opener) window.opener.focus();
+      } catch(e) {}
+
+      function closeTab() {
+        document.getElementById('closeBtn').disabled = true;
+        document.getElementById('closeBtn').textContent = 'Closing...';
+        window.close();
+      }
+
+      // Auto-close after 3s
+      setTimeout(function() {
+        document.getElementById('hint').textContent = 'Closing tab...';
+        window.close();
+      }, 3000);
+    })();
+  </script>
+</body>
+</html>

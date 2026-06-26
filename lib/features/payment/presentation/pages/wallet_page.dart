@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aqar/core/theme/app_colors.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_state.dart';
 import 'package:aqar/core/widgets/aqar_button.dart';
 import 'package:aqar/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:aqar/features/payment/presentation/bloc/wallet_bloc.dart';
@@ -209,8 +211,15 @@ class _WalletPageState extends State<WalletPage>
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const NotificationsPage())),
+            onPressed: () {
+              final authState = context.read<AuthBloc>().state;
+              if (authState is! AuthProfileLoaded) {
+                Navigator.pushNamed(context, '/auth');
+                return;
+              }
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const NotificationsPage()));
+            },
             color: AppColors.textSecondary,
           ),
         ],

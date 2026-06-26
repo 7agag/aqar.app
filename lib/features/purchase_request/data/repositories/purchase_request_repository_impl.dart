@@ -18,6 +18,8 @@ class PurchaseRequestRepositoryImpl implements PurchaseRequestRepository {
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
+    } on UnauthorizedException {
+      return Left(const UnauthorizedFailure());
     }
   }
 
@@ -29,6 +31,8 @@ class PurchaseRequestRepositoryImpl implements PurchaseRequestRepository {
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
+    } on UnauthorizedException {
+      return Left(const UnauthorizedFailure());
     }
   }
 
@@ -42,6 +46,8 @@ class PurchaseRequestRepositoryImpl implements PurchaseRequestRepository {
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
+    } on UnauthorizedException {
+      return Left(const UnauthorizedFailure());
     }
   }
 
@@ -56,6 +62,8 @@ class PurchaseRequestRepositoryImpl implements PurchaseRequestRepository {
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
+    } on UnauthorizedException {
+      return Left(const UnauthorizedFailure());
     }
   }
 
@@ -66,6 +74,8 @@ class PurchaseRequestRepositoryImpl implements PurchaseRequestRepository {
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
+    } on UnauthorizedException {
+      return Left(const UnauthorizedFailure());
     }
   }
 
@@ -76,6 +86,8 @@ class PurchaseRequestRepositoryImpl implements PurchaseRequestRepository {
       return Right(result);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
+    } on UnauthorizedException {
+      return Left(const UnauthorizedFailure());
     }
   }
 }

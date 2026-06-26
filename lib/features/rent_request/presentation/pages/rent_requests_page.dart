@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aqar/core/theme/app_colors.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_state.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_event.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_state.dart';
@@ -27,13 +29,20 @@ class _MyRequestsPageState extends State<MyRequestsPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
-    _loadAll();
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _loadAll();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthProfileLoaded) {
+        _loadAll();
+        _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+          _loadAll();
+        });
+      }
     });
   }
 
   void _loadAll() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthProfileLoaded) return;
     try {
       context.read<RentRequestBloc>().add(const LoadRentRequests());
     } catch (_) {}
@@ -120,6 +129,13 @@ class _MyRequestsPageState extends State<MyRequestsPage>
 
   void _rentListener(BuildContext context, RentRequestState state) {
     if (state is RentRequestError) {
+      final isAuth = context.read<AuthBloc>().state is AuthProfileLoaded;
+      if (!isAuth) {
+        _pollTimer?.cancel();
+        Navigator.pushReplacementNamed(context, '/auth');
+        return;
+      }
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
       );
@@ -171,6 +187,13 @@ class _MyRequestsPageState extends State<MyRequestsPage>
 
   void _purchaseListener(BuildContext context, PurchaseRequestState state) {
     if (state is PurchaseRequestError) {
+      final isAuth = context.read<AuthBloc>().state is AuthProfileLoaded;
+      if (!isAuth) {
+        _pollTimer?.cancel();
+        Navigator.pushReplacementNamed(context, '/auth');
+        return;
+      }
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
       );

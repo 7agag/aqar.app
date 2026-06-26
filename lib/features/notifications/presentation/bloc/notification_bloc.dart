@@ -6,6 +6,7 @@ import '../../domain/entities/notification_entity.dart';
 import '../../domain/usecases/get_notifications_usecase.dart';
 import '../../domain/usecases/mark_notification_read_usecase.dart';
 import '../../../../../core/usecases/usecase.dart';
+import '../../../../core/error/failures.dart';
 
 @injectable
 class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
@@ -21,7 +22,11 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
       emit(NotificationLoading());
       final result = await getNotifications(NoParams());
       result.fold(
-        (failure) => emit(NotificationError(failure.message)),
+        (failure) => emit(NotificationError(
+          failure is UnauthorizedFailure
+              ? 'Please sign in to view notifications'
+              : failure.message,
+        )),
         (data) {
           final (notifications, unreadCount) = data;
           emit(NotificationsLoaded(

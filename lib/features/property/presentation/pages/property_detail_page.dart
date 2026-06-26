@@ -635,7 +635,14 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         _ownerActionTile(icon: Icons.description_rounded, title: AppStrings.isArabic ? 'عرض عقود الإيجار' : 'View Leases',
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LeaseListPage()))),
         _ownerActionTile(icon: Icons.request_quote_rounded, title: AppStrings.isArabic ? 'عرض العروض' : 'View Offers',
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchaseRequestsPage()))),
+          onTap: () {
+            final authState = context.read<AuthBloc>().state;
+            if (authState is! AuthProfileLoaded) {
+              Navigator.pushNamed(context, '/auth');
+              return;
+            }
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchaseRequestsPage()));
+          }),
         _ownerActionTile(icon: Icons.rocket_launch_rounded, title: AppStrings.isArabic ? 'ترويج العقار' : 'Boost Property',
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SelectSellingPlanPage(propertyId: property.propertyId)))),
       ]),

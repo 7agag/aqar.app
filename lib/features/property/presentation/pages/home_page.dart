@@ -13,6 +13,8 @@ import 'package:aqar/features/chat/presentation/pages/chat_list_page.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
 import 'package:aqar/features/rent_request/presentation/pages/rent_requests_page.dart';
 import 'package:aqar/features/auth/presentation/widgets/auth_guard.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_state.dart';
 import 'package:aqar/core/navigation/property_detail_navigator.dart';
 import 'package:aqar/injection_container.dart' as di;
 import 'package:flutter/material.dart';
@@ -324,10 +326,18 @@ class _HomePageState extends State<HomePage>
   }
 
   void _loadFavorites() {
-    context.read<FavoriteBloc>().add(GetFavoritesEvent());
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthProfileLoaded) {
+      context.read<FavoriteBloc>().add(GetFavoritesEvent());
+    }
   }
 
   void _toggleFavorite(int propertyId) {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthProfileLoaded) {
+      Navigator.pushNamed(context, '/auth');
+      return;
+    }
     final isFav = _favoriteIds.contains(propertyId);
     if (isFav) {
       context.read<FavoriteBloc>().add(RemoveFavoriteEvent(propertyId));
@@ -456,6 +466,11 @@ class _HomePageState extends State<HomePage>
               ),
               IconButton(
                 onPressed: () {
+                  final authState = context.read<AuthBloc>().state;
+                  if (authState is! AuthProfileLoaded) {
+                    Navigator.pushNamed(context, '/auth');
+                    return;
+                  }
                   _loadProperties();
                   Navigator.push(
                       context,
