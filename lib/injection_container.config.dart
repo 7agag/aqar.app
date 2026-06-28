@@ -198,6 +198,10 @@ import 'package:aqar/features/review/domain/usecases/add_review_usecase.dart'
     as _i190;
 import 'package:aqar/features/review/domain/usecases/get_reviews_usecase.dart'
     as _i366;
+import 'package:aqar/features/sponsor/domain/repositories/sponsor_repository.dart'
+    as _i232;
+import 'package:aqar/features/sponsor/domain/usecases/create_sponsor_checkout_usecase.dart'
+    as _i500;
 import 'package:aqar/features/subscription/domain/repositories/subscription_repository.dart'
     as _i539;
 import 'package:aqar/features/subscription/domain/usecases/create_subscription_usecase.dart'
@@ -228,6 +232,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => injectionModule.connectionChecker);
     gh.singleton<_i164.ApiClient>(
         () => _i164.ApiClient(gh<_i558.FlutterSecureStorage>()));
+    gh.factory<_i500.CreateSponsorCheckoutUseCase>(() =>
+        _i500.CreateSponsorCheckoutUseCase(gh<_i232.SponsorRepository>()));
     gh.factory<_i898.AuthRemoteDataSource>(
         () => _i898.AuthRemoteDataSourceImpl(gh<_i164.ApiClient>()));
     gh.factory<_i791.InvoiceRemoteDataSource>(

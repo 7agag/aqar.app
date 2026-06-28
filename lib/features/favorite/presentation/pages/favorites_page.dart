@@ -4,7 +4,7 @@ import 'package:aqar/core/navigation/property_detail_navigator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
-import '../../../property/presentation/widgets/sponsored_property_card.dart';
+import 'package:aqar/features/sponsor/presentation/widgets/sponsored_property_card.dart';
 import '../bloc/favorite_bloc.dart';
 
 class FavoritesPage extends StatefulWidget {

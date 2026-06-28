@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aqar/features/property/domain/entities/property_entity.dart';
 import 'package:aqar/features/property/presentation/bloc/property_bloc.dart';
 import 'package:aqar/features/property/presentation/bloc/property_event.dart';
-import 'package:aqar/features/property/presentation/pages/select_selling_plan_page.dart';
+import 'package:aqar/features/sponsor/presentation/pages/sponsorship_page.dart';
 import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/core/network/api_client.dart';
 import 'package:aqar/core/theme/app_colors.dart';
@@ -52,7 +52,7 @@ void showPropertyActionSheet(BuildContext context, PropertyEntity property) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => SelectSellingPlanPage(
+                    builder: (_) => SponsorshipPage(
                       propertyId: property.propertyId,
                     ),
                   ),

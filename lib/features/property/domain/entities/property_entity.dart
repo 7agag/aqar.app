@@ -26,6 +26,7 @@ class PropertyEntity {
   final ListingType listingType;
   final double? rate;
   final ListingStatus? listingStatus;
+  final DateTime? listingExpiry;
   final String? ownerFirstName;
   final String? ownerSecondName;
   final String? ownerEmail;
@@ -56,6 +57,7 @@ class PropertyEntity {
     required this.listingType,
     this.rate,
     this.listingStatus,
+    this.listingExpiry,
     this.ownerFirstName,
     this.ownerSecondName,
     this.ownerEmail,

@@ -104,6 +104,13 @@ import 'package:aqar/features/subscription/domain/usecases/get_subscription_usec
 import 'package:aqar/features/subscription/domain/usecases/create_subscription_usecase.dart';
 import 'package:aqar/features/subscription/presentation/bloc/subscription_bloc.dart';
 
+// ========== SPONSOR IMPORTS ==========
+import 'package:aqar/features/sponsor/data/datasources/sponsor_remote_data_source.dart';
+import 'package:aqar/features/sponsor/data/repositories/sponsor_repository_impl.dart';
+import 'package:aqar/features/sponsor/domain/repositories/sponsor_repository.dart';
+import 'package:aqar/features/sponsor/domain/usecases/create_sponsor_checkout_usecase.dart';
+import 'package:aqar/features/sponsor/presentation/bloc/sponsor_bloc.dart';
+
 // ========== REVIEW IMPORTS ==========
 import 'package:aqar/features/review/data/datasources/review_remote_data_source.dart';
 import 'package:aqar/features/review/data/repositories/review_repository_impl.dart';
@@ -286,6 +293,12 @@ Future<void> configureDependencies() async {
     getSubscriptionUseCase: sl(),
     createSubscriptionUseCase: sl(),
   ));
+
+  // ========== SPONSOR ==========
+  sl.registerLazySingleton<SponsorRemoteDataSource>(() => SponsorRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<SponsorRepository>(() => SponsorRepositoryImpl(sl()));
+  sl.registerLazySingleton(() => CreateSponsorCheckoutUseCase(sl()));
+  sl.registerFactory(() => SponsorBloc(createCheckoutUseCase: sl()));
 
   // ========== REVIEW ==========
   sl.registerLazySingleton<ReviewRemoteDataSource>(() => ReviewRemoteDataSourceImpl(sl()));

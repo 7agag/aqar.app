@@ -1,0 +1,627 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:aqar/core/theme/app_colors.dart';
+import 'package:aqar/core/network/api_client.dart';
+import 'package:aqar/core/config/app_config.dart';
+import 'package:aqar/injection_container.dart' as di;
+import 'package:aqar/features/property/domain/entities/property_entity.dart';
+import 'package:aqar/features/property/domain/entities/property_enums.dart';
+import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
+import 'package:aqar/features/payment/presentation/mixins/payment_verification_mixin.dart';
+import 'package:aqar/features/subscription/domain/entities/sale_subscription_state.dart';
+import 'package:aqar/features/subscription/domain/entities/listing_subscription_record.dart';
+import 'package:aqar/features/subscription/data/services/subscription_storage_service.dart';
+import 'package:aqar/features/subscription/data/services/pending_payment_service.dart';
+
+class PropertySubscriptionPage extends StatefulWidget {
+  final int propertyId;
+  const PropertySubscriptionPage({super.key, required this.propertyId});
+
+  @override
+  State<PropertySubscriptionPage> createState() => _PropertySubscriptionPageState();
+}
+
+class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
+    with PaymentVerificationMixin<PropertySubscriptionPage> {
+  final _storageService = SubscriptionStorageService();
+  final _pendingService = PendingPaymentService();
+
+  PropertyEntity? _property;
+  ListingSubscriptionRecord? _localSub;
+  bool _loading = true;
+  String? _error;
+  int _selectedPlan = 1;
+  bool _creating = false;
+  bool _paying = false;
+
+  Timer? _autoPollTimer;
+
+  static const _plans = [1, 3, 6];
+  static const _planPrices = {1: 120, 3: 360, 6: 600};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPage();
+  }
+
+  @override
+  void dispose() {
+    _autoPollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadPage() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final dio = di.sl<ApiClient>().dio;
+      final res = await dio.get('/property/${widget.propertyId}');
+      final data = res.data;
+      final property = PropertyEntity(
+        propertyId: (data['property_id'] as num).toInt(),
+        ownerId: data['owner_id'] as String? ?? '',
+        propertyName: data['property_name'] as String? ?? '',
+        propertyDesc: data['property_desc'] as String? ?? '',
+        location: data['location'] as String? ?? '',
+        pricingUnit: PricingUnit.fromValue(data['pricing_unit'] as String? ?? 'month'),
+        priceValue: (data['price_value'] as num?)?.toDouble() ?? 0,
+        pricePerDay: (data['price_per_day'] as num?)?.toDouble() ?? 0,
+        size: data['size'] as String? ?? '',
+        bedroomsNo: (data['bedrooms_no'] as num?)?.toInt() ?? 0,
+        bedsNo: (data['beds_no'] as num?)?.toInt() ?? 0,
+        bathroomsNo: (data['bathrooms_no'] as num?)?.toInt() ?? 0,
+        images: (data['images'] as List?)?.cast<String>() ?? [],
+        isVerified: data['is_verified'] == true || data['is_verified'] == 1,
+        isAvailable: data['is_available'] == true || data['is_available'] == 1,
+        isFurnished: data['is_furnished'] == true || data['is_furnished'] == 1,
+        isSponsored: data['is_sponsored'] == true || data['is_sponsored'] == 1,
+        isVisible: data['is_visible'] == true || data['is_visible'] == 1,
+        listingType: ListingType.fromValue(data['property_type'] as String? ?? 'for_rent'),
+        rate: (data['rate'] as num?)?.toDouble(),
+        listingStatus: ListingStatus.fromValue(data['listing_status'] as String?),
+        listingExpiry: data['listing_expiry'] != null ? DateTime.tryParse(data['listing_expiry'] as String) : null,
+        ownerFirstName: data['owner_first_name'] as String?,
+        ownerSecondName: data['owner_second_name'] as String?,
+        ownerEmail: data['owner_email'] as String?,
+      );
+
+      if (property.listingType != ListingType.forSale) {
+        setState(() {
+          _property = property;
+          _error = 'This page is only available for sale listings.';
+          _loading = false;
+        });
+        return;
+      }
+
+      final synced = await _storageService.syncStoredListingSubscriptionWithProperty(property);
+      final stored = synced ?? await _storageService.getStoredListingSubscription(property.propertyId);
+      if (stored == null) {
+        await _storageService.fetchSubscriptionFromApi(property.propertyId);
+      }
+      final freshLocal = await _storageService.getStoredListingSubscription(property.propertyId);
+
+      if (!mounted) return;
+      setState(() {
+        _property = property;
+        _localSub = freshLocal;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not load subscription details.';
+        _loading = false;
+      });
+    }
+  }
+
+  SaleSubscriptionState? get _uiState =>
+      _property != null ? getSaleSubscriptionUiState(_property!, _localSub, null) : null;
+
+  void _startAutoPoll() {
+    _autoPollTimer?.cancel();
+    _autoPollTimer = Timer.periodic(const Duration(seconds: 15), (_) => _loadPage());
+  }
+
+  void _stopAutoPoll() {
+    _autoPollTimer?.cancel();
+    _autoPollTimer = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Selling Plan'),
+        backgroundColor: Colors.white,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('⚠️', style: TextStyle(fontSize: 48)),
+              const SizedBox(height: 16),
+              Text(_error!, textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _loadPage,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary, foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Try Again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final property = _property!;
+    final uiState = _uiState;
+    final isPending = uiState == SaleSubscriptionState.awaitingVerification ||
+        uiState == SaleSubscriptionState.paymentPending;
+
+    if (isPending) {
+      _startAutoPoll();
+    } else {
+      _stopAutoPoll();
+    }
+
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: _loadPage,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(property.propertyName,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+            const SizedBox(height: 6),
+            Text('Manage your selling plan subscription',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+
+            const SizedBox(height: 24),
+            _buildStatusCard(property, uiState),
+            const SizedBox(height: 16),
+            _buildSubscriptionDetailsCard(),
+            const SizedBox(height: 16),
+            _buildActionsCard(property, uiState),
+            const SizedBox(height: 16),
+            _buildInfoCard(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCard(PropertyEntity property, SaleSubscriptionState? uiState) {
+    String title;
+    String message;
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
+
+    switch (uiState) {
+      case SaleSubscriptionState.awaitingVerification:
+        title = 'Waiting for admin verification';
+        message = 'Your selling plan is attached to the property, but payment stays locked until the admin verifies the listing.';
+        bgColor = const Color(0xFFFFF8E1);
+        borderColor = const Color(0xFFFFE082);
+        textColor = const Color(0xFF8D6E00);
+      case SaleSubscriptionState.paidAwaitingVerification:
+        title = 'Listing fee paid';
+        message = 'Payment was received, but the property still needs admin verification before it becomes public.';
+        bgColor = const Color(0xFFE3F2FD);
+        borderColor = const Color(0xFF90CAF9);
+        textColor = const Color(0xFF1565C0);
+      case SaleSubscriptionState.readyToPay:
+        title = 'Ready for payment';
+        message = 'The property is verified. Pay the listing fee to activate the public sale listing.';
+        bgColor = const Color(0xFFE8F5E9);
+        borderColor = const Color(0xFFA5D6A7);
+        textColor = const Color(0xFF2E7D32);
+      case SaleSubscriptionState.paymentPending:
+        title = 'Payment in progress';
+        message = 'We\'re waiting for payment confirmation. Use "Check Status" if you already completed the card step.';
+        bgColor = const Color(0xFFE3F2FD);
+        borderColor = const Color(0xFF90CAF9);
+        textColor = const Color(0xFF1565C0);
+      case SaleSubscriptionState.active:
+        final expiry = _formatDate(property.listingExpiry?.toIso8601String());
+        title = 'Subscription active';
+        message = 'Your listing is active and visible to buyers. Expires on $expiry.';
+        bgColor = const Color(0xFFE8F5E9);
+        borderColor = const Color(0xFFA5D6A7);
+        textColor = const Color(0xFF2E7D32);
+      case SaleSubscriptionState.expired:
+        title = 'Subscription expired';
+        message = 'The listing is no longer active. The current backend does not support renewal.';
+        bgColor = const Color(0xFFFFEBEE);
+        borderColor = const Color(0xFFEF9A9A);
+        textColor = const Color(0xFFC62828);
+      case SaleSubscriptionState.missingSubscription:
+        title = 'No subscription yet';
+        message = 'Choose a selling plan to activate this property for buyers.';
+        bgColor = Colors.white;
+        borderColor = AppColors.borderLight;
+        textColor = AppColors.textPrimary;
+      default:
+        title = '';
+        message = '';
+        bgColor = Colors.white;
+        borderColor = AppColors.borderLight;
+        textColor = AppColors.textPrimary;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: textColor)),
+          const SizedBox(height: 8),
+          Text(message, style: TextStyle(fontSize: 13, color: textColor.withValues(alpha: 0.8), height: 1.4)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionDetailsCard() {
+    if (_localSub == null) return const SizedBox.shrink();
+
+    final sub = _localSub!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Subscription Details',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 12),
+          _detailRow('Plan', '${sub.planMonths} Month${sub.planMonths > 1 ? 's' : ''}'),
+          _detailRow('Amount', 'EGP ${sub.amount.toInt()}'),
+          _detailRow('Status', sub.paymentState.value),
+          _detailRow('ID', '${sub.subscriptionId.substring(0, 8).toUpperCase()}...'),
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionsCard(PropertyEntity property, SaleSubscriptionState? uiState) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (uiState == SaleSubscriptionState.missingSubscription) ...[
+            const Text('Select a Plan',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            const SizedBox(height: 16),
+            _buildPlanSelector(),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _creating ? null : _handleCreateSubscription,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary, foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(_creating ? 'Creating...' : 'Create Subscription'),
+              ),
+            ),
+          ],
+          if (uiState == SaleSubscriptionState.readyToPay) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _paying ? null : _handlePay,
+                icon: const Icon(Icons.payment_rounded, size: 18),
+                label: Text(_paying ? 'Preparing payment...' : 'Pay Listing Fee'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary, foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+          if (uiState == SaleSubscriptionState.paymentPending) ...[
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _loadPage,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Check Payment Status'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _loadPage,
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Refresh'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+                side: BorderSide(color: Colors.grey[300]!),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanSelector() {
+    return Row(
+      children: _plans.map((months) {
+        final selected = _selectedPlan == months;
+        final price = _planPrices[months]!;
+        return Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => _selectedPlan = months),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: selected ? AppColors.primary : Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: selected ? AppColors.primary : AppColors.borderLight),
+              ),
+              child: Column(
+                children: [
+                  Text('$months Month${months > 1 ? 's' : ''}',
+                    style: TextStyle(
+                      fontSize: 13, fontWeight: FontWeight.w600,
+                      color: selected ? Colors.white : AppColors.textPrimary,
+                    )),
+                  const SizedBox(height: 4),
+                  Text('EGP $price',
+                    style: TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w800,
+                      color: selected ? const Color(0xFFFFD54F) : AppColors.primary,
+                    )),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildInfoCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('What happens next',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          const SizedBox(height: 12),
+          _step(1, 'Add the sale property with a selling plan.'),
+          _step(2, 'Wait for admin verification.'),
+          _step(3, 'Pay the listing fee to activate your subscription.'),
+          _step(4, 'Buyers can contact you through chat while active.'),
+        ],
+      ),
+    );
+  }
+
+  Widget _step(int number, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 22, height: 22,
+            decoration: BoxDecoration(
+              color: AppColors.primary, shape: BoxShape.circle,
+            ),
+            child: Center(child: Text('$number',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(text,
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4))),
+        ],
+      ),
+    );
+  }
+
+
+  Future<void> _handleCreateSubscription() async {
+    setState(() => _creating = true);
+    final sub = await _storageService.createSubscriptionForProperty(
+      widget.propertyId, _selectedPlan,
+    );
+    if (!mounted) return;
+    setState(() => _creating = false);
+    if (sub != null) {
+      setState(() => _localSub = sub);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Subscription created. You can now pay the listing fee.'),
+          backgroundColor: AppColors.success),
+      );
+      await _loadPage();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to create subscription.'),
+          backgroundColor: AppColors.error),
+      );
+    }
+  }
+
+  Future<void> _handlePay() async {
+    if (_localSub == null || _paying) return;
+    setState(() => _paying = true);
+
+    try {
+      await _pendingService.savePendingSubscriptionPayment(
+        widget.propertyId, _localSub!.subscriptionId,
+      );
+      await _storageService.updateStoredListingSubscriptionState(
+        widget.propertyId, ListingSubscriptionPaymentState.pending,
+      );
+      setState(() {
+        _localSub = _localSub!.copyWith(paymentState: ListingSubscriptionPaymentState.pending);
+      });
+
+      final dio = di.sl<ApiClient>().dio;
+      final res = await dio.post('/api/payment/', data: {
+        'subscription_id': _localSub!.subscriptionId,
+        'redirect': AppConfig.subscriptionCallbackUrl(widget.propertyId, _localSub!.subscriptionId),
+      });
+
+      final url = res.data['url'] as String?;
+      if (url == null) throw Exception('Missing payment URL');
+
+      if (!mounted) return;
+      setState(() => _paying = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(children: [
+            Icon(Icons.payment_rounded, color: Colors.white, size: 18),
+            SizedBox(width: 8),
+            Expanded(child: Text('Payment tab opened')),
+          ]),
+          backgroundColor: AppColors.navyBlue,
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      final paymentResult = await KashierWebViewPage.open(
+        context,
+        url: url,
+        propertyId: widget.propertyId,
+        paymentType: VerificationType.subscription,
+      );
+      if (!mounted) return;
+
+      if (paymentResult != null && paymentResult['status'] == 'success') {
+        await _pendingService.clearPendingSubscriptionPayment();
+        final verified = await verifyPaymentAfterWebView(
+          propertyId: widget.propertyId,
+          isVerified: (data) => ['active', 'under_negotiation', 'sold']
+              .contains(data['listing_status']),
+          successTitle: 'Payment Confirmed!',
+          successMessage: 'Your subscription is now active!',
+          timeoutTitle: 'Still Processing',
+          timeoutMessage:
+              'Payment received but activation is taking longer than expected.',
+        );
+        if (!mounted) return;
+        if (verified) {
+          await _storageService.updateStoredListingSubscriptionState(
+            widget.propertyId, ListingSubscriptionPaymentState.paid,
+          );
+        }
+        await _loadPage();
+      } else if (paymentResult != null && mounted) {
+        await _pendingService.clearPendingSubscriptionPayment();
+        await _storageService.updateStoredListingSubscriptionState(
+          widget.propertyId, ListingSubscriptionPaymentState.unpaid,
+        );
+        await _loadPage();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _paying = false);
+      await _pendingService.clearPendingSubscriptionPayment();
+      await _storageService.updateStoredListingSubscriptionState(
+        widget.propertyId, ListingSubscriptionPaymentState.unpaid,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment failed: $e'),
+          backgroundColor: AppColors.error),
+      );
+      await _loadPage();
+    }
+  }
+
+  String _formatDate(String? value) {
+    if (value == null) return '—';
+    final date = DateTime.tryParse(value);
+    if (date == null) return '—';
+    return '${date.day} ${_months[date.month - 1]} ${date.year}';
+  }
+
+  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+}

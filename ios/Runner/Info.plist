@@ -54,9 +54,10 @@
             <key>CFBundleURLName</key>
             <string>com.example.aqar</string>
             <key>CFBundleURLSchemes</key>
-            <array>
-                <string>aqar</string>
-            </array>
+              <array>
+                  <string>aqar</string>
+                  <string>aqar.jovek</string>
+              </array>
         </dict>
     </array>
     <key>NSAppTransportSecurity</key>

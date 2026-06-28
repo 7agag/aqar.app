@@ -21,6 +21,7 @@ class PropertyImageCarousel extends StatelessWidget {
     final clampedHeight = (MediaQuery.of(context).size.height * 0.38).clamp(260, 420).toDouble();
     return SliverAppBar(
       expandedHeight: clampedHeight,
+      automaticallyImplyLeading: false,
       pinned: false,
       floating: false,
       flexibleSpace: FlexibleSpaceBar(

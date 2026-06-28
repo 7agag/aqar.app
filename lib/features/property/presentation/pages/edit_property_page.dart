@@ -4,7 +4,6 @@ import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/core/widgets/aqar_button.dart';
 import 'package:aqar/core/widgets/aqar_text_field.dart';
 import 'package:aqar/features/property/domain/entities/property_entity.dart';
-import 'package:aqar/features/property/domain/entities/property_enums.dart';
 import 'package:aqar/features/property/presentation/bloc/property_bloc.dart';
 import 'package:aqar/features/property/presentation/bloc/property_event.dart';
 import 'package:aqar/features/property/presentation/bloc/property_state.dart';
@@ -23,7 +22,6 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
   late TextEditingController _descController;
   late TextEditingController _locationController;
   late TextEditingController _priceController;
-  ListingStatus? _pendingAction;
   final _formKey = GlobalKey<FormState>();
   bool _isSaving = false;
 
@@ -57,10 +55,6 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
       'location': _locationController.text.trim(),
       'pricePerDay': double.tryParse(_priceController.text.trim()) ?? 0,
     };
-
-    if (_pendingAction != null) {
-      data['listingStatus'] = _pendingAction!.value;
-    }
 
     setState(() => _isSaving = true);
     context.read<PropertyBloc>().add(EditPropertyRequested(id: widget.property.propertyId, data: data));
@@ -189,11 +183,37 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              _buildSectionTitle('Listing Status'),
-              const SizedBox(height: 8),
-              _buildStatusSection(),
-              const SizedBox(height: 40),
+              if (!widget.property.isVerified) ...[
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFA000).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: const Color(0xFFFFA000).withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline,
+                          size: 20, color: Color(0xFFFFA000)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Changes will trigger a new admin review.',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF8B6914),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
                 child: AqarButton(
@@ -220,181 +240,5 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
       ),
     );
   }
-
-  Widget _buildStatusSection() {
-    final current = widget.property.listingStatus ?? ListingStatus.inactive;
-    final isSale = widget.property.listingType == ListingType.forSale;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatusChip(current, isSale),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildActionButton(ListingStatus.active, isSale),
-              const SizedBox(width: 8),
-              _buildActionButton(ListingStatus.sold, isSale),
-              const SizedBox(width: 8),
-              _buildActionButton(ListingStatus.inactive, isSale),
-            ],
-          ),
-          if (_pendingAction != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Status will change to "${_labelFor(_pendingAction!, isSale)}" on save.',
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textHint,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(ListingStatus status, bool isSale) {
-    final label = _labelFor(status, isSale);
-    final color = _colorFor(status);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8, height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton(ListingStatus target, bool isSale) {
-    final current = widget.property.listingStatus;
-    final isCurrent = target == current;
-    final isSelected = _pendingAction == target;
-    final label = _labelFor(target, isSale);
-    final color = _colorFor(target);
-    final icon = _iconFor(target);
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: isCurrent
-            ? null
-            : () {
-                setState(() {
-                  _pendingAction = isSelected ? null : target;
-                });
-              },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? color
-                : isCurrent
-                    ? color.withValues(alpha: 0.08)
-                    : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? color
-                  : isCurrent
-                      ? color.withValues(alpha: 0.2)
-                      : color.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 22,
-                color: isSelected
-                    ? Colors.white
-                    : isCurrent
-                        ? color.withValues(alpha: 0.4)
-                        : color,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected
-                      ? Colors.white
-                      : isCurrent
-                          ? color.withValues(alpha: 0.4)
-                          : color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _labelFor(ListingStatus status, bool isSale) {
-    switch (status) {
-      case ListingStatus.active:
-        return 'Active';
-      case ListingStatus.sold:
-        return isSale ? 'Sold' : 'Rented';
-      case ListingStatus.inactive:
-        return 'Inactive';
-      default:
-        return status.label;
-    }
-  }
-
-  Color _colorFor(ListingStatus status) {
-    switch (status) {
-      case ListingStatus.active:
-        return AppColors.success;
-      case ListingStatus.sold:
-        return AppColors.error;
-      case ListingStatus.inactive:
-        return Colors.grey;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _iconFor(ListingStatus status) {
-    switch (status) {
-      case ListingStatus.active:
-        return Icons.check_circle_outline;
-      case ListingStatus.sold:
-        return Icons.cancel_outlined;
-      case ListingStatus.inactive:
-        return Icons.archive_outlined;
-      default:
-        return Icons.help_outline;
-    }
-  }
 }
-
 

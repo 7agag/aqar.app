@@ -10,7 +10,7 @@ import '../../domain/entities/property_entity.dart';
 import '../../domain/entities/property_enums.dart';
 import '../../domain/entities/property_filter_params.dart';
 import '../bloc/property_bloc.dart';
-import '../widgets/sponsored_property_card.dart';
+import 'package:aqar/features/sponsor/presentation/widgets/sponsored_property_card.dart';
 
 enum PageType { sale, rent }
 

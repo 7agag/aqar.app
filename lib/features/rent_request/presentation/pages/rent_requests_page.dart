@@ -6,9 +6,6 @@ import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.d
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_event.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_state.dart';
 import 'package:aqar/features/rent_request/presentation/pages/rent_request_detail_page.dart';
-import 'package:aqar/features/purchase_request/presentation/bloc/purchase_request_bloc.dart';
-import 'package:aqar/features/purchase_request/presentation/pages/purchase_request_detail_page.dart';
-import 'package:aqar/features/purchase_request/domain/entities/purchase_request_entity.dart';
 
 class MyRequestsPage extends StatefulWidget {
   final int initialTab;
@@ -26,21 +23,11 @@ class _MyRequestsPageState extends State<MyRequestsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this, initialIndex: widget.initialTab);
-    _loadAll();
+    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
+    context.read<RentRequestBloc>().add(const LoadRentRequests());
     _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _loadAll();
-    });
-  }
-
-  void _loadAll() {
-    try {
       context.read<RentRequestBloc>().add(const LoadRentRequests());
-    } catch (_) {}
-    try {
-      context.read<PurchaseRequestBloc>().add(GetMyRequests());
-      context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
-    } catch (_) {}
+    });
   }
 
   @override
@@ -71,8 +58,6 @@ class _MyRequestsPageState extends State<MyRequestsPage>
           tabs: const [
             Tab(text: 'Rent Sent'),
             Tab(text: 'Rent Received'),
-            Tab(text: 'Purchase Sent'),
-            Tab(text: 'Purchase Received'),
           ],
         ),
       ),
@@ -81,8 +66,6 @@ class _MyRequestsPageState extends State<MyRequestsPage>
         children: [
           _buildRentSentTab(),
           _buildRentReceivedTab(),
-          _buildPurchaseSentTab(),
-          _buildPurchaseReceivedTab(),
         ],
       ),
     );
@@ -128,59 +111,6 @@ class _MyRequestsPageState extends State<MyRequestsPage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(state.message), backgroundColor: AppColors.success),
       );
-    }
-  }
-
-  Widget _buildPurchaseSentTab() {
-    return BlocConsumer<PurchaseRequestBloc, PurchaseRequestState>(
-      listener: _purchaseListener,
-      builder: (context, state) {
-        if (state is PurchaseRequestLoading) return _loader();
-        if (state is MyRequestsLoaded) {
-          return _buildPurchaseList(state.requests, isSent: true);
-        }
-        if (state is PurchaseRequestError) {
-          return _buildErrorRetry(() {
-            context.read<PurchaseRequestBloc>().add(GetMyRequests());
-          }, state.message);
-        }
-        context.read<PurchaseRequestBloc>().add(GetMyRequests());
-        return _loader();
-      },
-    );
-  }
-
-  Widget _buildPurchaseReceivedTab() {
-    return BlocConsumer<PurchaseRequestBloc, PurchaseRequestState>(
-      listener: _purchaseListener,
-      builder: (context, state) {
-        if (state is PurchaseRequestLoading) return _loader();
-        if (state is ReceivedRequestsLoaded) {
-          return _buildPurchaseList(state.requests, isSent: false);
-        }
-        if (state is PurchaseRequestError) {
-          return _buildErrorRetry(() {
-            context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
-          }, state.message);
-        }
-        context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
-        return _loader();
-      },
-    );
-  }
-
-  void _purchaseListener(BuildContext context, PurchaseRequestState state) {
-    if (state is PurchaseRequestError) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
-      );
-    }
-    if (state is PurchaseRequestSuccess) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(state.message), backgroundColor: AppColors.success),
-      );
-      context.read<PurchaseRequestBloc>().add(GetMyRequests());
-      context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
     }
   }
 
@@ -322,129 +252,6 @@ class _MyRequestsPageState extends State<MyRequestsPage>
       case 'Paid': return Colors.teal;
       default: return AppColors.textSecondary;
     }
-  }
-
-  Widget _buildPurchaseList(List<PurchaseRequestEntity> list, {required bool isSent}) {
-    if (list.isEmpty) {
-      return _emptyState(
-        icon: isSent ? Icons.shopping_cart_outlined : Icons.store_outlined,
-        title: isSent ? 'No sent requests' : 'No received requests',
-        subtitle: isSent ? 'Browse properties and send a purchase request' : 'Purchase requests for your properties will appear here',
-      );
-    }
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<PurchaseRequestBloc>().add(GetMyRequests());
-        context.read<PurchaseRequestBloc>().add(GetReceivedRequests());
-      },
-      color: AppColors.primary,
-      child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        itemCount: list.length,
-        itemBuilder: (context, index) {
-          final r = list[index];
-          return _buildPurchaseCard(r, isSent);
-        },
-      ),
-    );
-  }
-
-  Widget _buildPurchaseCard(PurchaseRequestEntity r, bool isSent) {
-    final statusLabel = _purchaseStatusLabel(r.status);
-    final color = _purchaseStatusColor(r.status);
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 0,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BlocProvider.value(
-                value: context.read<PurchaseRequestBloc>(),
-                child: PurchaseRequestDetailPage(
-                  requestId: r.requestId,
-                  isSent: isSent,
-                  contactUnlocked: r.contactUnlocked,
-                  buyerName: r.buyerName,
-                  buyerEmail: r.buyerEmail,
-                ),
-              ),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(Icons.sell_outlined, size: 22, color: color),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      r.propertyName ?? 'Property #${r.propertyId}',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isSent ? 'To: ${r.ownerName}' : 'From: ${r.buyerName}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _formatDate(r.createdAt),
-                      style: const TextStyle(fontSize: 12, color: AppColors.textHint),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              _statusChip(statusLabel, color),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _purchaseStatusLabel(String status) {
-    switch (status.toUpperCase()) {
-      case 'PENDING': return 'Pending';
-      case 'ACCEPTED': return 'Accepted';
-      case 'REJECTED': return 'Rejected';
-      case 'CANCELLED': return 'Cancelled';
-      default: return status;
-    }
-  }
-
-  Color _purchaseStatusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'PENDING': return Colors.orange;
-      case 'ACCEPTED': return Colors.green;
-      case 'REJECTED': return Colors.red;
-      case 'CANCELLED': return Colors.grey;
-      default: return AppColors.textSecondary;
-    }
-  }
-
-  String _formatDate(DateTime dt) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 
   Widget _statusChip(String label, Color color) {

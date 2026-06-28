@@ -26,6 +26,10 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
   final EditPropertyImagesUseCase editPropertyImages;
   final DeletePropertyUseCase deleteProperty;
 
+  List<PropertyEntity>? _myPropertiesCache;
+  DateTime? _myPropertiesCacheTime;
+  static const Duration _cacheDuration = Duration(seconds: 30);
+
   PropertyBloc({
     required this.getProperties,
     required this.getPropertyById,
@@ -55,15 +59,25 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     });
 
     on<GetMyPropertiesRequested>((event, emit) async {
+      if (_myPropertiesCache != null &&
+          DateTime.now().difference(_myPropertiesCacheTime!) < _cacheDuration) {
+        emit(MyPropertiesLoaded(_myPropertiesCache!));
+        return;
+      }
       emit(PropertyLoading());
       final result = await getMyProperties(NoParams());
       result.fold(
         (failure) => emit(PropertyError(failure.message)),
-        (properties) => emit(MyPropertiesLoaded(properties)),
+        (properties) {
+          _myPropertiesCache = properties;
+          _myPropertiesCacheTime = DateTime.now();
+          emit(MyPropertiesLoaded(properties));
+        },
       );
     });
 
     on<AddPropertyRequested>((event, emit) async {
+      _myPropertiesCache = null;
       emit(PropertyLoading());
       final result = await addProperty(event.formData);
       result.fold(
@@ -73,6 +87,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     });
 
     on<EditPropertyRequested>((event, emit) async {
+      _myPropertiesCache = null;
       emit(PropertyLoading());
       final result = await editProperty(EditPropertyParams(id: event.id, data: event.data));
       result.fold(
@@ -82,6 +97,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     });
 
     on<EditPropertyImagesRequested>((event, emit) async {
+      _myPropertiesCache = null;
       emit(PropertyLoading());
       final result = await editPropertyImages(EditPropertyImagesParams(id: event.id, formData: event.formData));
       result.fold(
@@ -91,6 +107,7 @@ class PropertyBloc extends Bloc<PropertyEvent, PropertyState> {
     });
 
     on<DeletePropertyRequested>((event, emit) async {
+      _myPropertiesCache = null;
       emit(PropertyLoading());
       final result = await deleteProperty(event.id);
       result.fold(

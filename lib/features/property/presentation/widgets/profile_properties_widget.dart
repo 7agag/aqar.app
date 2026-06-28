@@ -10,6 +10,7 @@ import '../../domain/entities/property_enums.dart';
 import '../pages/my_properties_page.dart';
 import '../pages/edit_property_page.dart';
 import '../pages/add_property_stepper_page.dart';
+import '../../../subscription/domain/entities/sale_subscription_state.dart';
 
 class ProfilePropertiesWidget extends StatefulWidget {
   const ProfilePropertiesWidget({super.key});
@@ -325,21 +326,29 @@ class _PropertyCardHorizontal extends StatelessWidget {
     required this.onEdit,
   });
 
-  PropertyStatus get _status {
-    if (property.isSponsored) return PropertyStatus.sponsored;
-    if (property.listingStatus == ListingStatus.inactive ||
-        property.listingStatus == ListingStatus.expired) {
-      return PropertyStatus.archived;
-    }
+  (String, Color) get _chip {
+    if (property.isVisible == false) return ('Deleted', Colors.grey);
+
     if (property.listingType == ListingType.forSale) {
-      return PropertyStatus.forSale;
+      return switch (getSaleSubscriptionUiState(property, null, null)) {
+        SaleSubscriptionState.expired => ('Subscription Expired', Colors.grey),
+        SaleSubscriptionState.paidAwaitingVerification => ('Paid · Pending Review', const Color(0xFF1565C0)),
+        SaleSubscriptionState.awaitingVerification => ('Awaiting Review', const Color(0xFFFFA000)),
+        SaleSubscriptionState.readyToPay => ('Verified · Unpaid', const Color(0xFF059669)),
+        SaleSubscriptionState.paymentPending => ('Payment Processing', const Color(0xFF0284C7)),
+        SaleSubscriptionState.missingSubscription => ('Subscription Missing', Colors.grey),
+        SaleSubscriptionState.active => ('Listing Active ✓', AppColors.success),
+      };
     }
-    return PropertyStatus.forRent;
+
+    if (!property.isVerified) return ('Pending Review', const Color(0xFFFFA000));
+    if (!property.isAvailable) return ('Unavailable', AppColors.error);
+    return ('Active ✓', AppColors.success);
   }
 
   @override
   Widget build(BuildContext context) {
-    final status = _status;
+    final (chipLabel, chipColor) = _chip;
     final imageHeight = cardWidth * 0.58;
     return GestureDetector(
       onTap: onTap,
@@ -359,7 +368,20 @@ class _PropertyCardHorizontal extends StatelessWidget {
                 width: cardWidth,
                 height: imageHeight,
                 child: property.images.isNotEmpty
-                    ? Image.network(property.images.first, fit: BoxFit.cover)
+                    ? Image.network(
+                        property.images.first,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (_, child, progress) =>
+                            progress == null
+                                ? child
+                                : Container(
+                                    color: AppColors.surfaceLight,
+                                    child: const Icon(Icons.home,
+                                        color: AppColors.textHint, size: 28)),
+                        errorBuilder: (_, __, ___) => Container(
+                            color: AppColors.surfaceLight,
+                            child: const Icon(Icons.home,
+                                color: AppColors.textHint, size: 28)))
                     : Container(
                         color: AppColors.surfaceLight,
                         child: const Icon(Icons.home, color: AppColors.textHint, size: 28),
@@ -390,12 +412,12 @@ class _PropertyCardHorizontal extends StatelessWidget {
                       children: [
                         Container(
                           width: 5, height: 5,
-                          decoration: BoxDecoration(color: status.color, shape: BoxShape.circle),
+                          decoration: BoxDecoration(color: chipColor, shape: BoxShape.circle),
                         ),
                         const SizedBox(width: 3),
                         Text(
-                          status.label,
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: status.color),
+                          chipLabel,
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: chipColor),
                         ),
                       ],
                     ),

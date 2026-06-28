@@ -551,6 +551,7 @@ class _ChatListPageState extends State<ChatListPage>
                     threadId: thread.id,
                     partnerId: thread.partnerId,
                     propertyId: thread.propertyId,
+                    propertyName: thread.propertyName,
                   ),
                 ),
               );
