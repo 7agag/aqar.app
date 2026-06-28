@@ -2,55 +2,81 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:aqar/core/theme/app_colors.dart';
+import 'package:aqar/features/payment/presentation/widgets/payment_web_overlay.dart';
+import 'package:aqar/features/payment/presentation/mixins/payment_verification_mixin.dart';
+import 'package:aqar/features/payment/presentation/pages/payment_result_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class KashierWebViewPage extends StatefulWidget {
   final String url;
+  final int? propertyId;
+  final VerificationType? paymentType;
 
-  const KashierWebViewPage({super.key, required this.url});
+  const KashierWebViewPage({
+    super.key,
+    required this.url,
+    this.propertyId,
+    this.paymentType,
+  });
 
-  static Future<bool?> open(BuildContext context, {required String url}) {
+  static Future<Map<String, String?>?> open(
+    BuildContext context, {
+    required String url,
+    int? propertyId,
+    VerificationType? paymentType,
+  }) {
     if (kIsWeb) {
-      return _openWeb(context, url);
+      return _openWeb(context, url,
+          propertyId: propertyId, paymentType: paymentType);
     }
-    return Navigator.push<bool>(
+    return Navigator.push<Map<String, String?>>(
       context,
       MaterialPageRoute(
-        builder: (_) => KashierWebViewPage(url: url),
+        builder: (_) => KashierWebViewPage(
+          url: url,
+          propertyId: propertyId,
+          paymentType: paymentType,
+        ),
       ),
     );
   }
 
-  static Future<bool?> _openWeb(BuildContext context, String url) async {
-    await launchUrl(
-      Uri.parse(url),
-      webOnlyWindowName: 'kashier_payment',
+  static Future<Map<String, String?>?> _openWeb(
+    BuildContext context,
+    String url, {
+    int? propertyId,
+    VerificationType? paymentType,
+  }) async {
+    final confirmed = await PaymentWebOverlay.show(
+      context,
+      paymentUrl: url,
+      propertyId: propertyId ?? 0,
+      paymentType: paymentType ?? VerificationType.subscription,
     );
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Payment'),
-        content: const Text(
-          'A new tab opened for payment.\nComplete it there, then press Done.',
+    return confirmed
+        ? {'status': 'success', 'propertyId': '$propertyId', 'type': paymentType == VerificationType.sponsorship ? 'sponsor' : 'subscription'}
+        : {'status': 'cancelled'};
+  }
+
+  static void navigateToResult(
+    BuildContext context, {
+    required String paymentStatus,
+    required int propertyId,
+    required String type,
+    String? amount,
+  }) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PaymentResultScreen(
+          paymentStatus: paymentStatus,
+          propertyId: propertyId,
+          type: type,
+          amount: amount,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.navyBlue,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Done'),
-          ),
-        ],
       ),
+      (route) => route.isFirst,
     );
   }
 
@@ -64,6 +90,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
   bool _hasError = false;
   String _errorMessage = '';
   Timer? _loadingTimer;
+  bool _paymentProcessed = false;
 
   @override
   void initState() {
@@ -82,15 +109,31 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
         NavigationDelegate(
           onNavigationRequest: (request) {
             if (request.url.contains('payment-callback')) {
-              Navigator.pop(context, true);
+              _processPaymentResponse(request.url);
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
           },
-          onPageStarted: (_) {
+          onPageStarted: (url) {
+            if (url.contains('payment-callback')) {
+              _processPaymentResponse(url);
+              return;
+            }
             if (mounted) setState(() => _isLoading = true);
           },
           onPageFinished: (_) {
+            _controller.runJavaScript('''
+              (function(){
+                var _open = window.open;
+                window.open = function(url) {
+                  if (url && url.indexOf('payment-callback') !== -1) {
+                    window.location.href = url;
+                    return null;
+                  }
+                  return _open.apply(window, arguments);
+                };
+              })();
+            ''');
             _loadingTimer?.cancel();
             if (mounted) setState(() => _isLoading = false);
           },
@@ -123,6 +166,31 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
   void dispose() {
     _loadingTimer?.cancel();
     super.dispose();
+  }
+
+  void _processPaymentResponse(String urlString) {
+    if (_paymentProcessed || !mounted) return;
+    _paymentProcessed = true;
+
+    final uri = Uri.parse(urlString);
+    final paymentStatus = uri.queryParameters['paymentStatus'];
+    final pid = uri.queryParameters['propertyId'];
+    final amount = uri.queryParameters['amount'];
+    final type = uri.queryParameters['type'] ??
+        (widget.paymentType == VerificationType.sponsorship
+            ? 'sponsor'
+            : 'subscription');
+    final propertyId = int.tryParse(pid ?? '') ?? widget.propertyId ?? 0;
+
+    final result = <String, String?>{
+      'status': paymentStatus == 'SUCCESS' ? 'success' : 'failed',
+      'propertyId': '$propertyId',
+      'amount': amount,
+      'type': type,
+      'transactionId': uri.queryParameters['transactionId'],
+    };
+
+    Navigator.pop(context, result);
   }
 
   Future<void> _retry() async {
@@ -166,7 +234,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.pop(context, false);
+              if (mounted) Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
             child: const Text('نعم، إلغاء'),
@@ -189,7 +257,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
           leading: IconButton(
             icon: const Icon(Icons.close_rounded),
             color: AppColors.textPrimary,
-            onPressed: _isLoading ? _confirmClose : () => Navigator.pop(context, false),
+            onPressed: _isLoading ? _confirmClose : () => Navigator.pop(context),
           ),
           title: const Text(
             'بوابة الدفع الآمنة',
@@ -208,7 +276,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
             if (_isLoading)
               const LinearProgressIndicator(
                 backgroundColor: Color(0xFFF0F0F0),
-                color: Color(0xFF1A2744),
+                color: AppColors.navyBlue,
                 minHeight: 2,
               ),
             Expanded(
@@ -271,7 +339,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
               child: ElevatedButton(
                 onPressed: _retry,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A2744),
+                  backgroundColor: AppColors.navyBlue,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),

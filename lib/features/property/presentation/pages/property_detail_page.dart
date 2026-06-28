@@ -26,7 +26,8 @@ import '../bloc/property_state.dart';
 import '../widgets/installment_calculator.dart';
 import '../../../lease/presentation/pages/lease_list_page.dart';
 import '../../../purchase_request/presentation/pages/purchase_request_list_page.dart';
-import 'select_selling_plan_page.dart';
+import '../../../purchase_request/presentation/bloc/purchase_request_bloc.dart';
+import 'package:aqar/features/sponsor/presentation/pages/sponsorship_page.dart';
 import '../widgets/listing_status_badge.dart';
 import '../widgets/owner_trust_banner.dart';
 import '../widgets/property_image_carousel.dart';
@@ -257,6 +258,21 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
             }
             if (state is RentRequestError) {
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message)));
+            }
+          },
+        ),
+        BlocListener<PurchaseRequestBloc, PurchaseRequestState>(
+          listener: (context, state) {
+            if (state is PurchaseRequestSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message), backgroundColor: AppColors.success),
+              );
+              context.read<PropertyBloc>().add(GetPropertyByIdRequested(id: widget.propertyId));
+            }
+            if (state is PurchaseRequestError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+              );
             }
           },
         ),
@@ -626,6 +642,10 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   }
 
   Widget _buildOwnerSection(PropertyEntity property) {
+    final isSale = property.listingType == ListingType.forSale;
+    final isSold = property.listingStatus == ListingStatus.sold;
+    final isRented = property.listingType == ListingType.forRent && !property.isAvailable;
+
     return Container(
       width: double.infinity, padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFEEEEEE))),
@@ -637,8 +657,51 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         _ownerActionTile(icon: Icons.request_quote_rounded, title: AppStrings.isArabic ? 'عرض العروض' : 'View Offers',
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchaseRequestsPage()))),
         _ownerActionTile(icon: Icons.rocket_launch_rounded, title: AppStrings.isArabic ? 'ترويج العقار' : 'Boost Property',
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SelectSellingPlanPage(propertyId: property.propertyId)))),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SponsorshipPage(propertyId: property.propertyId)))),
+        if (isSale && !isSold) ...[
+          const SizedBox(height: 8),
+          _ownerActionTile(
+            icon: Icons.check_circle_outline,
+            title: AppStrings.isArabic ? 'وضع كمباع' : 'Mark as Sold',
+            onTap: () => _confirmMarkAsSold(property),
+          ),
+        ],
+        if (isRented) ...[
+          const SizedBox(height: 8),
+          _ownerActionTile(
+            icon: Icons.account_balance_wallet_outlined,
+            title: AppStrings.isArabic ? 'سحب الأرباح' : 'Withdraw Earnings',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Withdrawal feature coming soon')),
+              );
+            },
+          ),
+        ],
       ]),
+    );
+  }
+
+  void _confirmMarkAsSold(PropertyEntity property) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as Sold'),
+        content: Text('Mark "${property.propertyName}" as sold? This will hide it from search results.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<PurchaseRequestBloc>().add(MarkPropertySold(propertyId: property.propertyId));
+            },
+            child: const Text('Mark as Sold', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -699,12 +762,20 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
             Text(durationLabel, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
             const Spacer(),
             IconButton(icon: Icon(Icons.remove_circle_outline, color: durationValue > 1 ? AppColors.navyBlue : AppColors.textHint),
-              onPressed: durationValue > 1 ? () => setState(() { if (isDaily) _rentDays--; else _rentMonths--; }) : null),
+              onPressed: durationValue > 1 ? () => setState(() { if (isDaily) {
+                _rentDays--;
+              } else {
+                _rentMonths--;
+              } }) : null),
             Container(
               constraints: const BoxConstraints(minWidth: 36), alignment: Alignment.center,
               child: Text('$durationValue', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary))),
             IconButton(icon: Icon(Icons.add_circle_outline, color: durationValue < maxValue ? AppColors.navyBlue : AppColors.textHint),
-              onPressed: durationValue < maxValue ? () => setState(() { if (isDaily) _rentDays++; else _rentMonths++; }) : null),
+              onPressed: durationValue < maxValue ? () => setState(() { if (isDaily) {
+                _rentDays++;
+              } else {
+                _rentMonths++;
+              } }) : null),
           ]),
           if (_rentValid) ...[
             const SizedBox(height: 16),
@@ -994,6 +1065,9 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
           initials: _ownerInitials(property),
           partnerId: property.ownerId,
           propertyId: property.propertyId,
+          propertyName: property.propertyName,
+          propertyPrice: property.priceValue,
+          isSaleProperty: property.listingType == ListingType.forSale,
         ),
       ),
     ));

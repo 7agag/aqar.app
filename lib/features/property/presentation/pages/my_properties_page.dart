@@ -8,10 +8,11 @@ import '../bloc/property_event.dart';
 import '../bloc/property_state.dart';
 import '../../domain/entities/property_entity.dart';
 import '../../domain/entities/property_enums.dart';
-import 'rejected_property_page.dart';
-import 'select_selling_plan_page.dart';
+import 'package:aqar/features/sponsor/presentation/pages/sponsorship_page.dart';
+import '../../../subscription/presentation/pages/property_subscription_page.dart';
 import 'edit_property_page.dart';
 import 'add_property_stepper_page.dart';
+import '../../../subscription/domain/entities/sale_subscription_state.dart';
 
 class MyPropertiesPage extends StatefulWidget {
   const MyPropertiesPage({super.key});
@@ -229,7 +230,7 @@ class _ShimmerCard extends StatelessWidget {
                     const BorderRadius.horizontal(left: Radius.circular(14)),
                 child: Container(
                   width: 120,
-                  height: 130,
+                  height: 90,
                   color: Colors.grey.withValues(alpha: opacity),
                 ),
               ),
@@ -279,26 +280,29 @@ class _PropertyCard extends StatelessWidget {
   final VoidCallback onTap;
   const _PropertyCard({required this.property, required this.onTap});
 
-  PropertyStatus get _status {
-    if (property.isSponsored) return PropertyStatus.sponsored;
-    if (property.listingStatus == ListingStatus.inactive) {
-      return PropertyStatus.pending;
-    }
-    if (property.listingStatus == ListingStatus.expired) {
-      return PropertyStatus.archived;
-    }
+  (String, Color) get _chip {
+    if (property.isVisible == false) return ('Deleted', Colors.grey);
+
     if (property.listingType == ListingType.forSale) {
-      return PropertyStatus.forSale;
+      return switch (getSaleSubscriptionUiState(property, null, null)) {
+        SaleSubscriptionState.expired => ('Subscription Expired', Colors.grey),
+        SaleSubscriptionState.paidAwaitingVerification => ('Paid · Pending Review', const Color(0xFF1565C0)),
+        SaleSubscriptionState.awaitingVerification => ('Awaiting Review', const Color(0xFFFFA000)),
+        SaleSubscriptionState.readyToPay => ('Verified · Unpaid', const Color(0xFF059669)),
+        SaleSubscriptionState.paymentPending => ('Payment Processing', const Color(0xFF0284C7)),
+        SaleSubscriptionState.missingSubscription => ('Subscription Missing', Colors.grey),
+        SaleSubscriptionState.active => ('Listing Active ✓', AppColors.success),
+      };
     }
-    return PropertyStatus.forRent;
+
+    if (!property.isVerified) return ('Pending Review', const Color(0xFFFFA000));
+    if (!property.isAvailable) return ('Unavailable', AppColors.error);
+    return ('Active ✓', AppColors.success);
   }
 
   @override
   Widget build(BuildContext context) {
-    final status = _status;
-    final vStatus = property.verificationStatus;
-    final isRejected = vStatus == 'rejected';
-    final isPending = !property.isVerified && !isRejected;
+    final (chipLabel, chipColor) = _chip;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -308,157 +312,99 @@ class _PropertyCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 12,
                 offset: const Offset(0, 2)),
           ],
         ),
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.horizontal(
-                          left: Radius.circular(14)),
-                      child: SizedBox(
-                        width: 120,
-                        height: 130,
-                        child: property.images.isNotEmpty
-                            ? Image.network(property.images.first,
-                                fit: BoxFit.cover)
-                            : Container(
+                ClipRRect(
+                  borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(14)),
+                  child: SizedBox(
+                    width: 120,
+                    height: 90,
+                    child: property.images.isNotEmpty
+                        ? Image.network(
+                            property.images.first,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (_, child, progress) =>
+                                progress == null
+                                    ? child
+                                    : Container(
+                                        color: AppColors.surfaceLight,
+                                        child: const Icon(Icons.home,
+                                            color: AppColors.textHint)),
+                            errorBuilder: (_, __, ___) => Container(
                                 color: AppColors.surfaceLight,
                                 child: const Icon(Icons.home,
-                                    color: AppColors.textHint)),
-                      ),
-                    ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(property.propertyName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textPrimary)),
-                            const SizedBox(height: 4),
-                            Text(property.location,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary
-                                        .withValues(alpha: 0.7))),
-                            const SizedBox(height: 8),
-                            Text(
-                                'EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
-                                style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.navyBlue)),
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: (isRejected
-                                        ? AppColors.error
-                                        : isPending
-                                            ? const Color(0xFFF59E0B)
-                                            : status.color)
-                                    .withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: (isRejected
-                                          ? AppColors.error
-                                          : isPending
-                                              ? const Color(0xFFF59E0B)
-                                              : status.color)
-                                      .withValues(alpha: 0.2),
-                                ),
-                              ),
-                              child: Text(
-                                isRejected
-                                    ? 'Rejected'
-                                    : isPending
-                                        ? 'Pending'
-                                        : status.label,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: isRejected
-                                      ? AppColors.error
-                                      : isPending
-                                          ? const Color(0xFFF59E0B)
-                                          : status.color,
-                                ),
-                              ),
+                                    color: AppColors.textHint)))
+                        : Container(
+                            color: AppColors.surfaceLight,
+                            child: const Icon(Icons.home,
+                                color: AppColors.textHint)),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(property.propertyName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary)),
+                        const SizedBox(height: 4),
+                        Text(property.location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary
+                                    .withValues(alpha: 0.7))),
+                        const SizedBox(height: 8),
+                        Text(
+                            'EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.navyBlue)),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: chipColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: chipColor.withValues(alpha: 0.2),
                             ),
-                            const SizedBox(height: 6),
-                            Visibility(
-                              maintainState: true,
-                              visible: isRejected,
-                              child: Row(
-                                children: [
-                                  Icon(Icons.description_outlined,
-                                      size: 12,
-                                      color: AppColors.textHint),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      'Requires re-verification. Tap Re-upload to submit documents.',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: AppColors.textHint,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          ),
+                          child: Text(
+                            chipLabel,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: chipColor,
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10, right: 10),
-                      child: Icon(Icons.chevron_right,
-                          color: AppColors.textHint.withValues(alpha: 0.5),
-                          size: 20),
-                    ),
-                  ],
-                ),
-                const Divider(height: 1, color: AppColors.borderLight),
-                _ActionRow(
-                  property: property,
-                  status: status,
-                ),
-              ],
-            ),
-            if (vStatus == 'rejected')
-              Positioned(
-                left: 0, top: 0, bottom: 0,
-                child: Container(
-                  width: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(14),
-                      bottomLeft: Radius.circular(14),
+                      ],
                     ),
                   ),
                 ),
-              ),
+              ],
+            ),
+            _ActionRow(property: property),
           ],
         ),
       ),
@@ -471,56 +417,75 @@ class _PropertyCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 class _ActionRow extends StatelessWidget {
   final PropertyEntity property;
-  final PropertyStatus status;
-  const _ActionRow({required this.property, required this.status});
+  const _ActionRow({required this.property});
+
+  bool get _canManage =>
+      property.isVisible != false && property.listingStatus != ListingStatus.sold;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    final isSale = property.listingType == ListingType.forSale;
+    final showBoost = property.isVerified &&
+        property.isAvailable &&
+        !property.isSponsored;
+    final isDeleted = property.isVisible == false;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.background.withValues(alpha: 0.5),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _ActionButton(
-            icon: property.verificationStatus == 'rejected'
-                ? Icons.cloud_upload_outlined
-                : Icons.auto_awesome,
-            label: property.verificationStatus == 'rejected'
-                ? 'Re-upload'
-                : 'Sponsor',
-            color: property.verificationStatus == 'rejected'
-                ? AppColors.navyBlue
-                : AppColors.primary,
-            onTap: property.verificationStatus == 'rejected'
-                ? () => RejectionSheet.show(
-                      context,
-                      propertyId: property.propertyId,
-                      rejectionReason: 'Your property requires re-verification. '
-                          'Please upload a valid ownership document.',
-                    )
-                : () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => SelectSellingPlanPage(
-                              propertyId: property.propertyId)),
-                    ),
-          ),
-          const SizedBox(width: 8),
-          _ActionButton(
-            icon: Icons.edit_outlined,
-            label: 'Edit',
-            color: AppColors.navyBlue,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => EditPropertyPage(property: property)),
+          if (_canManage)
+            _ActionButton(
+              icon: Icons.edit_outlined,
+              label: 'Edit',
+              color: AppColors.navyBlue,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => EditPropertyPage(property: property)),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          _ActionButton(
-            icon: Icons.delete_outline,
-            label: 'Delete',
-            color: AppColors.error,
-            onTap: () => _confirmDelete(context),
+          if (_canManage) const SizedBox(width: 10),
+          if (_canManage && isSale)
+            _ActionButton(
+              primary: true,
+              icon: Icons.settings_outlined,
+              label: 'Selling Plan',
+              color: AppColors.navyBlue,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => PropertySubscriptionPage(
+                        propertyId: property.propertyId)),
+              ),
+            ),
+          if (_canManage && showBoost)
+            _ActionButton(
+              primary: true,
+              icon: Icons.auto_awesome,
+              label: 'Boost',
+              color: AppColors.primary,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => SponsorshipPage(
+                        propertyId: property.propertyId)),
+              ),
+            ),
+          if (_canManage && (isSale || showBoost)) const SizedBox(width: 10),
+          Opacity(
+            opacity: isDeleted ? 0.4 : 1,
+            child: _ActionButton(
+              icon: Icons.delete_outline,
+              label: isDeleted ? 'Deleted' : 'Delete',
+              color: isDeleted ? AppColors.textHint : AppColors.error,
+              onTap: isDeleted ? () {} : () => _confirmDelete(context),
+            ),
           ),
         ],
       ),
@@ -567,37 +532,51 @@ class _ActionRow extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// ACTION BUTTON
+// ACTION BUTTON (pill style)
 // ---------------------------------------------------------------------------
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
-  const _ActionButton(
-      {required this.icon,
-      required this.label,
-      required this.color,
-      required this.onTap});
+  final bool primary;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+    this.primary = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
+    return Material(
+      color: primary ? color : color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: primary ? Colors.white24 : color.withValues(alpha: 0.15),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: primary
+              ? null
+              : BoxDecoration(
+                  border: Border.all(color: color.withValues(alpha: 0.25)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(height: 2),
+              Icon(icon, size: 16, color: primary ? Colors.white : color),
+              const SizedBox(width: 5),
               Text(label,
                   style: TextStyle(
-                      fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: primary ? Colors.white : color,
+                  )),
             ],
           ),
         ),

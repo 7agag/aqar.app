@@ -32,6 +32,7 @@ class PropertyModel extends PropertyEntity {
     required super.listingType,
     super.rate,
     super.listingStatus,
+    super.listingExpiry,
     super.ownerFirstName,
     super.ownerSecondName,
     super.ownerEmail,
@@ -101,6 +102,9 @@ class PropertyModel extends PropertyEntity {
       rate: parseNullableDouble(json['rate']),
       listingStatus:
           ListingStatus.fromValue(json['listing_status']?.toString()),
+      listingExpiry: json['listing_expiry'] != null
+          ? DateTime.tryParse(json['listing_expiry'].toString())
+          : null,
       ownerFirstName: json['owner_first_name']?.toString(),
       ownerSecondName: json['owner_second_name']?.toString(),
       ownerEmail: json['owner_email']?.toString(),
@@ -132,6 +136,7 @@ class PropertyModel extends PropertyEntity {
         'property_type': listingType.value,
         'rate': rate,
         'listing_status': listingStatus?.value,
+        'listing_expiry': listingExpiry?.toIso8601String(),
       };
 
   static double _parsePriceValue(dynamic value) {

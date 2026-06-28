@@ -23,6 +23,7 @@ import 'package:aqar/features/subscription/presentation/bloc/subscription_bloc.d
 import 'package:aqar/features/property/presentation/bloc/property_bloc.dart';
 import 'package:aqar/features/property/presentation/pages/home_page.dart';
 import 'package:aqar/features/splash/presentation/pages/splash_page.dart';
+import 'package:aqar/features/payment/presentation/pages/payment_result_screen.dart';
 import 'package:aqar/injection_container.dart' as di;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -83,57 +84,23 @@ class _AqarAppState extends State<AqarApp> {
 
   void _handleDeepLink(Uri? uri) {
     if (uri == null) return;
-    if (uri.host == 'payment-callback') {
+    if (uri.scheme == 'aqar.jovek' && uri.host == 'payment-callback') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final context = _navigatorKey.currentContext;
-        if (context == null || !context.mounted) return;
-        Navigator.of(context).push(
+        final ctx = _navigatorKey.currentContext;
+        if (ctx == null || !ctx.mounted) return;
+        final status = uri.queryParameters['status'] ?? 'success';
+        final pid = int.tryParse(uri.queryParameters['propertyId'] ?? '') ?? 0;
+        final type = uri.queryParameters['type'] ?? 'subscription';
+        Navigator.of(ctx).pushAndRemoveUntil(
           MaterialPageRoute(
-            builder: (_) => Scaffold(
-              appBar: AppBar(
-                title: const Text('نتيجة الدفع'),
-                centerTitle: true,
-              ),
-              body: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.check_circle_rounded,
-                          size: 72, color: Color(0xFF27AE60)),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'تمت عملية الدفع بنجاح',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'رقم العملية: ${uri.queryParameters['transactionId'] ?? 'N/A'}',
-                        style:
-                            const TextStyle(fontSize: 14, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 32),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1A2744),
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(200, 48),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('العودة',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+            builder: (_) => PaymentResultScreen(
+              paymentStatus: status,
+              propertyId: pid,
+              type: type,
+              amount: uri.queryParameters['amount'],
             ),
           ),
+          (route) => route.isFirst,
         );
       });
     }

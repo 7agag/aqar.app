@@ -11,6 +11,8 @@ import '../bloc/chat_bloc.dart';
 import '../bloc/chat_event.dart';
 import '../bloc/chat_state.dart';
 import '../widgets/rent_status_banner.dart';
+import '../widgets/agreement_card.dart';
+import '../../data/utils/agreement_utils.dart';
 
 class ChatDetailsPage extends StatefulWidget {
   final String userName;
@@ -18,6 +20,9 @@ class ChatDetailsPage extends StatefulWidget {
   final String? threadId;
   final String? partnerId;
   final int? propertyId;
+  final String? propertyName;
+  final double? propertyPrice;
+  final bool isSaleProperty;
 
   const ChatDetailsPage({
     super.key,
@@ -26,6 +31,9 @@ class ChatDetailsPage extends StatefulWidget {
     this.threadId,
     this.partnerId,
     this.propertyId,
+    this.propertyName,
+    this.propertyPrice,
+    this.isSaleProperty = false,
   });
 
   @override
@@ -34,12 +42,17 @@ class ChatDetailsPage extends StatefulWidget {
 
 class _ChatDetailsPageState extends State<ChatDetailsPage> {
   late final TextEditingController _messageController;
+  late final TextEditingController _agreementPriceController;
+  late final TextEditingController _agreementTermsController;
   late final FocusNode _focusNode;
   late final ScrollController _scrollController;
   final List<ChatMessageEntity> _messages = [];
   String? _currentUserId;
   String? _chatId;
   StreamSubscription<Map<String, dynamic>>? _socketSub;
+  bool _isOwner = false;
+  final Set<String> _acceptedAgreements = {};
+  final Set<String> _declinedAgreements = {};
 
   @override
   void initState() {
@@ -52,6 +65,11 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     if (authState is AuthProfileLoaded) {
       _currentUserId = authState.user.id;
     }
+    _isOwner = _currentUserId == widget.partnerId;
+    _agreementPriceController = TextEditingController(
+      text: widget.propertyPrice?.toStringAsFixed(0) ?? '',
+    );
+    _agreementTermsController = TextEditingController();
 
     if (widget.threadId != null) {
       _chatId = widget.threadId;
@@ -75,20 +93,27 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
         ?? data['sender']?.toString()
         ?? data['user_id']?.toString()
         ?? '';
+    final content = data['content']?.toString() ?? '';
 
     final message = ChatMessageEntity(
       messageId: messageId,
       senderId: senderId,
-      content: data['content']?.toString() ?? '',
+      content: content,
       isRead: false,
       createdAt: data['created_at'] != null
           ? DateTime.tryParse(data['created_at'].toString()) ?? DateTime.now()
           : DateTime.now(),
     );
 
+    if (content.startsWith('[AGREEMENT_ACCEPT]')) {
+      setState(() => _acceptedAgreements.add(content));
+    } else if (content.startsWith('[AGREEMENT_DECLINE]')) {
+      setState(() => _declinedAgreements.add(content));
+    }
+
     if (senderId == _currentUserId) {
       final idx = _messages.indexWhere(
-        (m) => m.messageId.isEmpty && m.content == message.content,
+        (m) => m.messageId.isEmpty && m.content == content,
       );
       if (idx >= 0) {
         setState(() { _messages[idx] = message; });
@@ -103,17 +128,26 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     _scrollToTop();
   }
 
-  @override
-  void dispose() {
-    _socketSub?.cancel();
-    _messageController.dispose();
-    _focusNode.dispose();
-    _scrollController.dispose();
-    super.dispose();
+  void _sendAgreement(String price, String terms) {
+    if (!_canSendAgreement) return;
+    final content = AgreementUtils.encodeRequest(AgreementData(
+      propertyId: widget.propertyId ?? 0,
+      propertyName: widget.propertyName ?? 'Property',
+      price: double.tryParse(price) ?? 0,
+      terms: terms,
+    ));
+    _sendMessage(content);
   }
 
-  void _handleSend() {
-    final text = _messageController.text.trim();
+  void _respondAgreement(bool accept) {
+    final pid = widget.propertyId ?? 0;
+    final content = accept
+        ? AgreementUtils.encodeAccept(pid)
+        : AgreementUtils.encodeDecline(pid);
+    _sendMessage(content);
+  }
+
+  void _sendMessage(String text) {
     if (text.isEmpty) return;
 
     if (widget.threadId != null || (widget.partnerId != null && widget.propertyId != null)) {
@@ -124,18 +158,36 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
       ));
     }
 
-    final now = DateTime.now();
     _messages.insert(0, ChatMessageEntity(
       messageId: '',
       senderId: _currentUserId ?? '',
       content: text,
       isRead: false,
-      createdAt: now,
+      createdAt: DateTime.now(),
     ));
-    _messageController.clear();
+
+    if (!AgreementUtils.isAgreementMessage(text)) {
+      _messageController.clear();
+    }
 
     setState(() {});
     _scrollToTop();
+  }
+
+  @override
+  void dispose() {
+    _socketSub?.cancel();
+    _messageController.dispose();
+    _agreementPriceController.dispose();
+    _agreementTermsController.dispose();
+    _focusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleSend() {
+    _sendMessage(_messageController.text.trim());
+    _messageController.clear();
   }
 
   void _scrollToTop() {
@@ -320,6 +372,56 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
   }
 
   Widget _buildMessageBubble(ChatMessageEntity msg, bool isSender) {
+    final content = msg.content;
+    final (agreementType, agreementData) = AgreementUtils.parse(content);
+
+    if (agreementType != AgreementMessageType.none && agreementData != null) {
+      final isAccepted = agreementType == AgreementMessageType.accepted ||
+          _acceptedAgreements.any((a) => a.contains('${agreementData.propertyId}'));
+      final isDeclined = agreementType == AgreementMessageType.declined ||
+          _declinedAgreements.any((a) => a.contains('${agreementData.propertyId}'));
+
+      final status = isAccepted ? 'accepted' : isDeclined ? 'declined' : 'pending';
+
+      return Align(
+        alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
+        child: AgreementCard(
+          data: agreementData,
+          status: status,
+          isOwner: _isOwner,
+          onAccept: () => _respondAgreement(true),
+          onDecline: () => _respondAgreement(false),
+        ),
+      );
+    }
+
+    if (agreementType == AgreementMessageType.accepted || agreementType == AgreementMessageType.declined) {
+      final label = agreementType == AgreementMessageType.accepted ? 'Agreement Accepted' : 'Agreement Declined';
+      return Align(
+        alignment: Alignment.center,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: agreementType == AgreementMessageType.accepted
+                ? AppColors.success.withValues(alpha: 0.1)
+                : AppColors.error.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: agreementType == AgreementMessageType.accepted
+                  ? AppColors.success
+                  : AppColors.error,
+            ),
+          ),
+        ),
+      );
+    }
+
     if (isSender) {
       return Align(
         alignment: Alignment.centerRight,
@@ -413,6 +515,118 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     );
   }
 
+  bool get _canSendAgreement =>
+      _isOwner &&
+      widget.isSaleProperty &&
+      widget.propertyName != null;
+
+  void _showAgreementSheet(BuildContext context) {
+    _agreementPriceController.text =
+        widget.propertyPrice?.toStringAsFixed(0) ?? '';
+    _agreementTermsController.clear();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: AppColors.textHint.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text(
+              'Send Agreement',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Propose a price and terms to the buyer.',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary.withValues(alpha: 0.8),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text('Price (EGP)',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textHint)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _agreementPriceController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                hintText: 'Enter price',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Terms (optional)',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textHint)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _agreementTermsController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Enter payment terms, conditions...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () {
+                  final price = _agreementPriceController.text.trim();
+                  if (price.isEmpty) return;
+                  Navigator.pop(ctx);
+                  _sendAgreement(price, _agreementTermsController.text.trim());
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.navyBlue,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Send Agreement',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildInputBar(double bottomInset) {
     return Container(
       color: Colors.white,
@@ -435,6 +649,15 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (_canSendAgreement)
+                  IconButton(
+                    icon: const Icon(
+                      Icons.description_outlined,
+                      color: AppColors.navyBlue,
+                    ),
+                    tooltip: 'Send Agreement',
+                    onPressed: () => _showAgreementSheet(context),
+                  ),
                 IconButton(
                   icon: const Icon(
                     Icons.attach_file_outlined,

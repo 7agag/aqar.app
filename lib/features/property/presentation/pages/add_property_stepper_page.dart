@@ -5,9 +5,10 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:aqar/features/payment/domain/usecases/get_payment_link_usecase.dart';
-import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
 import 'package:aqar/features/subscription/domain/usecases/create_subscription_usecase.dart';
+import 'package:aqar/features/subscription/domain/entities/listing_subscription_record.dart';
+import 'package:aqar/features/subscription/data/services/subscription_storage_service.dart';
+import 'package:aqar/features/subscription/presentation/pages/property_subscription_page.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -2493,58 +2494,44 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
       );
       if (!mounted) return;
 
-      final subscriptionId = subscriptionResult.fold(
-        (failure) {
-          setState(() => _isSubmitting = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(failure.message)),
-          );
-          return null;
-        },
-        (sub) => sub.subscriptionId,
-      );
-
-      if (subscriptionId == null || subscriptionId.isEmpty) return;
-
-      final linkResult = await di.sl<GetPaymentLinkUseCase>()(
-        GetPaymentLinkParams(
-          subscriptionId: subscriptionId,
-          redirect: 'https://aqar.app/payment-callback',
-        ),
-      );
-      if (!mounted) return;
-
-      linkResult.fold(
-        (failure) {
+      await subscriptionResult.fold(
+        (failure) async {
           setState(() => _isSubmitting = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(failure.message)),
           );
         },
-        (link) async {
-          final ok = await KashierWebViewPage.open(context, url: link.url);
+        (sub) async {
+          try {
+            final storage = di.sl<SubscriptionStorageService>();
+            await storage.saveListingSubscription(ListingSubscriptionRecord(
+              propertyId: propertyId,
+              subscriptionId: sub.subscriptionId,
+              propertyName: _titleCtl.text.trim(),
+              planMonths: planMonths,
+              amount: sub.amount,
+              paymentState: ListingSubscriptionPaymentState.unpaid,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ));
+          } catch (_) {}
+
           if (!mounted) return;
           setState(() => _isSubmitting = false);
-          if (ok == true && mounted) {
-            _showPropertyAddedDialog();
-          } else if (ok != true && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Payment cancelled or failed'),
-                action: SnackBarAction(
-                  label: 'Retry',
-                  onPressed: _processSalePayment,
-                ),
-              ),
-            );
-          }
+          _showPropertyAddedDialog();
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PropertySubscriptionPage(propertyId: propertyId),
+            ),
+          );
         },
       );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Payment failed: $e')),
+        SnackBar(content: Text('Error: $e')),
       );
     }
   }

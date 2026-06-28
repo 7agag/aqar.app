@@ -10,11 +10,9 @@ import 'package:aqar/features/property/presentation/pages/property_detail_page.d
 import 'package:aqar/features/ai/presentation/pages/ai_assistant_page.dart';
 import 'package:aqar/features/notifications/presentation/pages/notifications_page.dart';
 import 'package:aqar/features/chat/presentation/pages/chat_list_page.dart';
-import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
 import 'package:aqar/features/rent_request/presentation/pages/rent_requests_page.dart';
 import 'package:aqar/features/auth/presentation/widgets/auth_guard.dart';
 import 'package:aqar/core/navigation/property_detail_navigator.dart';
-import 'package:aqar/injection_container.dart' as di;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,7 +25,7 @@ import '../bloc/property_bloc.dart';
 import '../bloc/property_event.dart';
 import '../bloc/property_state.dart';
 import '../widgets/advanced_search_sheet.dart';
-import '../widgets/sponsored_property_card.dart';
+import 'package:aqar/features/sponsor/presentation/widgets/sponsored_property_card.dart';
 import '../widgets/filter_chip_widget.dart';
 import '../widgets/nearby_property_card.dart';
 import '../widgets/search_bar_widget.dart';

@@ -12,7 +12,7 @@ import '../bloc/property_bloc.dart';
 import '../bloc/property_event.dart';
 import '../bloc/property_state.dart';
 import '../widgets/advanced_search_sheet.dart';
-import '../widgets/sponsored_property_card.dart';
+import 'package:aqar/features/sponsor/presentation/widgets/sponsored_property_card.dart';
 import '../widgets/filter_chip_widget.dart';
 import '../widgets/search_bar_widget.dart';
 

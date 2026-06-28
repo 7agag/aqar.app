@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:aqar/core/config/app_config.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -15,7 +16,10 @@ class ApiClient {
         baseUrl: AppConfig.baseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
       ),
     );
 
@@ -29,6 +33,10 @@ class ApiClient {
           handler.next(options);
         },
         onError: (error, handler) {
+          debugPrint('[API ERROR] ${error.type} | ${error.requestOptions.uri} | ${error.message}');
+          if (error.response != null) {
+            debugPrint('[API ERROR] Status: ${error.response?.statusCode} | Body: ${error.response?.data}');
+          }
           handler.next(error);
         },
       ),

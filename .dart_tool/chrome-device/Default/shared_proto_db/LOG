@@ -1,13 +1,2 @@
-2026/06/21-08:34:46.071 356c Reusing MANIFEST C:\Users\Jovek\AppData\Local\Temp\flutter_tools.bde55d48\flutter_tools_chrome_device.4a60edf2\Default\shared_proto_db/MANIFEST-000001
-2026/06/21-08:34:46.072 356c Recovering log #19
-2026/06/21-08:34:46.074 356c Reusing old log C:\Users\Jovek\AppData\Local\Temp\flutter_tools.bde55d48\flutter_tools_chrome_device.4a60edf2\Default\shared_proto_db/000019.log 
-2026/06/21-08:34:46.074 356c Delete type=0 #3
-2026/06/21-08:34:46.075 356c Delete type=0 #4
-2026/06/21-08:34:46.075 356c Delete type=0 #7
-2026/06/21-08:34:46.075 356c Delete type=2 #8
-2026/06/21-08:34:46.075 356c Delete type=0 #10
-2026/06/21-08:34:46.075 356c Delete type=2 #11
-2026/06/21-08:34:46.075 356c Delete type=0 #13
-2026/06/21-08:34:46.075 356c Delete type=2 #14
-2026/06/21-08:34:46.075 356c Delete type=0 #16
-2026/06/21-08:34:46.076 356c Delete type=2 #17
+2026/06/28-10:06:06.771 2254 Creating DB C:\Users\Jovek\AppData\Local\Temp\flutter_tools.4a46d9db\flutter_tools_chrome_device.8bfe2970\Default\shared_proto_db since it was missing.
+2026/06/28-10:06:06.807 2254 Reusing MANIFEST C:\Users\Jovek\AppData\Local\Temp\flutter_tools.4a46d9db\flutter_tools_chrome_device.8bfe2970\Default\shared_proto_db/MANIFEST-000001
