@@ -9,7 +9,7 @@ class AppConfig {
 
   static String get paymentCallbackUrl {
     if (kIsWeb) return '$baseUrl/payment-callback';
-    return 'aqar.jovek://payment-callback';
+    return 'https://aqar-tan.vercel.app/payment-callback';
   }
 
   static String sponsorshipCallbackUrl(int propertyId) =>
