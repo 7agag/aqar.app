@@ -1,32 +1,31 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 class AppConfig {
-  static String get baseUrl {
-    const env = String.fromEnvironment('API_BASE_URL');
-    if (env.isNotEmpty) return env;
-    return 'https://unburned-helmet-photo.ngrok-free.dev';
-  }
+  // الروابط الأساسية كـ Constants لضمان الأداء الأفضل
+  static const String _serverUrl = 'https://aqar.dpdns.org';
+  static const String _vercelUrl = 'https://aqar-tan.vercel.app';
 
+  /// الرابط الأساسي للسيرفر (API)
+  static String get baseUrl => _serverUrl;
+
+  /// الرابط الخاص بصفحات الويب (للتحويلات)
+  static String get webUrl => _serverUrl;
+
+  /// رابط استقبال الدفع (Payment Callback)
   static String get paymentCallbackUrl {
-    if (kIsWeb) return '$baseUrl/payment-callback';
-    return 'https://aqar-tan.vercel.app/payment-callback';
+    // نستخدم _vercelUrl دائماً للـ Callback لضمان الاتساق
+    return '$_vercelUrl/payment-callback';
   }
 
+  /// رابط الدفع للرعاية (Sponsorship)
   static String sponsorshipCallbackUrl(int propertyId) =>
       '$paymentCallbackUrl?type=sponsor&propertyId=$propertyId';
 
+  /// رابط الدفع للاشتراكات (Subscription)
   static String subscriptionCallbackUrl(int propertyId, String subscriptionId) =>
       '$paymentCallbackUrl?type=subscription&propertyId=$propertyId&subscriptionId=$subscriptionId';
 
+  /// رابط الصور (يدعم متغيرات البيئة للـ Production/Staging)
   static String get imageBaseUrl {
     const env = String.fromEnvironment('IMAGE_BASE_URL');
-    if (env.isNotEmpty) return env;
-    return baseUrl;
-  }
-
-  static String get webUrl {
-    const env = String.fromEnvironment('WEB_BASE_URL');
-    if (env.isNotEmpty) return env;
-    return 'https://aqar.dpdns.org';
+    return env.isNotEmpty ? env : _serverUrl;
   }
 }
