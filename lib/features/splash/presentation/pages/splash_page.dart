@@ -61,37 +61,17 @@ class _SplashPageState extends State<SplashPage>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1A2744),
-              Color(0xFF0F1A2E),
-              Color(0xFF0A1020),
+              Color(0xFFFFFFFF),
+              Color(0xFFFCF8F0),
             ],
           ),
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Positioned(
-              top: -60,
-              right: -60,
-              child: Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: 0.06),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -80,
-              left: -80,
-              child: Container(
-                width: 240,
-                height: 240,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary.withValues(alpha: 0.04),
-                ),
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _DotGridPainter(),
               ),
             ),
             Column(
@@ -105,18 +85,14 @@ class _SplashPageState extends State<SplashPage>
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.12),
+                        color: AppColors.primary.withValues(alpha: 0.08),
                         shape: BoxShape.circle,
                       ),
-                      child: Center(
-                        child: Text(
-                          'A',
-                          style: TextStyle(
-                            fontSize: 64,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.primary,
-                            letterSpacing: 0,
-                          ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(22),
+                        child: Image.asset(
+                          'assets/icons/aqar.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
@@ -141,7 +117,7 @@ class _SplashPageState extends State<SplashPage>
                         'Find Your Perfect Home',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.6),
+                          color: AppColors.textSecondary.withValues(alpha: 0.7),
                           letterSpacing: 2,
                           fontWeight: FontWeight.w300,
                         ),
@@ -172,4 +148,24 @@ class _SplashPageState extends State<SplashPage>
       ),
     );
   }
+}
+
+class _DotGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.primary.withValues(alpha: 0.05)
+      ..style = PaintingStyle.fill;
+    const spacing = 40.0;
+    const radius = 1.5;
+    for (double y = 0; y < size.height; y += spacing) {
+      final offset = (y / spacing) % 2 == 0 ? 0.0 : spacing / 2;
+      for (double x = offset; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), radius, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

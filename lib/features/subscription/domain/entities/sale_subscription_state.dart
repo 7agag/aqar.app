@@ -34,10 +34,12 @@ SaleSubscriptionState getSaleSubscriptionUiState(
   }
 
   if (!property.isVerified) {
-    if (localSub?.paymentState == ListingSubscriptionPaymentState.paid) {
+    if (localSub == null) {
+      return SaleSubscriptionState.awaitingVerification;
+    }
+    if (localSub.paymentState == ListingSubscriptionPaymentState.paid) {
       return SaleSubscriptionState.paidAwaitingVerification;
     }
-    return SaleSubscriptionState.awaitingVerification;
   }
 
   if (localSub?.paymentState == ListingSubscriptionPaymentState.pending) {

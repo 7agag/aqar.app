@@ -9,6 +9,7 @@ import 'package:aqar/features/payment/presentation/mixins/payment_verification_m
 import 'package:aqar/features/subscription/data/services/pending_payment_service.dart';
 import 'package:aqar/injection_container.dart' as di;
 import 'package:aqar/features/sponsor/presentation/bloc/sponsor_bloc.dart';
+import 'package:aqar/features/subscription/data/services/property_override_service.dart';
 
 class SponsorshipPage extends StatefulWidget {
   final int propertyId;
@@ -94,10 +95,12 @@ class _SponsorshipPageState extends State<SponsorshipPage>
       url: url,
       propertyId: widget.propertyId,
       paymentType: VerificationType.sponsorship,
-    ).then((result) {
+    ).then((result) async {
       if (!mounted) return;
       if (result == null || result['status'] == 'failed' || result['status'] == 'cancelled') return;
       final pid = int.tryParse(result['propertyId'] ?? '') ?? widget.propertyId;
+      await PropertyOverrideService().markAsSponsored(pid);
+      if (!mounted) return;
       KashierWebViewPage.navigateToResult(
         context,
         paymentStatus: 'success',
