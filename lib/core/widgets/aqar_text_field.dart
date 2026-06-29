@@ -44,7 +44,7 @@ class AqarTextField extends StatelessWidget {
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
-          maxLines: maxLines,
+          maxLines: obscureText ? 1 : maxLines,
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,

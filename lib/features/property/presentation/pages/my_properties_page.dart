@@ -415,80 +415,165 @@ class _PropertyCard extends StatelessWidget {
 // ---------------------------------------------------------------------------
 // ACTION ROW
 // ---------------------------------------------------------------------------
-class _ActionRow extends StatelessWidget {
+class _ActionRow extends StatefulWidget {
   final PropertyEntity property;
   const _ActionRow({required this.property});
 
+  @override
+  State<_ActionRow> createState() => _ActionRowState();
+}
+
+class _ActionRowState extends State<_ActionRow> {
+  final _scrollController = ScrollController();
+  bool _isOverflowing = false;
+  bool _atEnd = true;
+
   bool get _canManage =>
-      property.isVisible != false && property.listingStatus != ListingStatus.sold;
+      widget.property.isVisible != false &&
+      widget.property.listingStatus != ListingStatus.sold;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureOverflow());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final atEnd = _scrollController.offset >= maxScroll - 1;
+    if (atEnd != _atEnd) {
+      setState(() => _atEnd = atEnd);
+    }
+  }
+
+  void _measureOverflow() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      if ((maxScroll > 0) != _isOverflowing) {
+        setState(() {
+          _isOverflowing = maxScroll > 0;
+          _atEnd = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isSale = property.listingType == ListingType.forSale;
-    final showBoost = property.isVerified &&
-        property.isAvailable &&
-        !property.isSponsored;
-    final isDeleted = property.isVisible == false;
+    final isSale = widget.property.listingType == ListingType.forSale;
+    final showBoost = widget.property.isVerified &&
+        widget.property.isAvailable &&
+        !widget.property.isSponsored;
+    final isDeleted = widget.property.isVisible == false;
 
     return Container(
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.background.withValues(alpha: 0.5),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
       ),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (_canManage)
-            _ActionButton(
-              icon: Icons.edit_outlined,
-              label: 'Edit',
-              color: AppColors.navyBlue,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => EditPropertyPage(property: property)),
-              ),
-            ),
-          if (_canManage) const SizedBox(width: 10),
-          if (_canManage && isSale)
-            _ActionButton(
-              primary: true,
-              icon: Icons.settings_outlined,
-              label: 'Selling Plan',
-              color: AppColors.navyBlue,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => PropertySubscriptionPage(
-                        propertyId: property.propertyId)),
-              ),
-            ),
-          if (_canManage && showBoost)
-            _ActionButton(
-              primary: true,
-              icon: Icons.auto_awesome,
-              label: 'Boost',
-              color: AppColors.primary,
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => SponsorshipPage(
-                        propertyId: property.propertyId)),
-              ),
-            ),
-          if (_canManage && (isSale || showBoost)) const SizedBox(width: 10),
-          Opacity(
-            opacity: isDeleted ? 0.4 : 1,
-            child: _ActionButton(
-              icon: Icons.delete_outline,
-              label: isDeleted ? 'Deleted' : 'Delete',
-              color: isDeleted ? AppColors.textHint : AppColors.error,
-              onTap: isDeleted ? () {} : () => _confirmDelete(context),
+      child: _isOverflowing
+          ? Stack(
+              children: [
+                SingleChildScrollView(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: _buildButtons(context, isSale, showBoost, isDeleted),
+                ),
+                if (!_atEnd)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 24,
+                    child: IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerRight,
+                            end: Alignment.centerLeft,
+                            colors: [
+                              AppColors.background.withValues(alpha: 0.9),
+                              AppColors.background.withValues(alpha: 0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            )
+          : Center(child: _buildButtons(context, isSale, showBoost, isDeleted)),
+    );
+  }
+
+  Widget _buildButtons(BuildContext context, bool isSale, bool showBoost, bool isDeleted) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_canManage)
+          _ActionButton(
+            icon: Icons.edit_outlined,
+            label: 'Edit',
+            color: AppColors.navyBlue,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) =>
+                      EditPropertyPage(property: widget.property)),
             ),
           ),
-        ],
-      ),
+        if (_canManage) const SizedBox(width: 10),
+        if (_canManage && isSale)
+          _ActionButton(
+            primary: true,
+            icon: Icons.settings_outlined,
+            label: 'Selling Plan',
+            color: AppColors.navyBlue,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => PropertySubscriptionPage(
+                      propertyId: widget.property.propertyId)),
+            ),
+          ),
+        if (_canManage && showBoost)
+          _ActionButton(
+            primary: true,
+            icon: Icons.auto_awesome,
+            label: 'Boost',
+            color: AppColors.primary,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => SponsorshipPage(
+                      propertyId: widget.property.propertyId)),
+            ),
+          ),
+        if (_canManage && (isSale || showBoost))
+          const SizedBox(width: 10),
+        Opacity(
+          opacity: isDeleted ? 0.4 : 1,
+          child: _ActionButton(
+            icon: Icons.delete_outline,
+            label: isDeleted ? 'Deleted' : 'Delete',
+            color: isDeleted ? AppColors.textHint : AppColors.error,
+            onTap: isDeleted
+                ? () {}
+                : () => _confirmDelete(context),
+          ),
+        ),
+      ],
     );
   }
 
@@ -498,7 +583,7 @@ class _ActionRow extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Property'),
         content: Text(
-            'Are you sure you want to delete "${property.propertyName}"? This cannot be undone.'),
+            'Are you sure you want to delete "${widget.property.propertyName}"? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -527,7 +612,7 @@ class _ActionRow extends StatelessWidget {
     if (!ok || !context.mounted) return;
     context
         .read<PropertyBloc>()
-        .add(DeletePropertyRequested(id: property.propertyId));
+        .add(DeletePropertyRequested(id: widget.property.propertyId));
   }
 }
 

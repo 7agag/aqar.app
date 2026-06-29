@@ -5,10 +5,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:aqar/features/subscription/domain/usecases/create_subscription_usecase.dart';
-import 'package:aqar/features/subscription/domain/entities/listing_subscription_record.dart';
-import 'package:aqar/features/subscription/data/services/subscription_storage_service.dart';
-import 'package:aqar/features/subscription/presentation/pages/property_subscription_page.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,7 +13,6 @@ import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/core/theme/app_spacing.dart';
 import 'package:aqar/core/network/api_client.dart';
 import 'package:aqar/features/property/domain/entities/property_enums.dart';
-import 'package:aqar/core/services/biometric_auth_guard.dart';
 import 'package:aqar/features/property/presentation/widgets/photo_tips_card.dart';
 import 'package:aqar/injection_container.dart' as di;
 
@@ -188,7 +183,6 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
       _buildPlanStep(),
       _buildMapStep(),
       _buildDocumentsStep(),
-      if (!_isForRent) _buildInvoiceStep(),
     ];
   }
 
@@ -196,25 +190,14 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   // STEP INDICATOR
   // ---------------------------------------------------------------------------
   Widget _buildStepIndicator() {
-    final rentLabels = ['Basic', 'Media', 'Plan', 'Map', 'Docs'];
-    final saleLabels = ['Basic', 'Media', 'Plan', 'Map', 'Docs', 'Invoice'];
-    final rentIcons = [
+    final labels = ['Basic', 'Media', 'Plan', 'Map', 'Docs'];
+    final icons = [
       Icons.edit_note,
       Icons.image,
       Icons.sell,
       Icons.location_on,
       Icons.verified_outlined
     ];
-    final saleIcons = [
-      Icons.edit_note,
-      Icons.image,
-      Icons.sell,
-      Icons.location_on,
-      Icons.verified_outlined,
-      Icons.receipt_long
-    ];
-    final labels = _isForRent ? rentLabels : saleLabels;
-    final icons = _isForRent ? rentIcons : saleIcons;
     return Container(
       padding: const EdgeInsets.symmetric(
           vertical: AppSpacing.md, horizontal: AppSpacing.md),
@@ -1870,18 +1853,14 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
               _showError('Please upload your Ownership Proof');
               return;
             }
-            if (_isForRent) {
-              setState(() => _isSubmitting = true);
-              _submitProperty().then((data) {
-                if (mounted) setState(() => _isSubmitting = false);
-                if (data != null) _showPropertyAddedDialog();
-              });
-            } else {
-              _goToStep(5);
-            }
+            setState(() => _isSubmitting = true);
+            _submitProperty().then((data) {
+              if (mounted) setState(() => _isSubmitting = false);
+              if (data != null) _showPropertyAddedDialog();
+            });
           },
-          nextLabel: _isForRent ? 'Submit Property' : 'Next — Invoice',
-          isLoading: _isForRent ? _isSubmitting : false,
+          nextLabel: 'Submit Property',
+          isLoading: _isSubmitting,
         ),
       ],
     );
@@ -2038,239 +2017,6 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   }
 
   // ---------------------------------------------------------------------------
-  // STEP 5: INVOICE & PAYMENT  (sale only)
-  // ---------------------------------------------------------------------------
-  Widget _buildInvoiceStep() {
-    final planMonths = _salePlanMonths ?? 1;
-    final planFee = planMonths == 1
-        ? 120
-        : planMonths == 3
-            ? 360
-            : 600;
-    final previewImages = _propertyImages.take(2).toList();
-
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      children: [
-        // --- Header ---
-        Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.receipt_long,
-                  color: AppColors.primary, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Invoice & Summary',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary)),
-                const SizedBox(height: 2),
-                Text('Review your property and payment details',
-                    style: TextStyle(fontSize: 12, color: AppColors.textHint)),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xl),
-
-        // --- Property Preview (first 2 images) ---
-        if (previewImages.isNotEmpty) ...[
-          const Text('Property Preview',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textHint,
-                  letterSpacing: 0.5)),
-          const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            height: 140,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: previewImages.length,
-              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
-              itemBuilder: (_, i) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 200,
-                    child: kIsWeb
-                        ? _PickedImageTile(file: previewImages[i])
-                        : Image.file(File(previewImages[i].path),
-                            fit: BoxFit.cover),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-        ],
-
-        // --- Invoice Breakdown ---
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.description_outlined,
-                      color: AppColors.primary, size: 18),
-                  const SizedBox(width: AppSpacing.sm),
-                  const Text('Property Summary',
-                      style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary)),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              _summaryRow('Title', _titleCtl.text),
-              _summaryRow('Type', 'For Sale'),
-              _summaryRow('Price', 'EGP ${_priceCtl.text}'),
-              _summaryRow('Size', '${_sizeCtl.text} m\u00B2'),
-              _summaryRow('Images', '${_propertyImages.length} selected'),
-              if (_govIdDoc != null)
-                _summaryRow('National ID', 'Uploaded ✓',
-                    valueColor: AppColors.success),
-              if (_ownershipDoc != null)
-                _summaryRow('Ownership Proof', 'Uploaded ✓',
-                    valueColor: AppColors.success),
-              const Divider(height: AppSpacing.lg),
-              const Text('Cost Breakdown',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                      '$planMonths Month${planMonths > 1 ? 's' : ''} Sale Plan',
-                      style: const TextStyle(
-                          fontSize: 13, color: AppColors.textSecondary)),
-                  Text('EGP $planFee',
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary)),
-                ],
-              ),
-              const Divider(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Total',
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary)),
-                  Text('EGP $planFee',
-                      style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary)),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-
-        // --- Proceed to Payment ---
-        SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: ElevatedButton.icon(
-            onPressed: _isSubmitting
-                ? null
-                : () => _processSalePayment(),
-            icon: _isSubmitting
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2.5))
-                : const Icon(Icons.credit_card, color: Colors.white),
-            label: Text(
-              _isSubmitting
-                  ? 'Processing...'
-                  : 'الاستمرار للدفع  •  EGP $planFee',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        OutlinedButton(
-          onPressed: _isSubmitting ? null : () => _goToStep(4),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.textSecondary,
-            side: const BorderSide(color: AppColors.borderLight),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
-            minimumSize: const Size(double.infinity, 48),
-          ),
-          child: const Text('Go Back & Edit'),
-        ),
-      ],
-    );
-  }
-
-  Widget _summaryRow(String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(label,
-                style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textHint)),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                  fontSize: 13,
-                  color: valueColor ?? AppColors.textPrimary,
-                  fontWeight: valueColor != null ? FontWeight.w600 : null),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
   // SUBMIT
   // ---------------------------------------------------------------------------
   String? _extractMsg(dynamic data) =>
@@ -2406,34 +2152,45 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 72,
-              height: 72,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                color: AppColors.success.withValues(alpha: 0.1),
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.success.withValues(alpha: 0.15),
+                    AppColors.success.withValues(alpha: 0.05),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle,
-                  color: AppColors.success, size: 40),
+              child: const Icon(Icons.check_circle_rounded,
+                  color: AppColors.success, size: 44),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             const Text(
-              'تم رفع العقار بنجاح',
+              'Property Listed Successfully',
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary),
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'Your property has been submitted for admin review.\nYou will be notified once it is approved.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                  height: 1.6),
             ),
           ],
         ),
@@ -2449,94 +2206,19 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                    borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                elevation: 0,
               ),
               child: const Text('Back to My Properties',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  style: TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
       ),
     );
   }
-
-  Future<void> _processSalePayment() async {
-    if (_isSubmitting) return;
-    final guardOk = await BiometricAuthGuard.guard(
-      context,
-      reason: 'Authenticate to confirm your payment',
-    );
-    if (!guardOk) return;
-    if (!mounted) return;
-    final planMonths = _salePlanMonths ?? 1;
-    setState(() => _isSubmitting = true);
-    try {
-      final responseData = await _submitProperty();
-      if (!mounted) return;
-      if (responseData == null) {
-        setState(() => _isSubmitting = false);
-        return;
-      }
-
-      final propertyId = _parseInt(responseData['property_id'], fallback: -1);
-      if (propertyId <= 0) {
-        setState(() => _isSubmitting = false);
-        _showError('Could not determine property ID');
-        return;
-      }
-
-      final subscriptionResult = await di.sl<CreateSubscriptionUseCase>()(
-        CreateSubscriptionParams(
-          propertyId: propertyId,
-          planMonths: planMonths,
-        ),
-      );
-      if (!mounted) return;
-
-      await subscriptionResult.fold(
-        (failure) async {
-          setState(() => _isSubmitting = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(failure.message)),
-          );
-        },
-        (sub) async {
-          try {
-            final storage = di.sl<SubscriptionStorageService>();
-            await storage.saveListingSubscription(ListingSubscriptionRecord(
-              propertyId: propertyId,
-              subscriptionId: sub.subscriptionId,
-              propertyName: _titleCtl.text.trim(),
-              planMonths: planMonths,
-              amount: sub.amount,
-              paymentState: ListingSubscriptionPaymentState.unpaid,
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-            ));
-          } catch (_) {}
-
-          if (!mounted) return;
-          setState(() => _isSubmitting = false);
-          _showPropertyAddedDialog();
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => PropertySubscriptionPage(propertyId: propertyId),
-            ),
-          );
-        },
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-    }
-  }
-
-
 
   // ---------------------------------------------------------------------------
   // HELPERS
@@ -2550,13 +2232,6 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   }
 
   String _nonNull(dynamic v) => v?.toString().trim() ?? '';
-
-  int _parseInt(dynamic value, {int fallback = 0}) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value) ?? fallback;
-    return fallback;
-  }
 
   void _showError(String message) {
     if (!mounted) return;

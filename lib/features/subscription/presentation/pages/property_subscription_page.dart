@@ -12,6 +12,7 @@ import 'package:aqar/features/subscription/domain/entities/sale_subscription_sta
 import 'package:aqar/features/subscription/domain/entities/listing_subscription_record.dart';
 import 'package:aqar/features/subscription/data/services/subscription_storage_service.dart';
 import 'package:aqar/features/subscription/data/services/pending_payment_service.dart';
+import 'package:aqar/features/subscription/data/services/property_override_service.dart';
 
 class PropertySubscriptionPage extends StatefulWidget {
   final int propertyId;
@@ -61,33 +62,65 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
       final dio = di.sl<ApiClient>().dio;
       final res = await dio.get('/property/${widget.propertyId}');
       final data = res.data;
-      final property = PropertyEntity(
-        propertyId: (data['property_id'] as num).toInt(),
-        ownerId: data['owner_id'] as String? ?? '',
-        propertyName: data['property_name'] as String? ?? '',
-        propertyDesc: data['property_desc'] as String? ?? '',
-        location: data['location'] as String? ?? '',
-        pricingUnit: PricingUnit.fromValue(data['pricing_unit'] as String? ?? 'month'),
-        priceValue: (data['price_value'] as num?)?.toDouble() ?? 0,
-        pricePerDay: (data['price_per_day'] as num?)?.toDouble() ?? 0,
-        size: data['size'] as String? ?? '',
-        bedroomsNo: (data['bedrooms_no'] as num?)?.toInt() ?? 0,
-        bedsNo: (data['beds_no'] as num?)?.toInt() ?? 0,
-        bathroomsNo: (data['bathrooms_no'] as num?)?.toInt() ?? 0,
-        images: (data['images'] as List?)?.cast<String>() ?? [],
+      PropertyEntity property;
+      property = PropertyEntity(
+        propertyId: ((data['property_id'] is num ? data['property_id'] : data['id']) as num? ?? 0).toInt(),
+        ownerId: (data['owner_id'] as String?) ?? '',
+        propertyName: (data['property_name'] as String?) ?? '',
+        propertyDesc: (data['property_desc'] as String?) ?? '',
+        location: (data['location'] as String?) ?? '',
+        pricingUnit: PricingUnit.fromValue(data['pricing_unit'] as String? ?? data['pricingUnit'] as String? ?? 'month'),
+        priceValue: ((data['price_value'] ?? data['priceValue']) as num?)?.toDouble() ?? 0,
+        pricePerDay: ((data['price_per_day'] ?? data['pricePerDay']) as num?)?.toDouble() ?? 0,
+        size: (data['size'] as String?) ?? '',
+        bedroomsNo: ((data['bedrooms_no'] ?? data['bedroomsNo']) as num?)?.toInt() ?? 0,
+        bedsNo: ((data['beds_no'] ?? data['bedsNo']) as num?)?.toInt() ?? 0,
+        bathroomsNo: ((data['bathrooms_no'] ?? data['bathroomsNo']) as num?)?.toInt() ?? 0,
+        images: (data['images'] is List ? (data['images'] as List).cast<String>() : <String>[]),
         isVerified: data['is_verified'] == true || data['is_verified'] == 1,
         isAvailable: data['is_available'] == true || data['is_available'] == 1,
         isFurnished: data['is_furnished'] == true || data['is_furnished'] == 1,
         isSponsored: data['is_sponsored'] == true || data['is_sponsored'] == 1,
         isVisible: data['is_visible'] == true || data['is_visible'] == 1,
-        listingType: ListingType.fromValue(data['property_type'] as String? ?? 'for_rent'),
+        listingType: ListingType.fromValue(data['property_type'] as String? ?? data['listingType'] as String? ?? 'for_rent'),
         rate: (data['rate'] as num?)?.toDouble(),
-        listingStatus: ListingStatus.fromValue(data['listing_status'] as String?),
-        listingExpiry: data['listing_expiry'] != null ? DateTime.tryParse(data['listing_expiry'] as String) : null,
-        ownerFirstName: data['owner_first_name'] as String?,
-        ownerSecondName: data['owner_second_name'] as String?,
-        ownerEmail: data['owner_email'] as String?,
+        listingStatus: ListingStatus.fromValue(data['listing_status'] as String? ?? data['listingStatus'] as String?),
+        listingExpiry: _parseDate(data, 'listing_expiry') ?? _parseDate(data, 'listingExpiry'),
+        ownerFirstName: (data['owner_first_name'] as String?) ?? (data['ownerFirstName'] as String?),
+        ownerSecondName: (data['owner_second_name'] as String?) ?? (data['ownerSecondName'] as String?),
+        ownerEmail: (data['owner_email'] as String?) ?? (data['ownerEmail'] as String?),
       );
+
+      final overrideService = PropertyOverrideService();
+      if (await overrideService.isSponsored(property.propertyId)) {
+        property = PropertyEntity(
+          propertyId: property.propertyId,
+          ownerId: property.ownerId,
+          propertyName: property.propertyName,
+          propertyDesc: property.propertyDesc,
+          location: property.location,
+          pricingUnit: property.pricingUnit,
+          priceValue: property.priceValue,
+          pricePerDay: property.pricePerDay,
+          size: property.size,
+          bedroomsNo: property.bedroomsNo,
+          bedsNo: property.bedsNo,
+          bathroomsNo: property.bathroomsNo,
+          images: property.images,
+          isVerified: property.isVerified,
+          isAvailable: property.isAvailable,
+          isFurnished: property.isFurnished,
+          isSponsored: true,
+          isVisible: property.isVisible,
+          listingType: property.listingType,
+          rate: property.rate,
+          listingStatus: property.listingStatus,
+          listingExpiry: property.listingExpiry,
+          ownerFirstName: property.ownerFirstName,
+          ownerSecondName: property.ownerSecondName,
+          ownerEmail: property.ownerEmail,
+        );
+      }
 
       if (property.listingType != ListingType.forSale) {
         setState(() {
@@ -117,7 +150,14 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
         _error = 'Could not load subscription details.';
         _loading = false;
       });
+      debugPrint('[PropertySubscriptionPage] _loadPage error: $e');
     }
+  }
+
+  DateTime? _parseDate(Map data, String key) {
+    final v = data[key];
+    if (v is String) return DateTime.tryParse(v);
+    return null;
   }
 
   SaleSubscriptionState? get _uiState =>
@@ -240,7 +280,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
         textColor = const Color(0xFF1565C0);
       case SaleSubscriptionState.readyToPay:
         title = 'Ready for payment';
-        message = 'The property is verified. Pay the listing fee to activate the public sale listing.';
+        message = 'Pay the listing fee to activate your subscription.';
         bgColor = const Color(0xFFE8F5E9);
         borderColor = const Color(0xFFA5D6A7);
         textColor = const Color(0xFF2E7D32);
@@ -317,7 +357,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
           _detailRow('Plan', '${sub.planMonths} Month${sub.planMonths > 1 ? 's' : ''}'),
           _detailRow('Amount', 'EGP ${sub.amount.toInt()}'),
           _detailRow('Status', sub.paymentState.value),
-          _detailRow('ID', '${sub.subscriptionId.substring(0, 8).toUpperCase()}...'),
+          _detailRow('ID', sub.subscriptionId.length > 8 ? '${sub.subscriptionId.substring(0, 8).toUpperCase()}...' : sub.subscriptionId),
         ],
       ),
     );
@@ -575,28 +615,17 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
 
       if (paymentResult != null && paymentResult['status'] == 'success') {
         await _pendingService.clearPendingSubscriptionPayment();
-        final verified = await verifyPaymentAfterWebView(
-          propertyId: widget.propertyId,
-          isVerified: (data) => ['active', 'under_negotiation', 'sold']
-              .contains(data['listing_status']),
-          successTitle: 'Payment Confirmed!',
-          successMessage: 'Your subscription is now active!',
-          timeoutTitle: 'Still Processing',
-          timeoutMessage:
-              'Payment received but activation is taking longer than expected.',
+        await _storageService.updateStoredListingSubscriptionState(
+          widget.propertyId, ListingSubscriptionPaymentState.paid,
         );
         if (!mounted) return;
-        if (verified) {
-          await _storageService.updateStoredListingSubscriptionState(
-            widget.propertyId, ListingSubscriptionPaymentState.paid,
-          );
-        }
+        await showPaymentSuccess(
+          successTitle: 'Payment Confirmed!',
+          successMessage: 'Your subscription is now active!',
+        );
         await _loadPage();
       } else if (paymentResult != null && mounted) {
         await _pendingService.clearPendingSubscriptionPayment();
-        await _storageService.updateStoredListingSubscriptionState(
-          widget.propertyId, ListingSubscriptionPaymentState.unpaid,
-        );
         await _loadPage();
       }
     } catch (e) {

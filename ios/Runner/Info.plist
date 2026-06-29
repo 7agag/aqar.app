@@ -67,5 +67,11 @@
     </dict>
     <key>NSFaceIDUsageDescription</key>
     <string>Authenticate to delete your property</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>AQAR uses your location to show properties near you and help you find your perfect home.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>AQAR uses the camera to take property photos for your listings.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>AQAR accesses your photo library to upload property images.</string>
 </dict>
 </plist>

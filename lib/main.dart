@@ -32,6 +32,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:aqar/features/payment/presentation/mixins/payment_resume_verifier.dart';
 import 'dart:developer' as developer;
 
 void main() async {
@@ -70,9 +71,10 @@ class AqarApp extends StatefulWidget {
   State<AqarApp> createState() => _AqarAppState();
 }
 
-class _AqarAppState extends State<AqarApp> {
+class _AqarAppState extends State<AqarApp> with WidgetsBindingObserver {
   final _navigatorKey = GlobalKey<NavigatorState>();
   late final AppLinks _appLinks;
+  final _resumeVerifier = PaymentResumeVerifier();
 
   @override
   void initState() {
@@ -80,6 +82,14 @@ class _AqarAppState extends State<AqarApp> {
     _appLinks = AppLinks();
     _appLinks.uriLinkStream.listen(_handleDeepLink);
     _appLinks.getInitialLink().then(_handleDeepLink);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _resumeVerifier.verifyOnResume(_navigatorKey);
+    }
   }
 
   void _handleDeepLink(Uri? uri) {
@@ -108,6 +118,7 @@ class _AqarAppState extends State<AqarApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _appLinks = AppLinks();
     super.dispose();
   }

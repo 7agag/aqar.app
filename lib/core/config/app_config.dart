@@ -1,6 +1,6 @@
 class AppConfig {
   // الروابط الأساسية كـ Constants لضمان الأداء الأفضل
-  static const String _serverUrl = 'https://aqar.dpdns.org';
+  static const String _serverUrl = 'https://jovek-aqar.up.railway.app';
   static const String _vercelUrl = 'https://aqar-tan.vercel.app';
 
   /// الرابط الأساسي للسيرفر (API)
@@ -20,7 +20,8 @@ class AppConfig {
       '$paymentCallbackUrl?type=sponsor&propertyId=$propertyId';
 
   /// رابط الدفع للاشتراكات (Subscription)
-  static String subscriptionCallbackUrl(int propertyId, String subscriptionId) =>
+  static String subscriptionCallbackUrl(
+          int propertyId, String subscriptionId) =>
       '$paymentCallbackUrl?type=subscription&propertyId=$propertyId&subscriptionId=$subscriptionId';
 
   /// رابط الصور (يدعم متغيرات البيئة للـ Production/Staging)
