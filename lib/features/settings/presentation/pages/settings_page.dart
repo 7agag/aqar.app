@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/core/localization/app_strings.dart';
+import 'package:aqar/core/services/biometric_auth_service.dart';
 import 'package:aqar/features/about/presentation/pages/about_page.dart';
 import 'package:aqar/features/help/presentation/pages/help_page.dart';
 import 'package:aqar/features/auth/presentation/pages/change_password_page.dart';
+import 'package:aqar/injection_container.dart' as di;
+import 'package:aqar/features/notifications/domain/repositories/notification_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -18,6 +21,8 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _emailNotifications = true;
   bool _smsNotifications = false;
   bool _darkMode = false;
+  bool _biometricEnabled = true;
+  bool _biometricAvailable = false;
   String _currentLocale = AppStrings.locale;
 
   @override
@@ -28,8 +33,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
+    final biometricAvailable = await BiometricAuthService.canAuthenticate();
     setState(() {
       _darkMode = prefs.getBool('dark_mode') ?? false;
+      _biometricEnabled = prefs.getBool('biometric_enabled') ?? true;
+      _biometricAvailable = biometricAvailable;
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
       _emailNotifications = prefs.getBool('email_notifications') ?? true;
       _smsNotifications = prefs.getBool('sms_notifications') ?? false;
@@ -111,7 +119,13 @@ class _SettingsPageState extends State<SettingsPage> {
               value: _emailNotifications,
               onChanged: (v) {
                 setState(() => _emailNotifications = v);
-                SharedPreferences.getInstance().then((prefs) => prefs.setBool('email_notifications', v));
+                SharedPreferences.getInstance().then((prefs) {
+                  prefs.setBool('email_notifications', v);
+                  di.sl<NotificationRepository>().updatePreferences(
+                    email: v,
+                    sms: _smsNotifications,
+                  );
+                });
               },
             ),
           ),
@@ -123,7 +137,13 @@ class _SettingsPageState extends State<SettingsPage> {
               value: _smsNotifications,
               onChanged: (v) {
                 setState(() => _smsNotifications = v);
-                SharedPreferences.getInstance().then((prefs) => prefs.setBool('sms_notifications', v));
+                SharedPreferences.getInstance().then((prefs) {
+                  prefs.setBool('sms_notifications', v);
+                  di.sl<NotificationRepository>().updatePreferences(
+                    email: _emailNotifications,
+                    sms: v,
+                  );
+                });
               },
             ),
           ),
@@ -137,6 +157,25 @@ class _SettingsPageState extends State<SettingsPage> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+            ),
+          ),
+          _buildTile(
+            Icons.fingerprint,
+            'Biometric Authentication',
+            _biometricAvailable
+                ? (_biometricEnabled
+                    ? 'Use fingerprint to confirm actions'
+                    : 'Disabled')
+                : 'Not available on this device',
+            TrailingSwitch(
+              value: _biometricEnabled && _biometricAvailable,
+              onChanged: _biometricAvailable
+                  ? (v) {
+                      setState(() => _biometricEnabled = v);
+                      SharedPreferences.getInstance().then(
+                          (prefs) => prefs.setBool('biometric_enabled', v));
+                    }
+                  : null,
             ),
           ),
           const SizedBox(height: 24),
@@ -232,9 +271,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
 class TrailingSwitch extends StatelessWidget {
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
-  const TrailingSwitch({super.key, required this.value, required this.onChanged});
+  const TrailingSwitch({super.key, required this.value, this.onChanged});
 
   @override
   Widget build(BuildContext context) {

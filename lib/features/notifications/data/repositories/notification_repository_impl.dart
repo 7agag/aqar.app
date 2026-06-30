@@ -35,4 +35,16 @@ class NotificationRepositoryImpl implements NotificationRepository {
       return Left(ServerFailure(e.message));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> updatePreferences({required bool email, required bool sms}) async {
+    try {
+      await remoteDataSource.updatePreferences(email: email, sms: sms);
+      return const Right(null);
+    } on UnauthorizedException {
+      return const Left(UnauthorizedFailure());
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
 }

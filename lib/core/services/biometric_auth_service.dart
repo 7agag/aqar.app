@@ -2,6 +2,18 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:local_auth/local_auth.dart';
 
 class BiometricAuthService {
+  static Future<bool> canAuthenticate() async {
+    if (kIsWeb) return false;
+    final auth = LocalAuthentication();
+    try {
+      final canCheck = await auth.canCheckBiometrics;
+      final isDeviceSupported = await auth.isDeviceSupported();
+      return canCheck || isDeviceSupported;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<bool> authenticate({
     String reason = 'Please authenticate to confirm this action',
   }) async {

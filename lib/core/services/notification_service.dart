@@ -6,6 +6,8 @@ class NotificationService {
   late final FlutterLocalNotificationsPlugin _plugin;
   bool _initialized = false;
 
+  void Function(String? payload)? onNotificationTap;
+
   Future<void> init() async {
     if (_initialized) return;
     tz.initializeTimeZones();
@@ -13,9 +15,9 @@ class NotificationService {
 
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
     );
 
     const settings = InitializationSettings(
@@ -23,8 +25,40 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(settings);
+    await _plugin.initialize(
+      settings,
+      onDidReceiveNotificationResponse: _onNotificationResponse,
+    );
     _initialized = true;
+  }
+
+  void _onNotificationResponse(NotificationResponse response) {
+    onNotificationTap?.call(response.payload);
+  }
+
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (!_initialized) return;
+    final id = DateTime.now().millisecondsSinceEpoch.bitLength;
+    await _plugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'general_notifications',
+          'Notifications',
+          channelDescription: 'General app notifications',
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      payload: payload,
+    );
   }
 
   Future<void> scheduleLeaseReminder({

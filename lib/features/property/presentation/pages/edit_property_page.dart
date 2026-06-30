@@ -36,6 +36,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
   bool _isSaving = false;
   bool _pendingImagesSave = false;
   bool _isFurnished = false;
+  bool _propertyLoaded = false;
   PricingUnit _pricingUnit = PricingUnit.month;
 
   double? _lat;
@@ -48,7 +49,12 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
   @override
   void initState() {
     super.initState();
-    final p = widget.property;
+    context.read<PropertyBloc>().add(
+      GetPropertyByIdRequested(id: widget.property.propertyId),
+    );
+  }
+
+  void _initControllers(PropertyEntity p) {
     _nameController = TextEditingController(text: p.propertyName);
     _descController = TextEditingController(text: p.propertyDesc);
     _locationController = TextEditingController(text: p.location);
@@ -70,18 +76,21 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
     _resolvedAddress = p.location;
     _isFurnished = p.isFurnished;
     _pricingUnit = p.pricingUnit;
+    _propertyLoaded = true;
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _descController.dispose();
-    _locationController.dispose();
-    _priceController.dispose();
-    _sizeController.dispose();
-    _bedroomsController.dispose();
-    _bedsController.dispose();
-    _bathroomsController.dispose();
+    if (_propertyLoaded) {
+      _nameController.dispose();
+      _descController.dispose();
+      _locationController.dispose();
+      _priceController.dispose();
+      _sizeController.dispose();
+      _bedroomsController.dispose();
+      _bedsController.dispose();
+      _bathroomsController.dispose();
+    }
     super.dispose();
   }
 
@@ -196,7 +205,11 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
       ),
       body: BlocListener<PropertyBloc, PropertyState>(
         listener: (context, state) {
-          if (state is PropertyOperationSuccess) {
+          if (state is PropertyDetailLoaded) {
+            _initControllers(state.property);
+            setState(() {});
+          } else if (state is PropertyOperationSuccess) {
+            if (!_propertyLoaded) return;
             if (_pendingImagesSave) {
               setState(() => _pendingImagesSave = false);
               _saveImages();
@@ -210,21 +223,24 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
               Navigator.pop(context, true);
             }
           } else if (state is PropertyLoading) {
-            setState(() => _isSaving = true);
+            if (_propertyLoaded) setState(() => _isSaving = true);
           } else if (state is PropertyError) {
-            setState(() => _isSaving = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
+            if (_propertyLoaded) {
+              setState(() => _isSaving = false);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
           }
         },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
+        child: _propertyLoaded
+            ? SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -347,6 +363,9 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
               ],
             ),
           ),
+        )
+      : const Center(
+          child: CircularProgressIndicator(),
         ),
       ),
     );
@@ -380,6 +399,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
         const SizedBox(width: 12),
         SizedBox(
           height: 56,
+          width: 56,
           child: ElevatedButton(
             onPressed: _pickMapLocation,
             style: ElevatedButton.styleFrom(
@@ -389,7 +409,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.zero,
             ),
             child: const Icon(Icons.map, size: 22),
           ),

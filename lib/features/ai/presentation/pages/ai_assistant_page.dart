@@ -7,7 +7,8 @@ import '../../domain/entities/ai_message_entity.dart';
 import '../bloc/ai_bloc.dart';
 import '../bloc/ai_event.dart';
 import '../bloc/ai_state.dart';
-import '../widgets/ai_property_card.dart';
+import '../widgets/ai_message_bubble.dart';
+import '../widgets/ai_typing_indicator.dart';
 
 class AiAssistantPage extends StatefulWidget {
   const AiAssistantPage({super.key});
@@ -16,18 +17,13 @@ class AiAssistantPage extends StatefulWidget {
   State<AiAssistantPage> createState() => _AiAssistantPageState();
 }
 
-class _AiAssistantPageState extends State<AiAssistantPage>
-    with SingleTickerProviderStateMixin {
-  static const _navy = Color(0xFF1A237E);
+class _AiAssistantPageState extends State<AiAssistantPage> {
 
   late final TextEditingController _messageController;
   late final FocusNode _focusNode;
   late final ScrollController _scrollController;
-  late final AnimationController _dotController;
-  late final Animation<double> _dot1;
-  late final Animation<double> _dot2;
-  late final Animation<double> _dot3;
   late final VoidCallback _focusListener;
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -41,30 +37,6 @@ class _AiAssistantPageState extends State<AiAssistantPage>
     };
     _focusNode.addListener(_focusListener);
     context.read<AiBloc>().add(const LoadAiChatHistory());
-
-    _dotController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
-
-    _dot1 = Tween(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _dotController,
-        curve: const Interval(0.0, 1.0, curve: Curves.easeInOut),
-      ),
-    );
-    _dot2 = Tween(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _dotController,
-        curve: const Interval(0.2, 1.0, curve: Curves.easeInOut),
-      ),
-    );
-    _dot3 = Tween(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _dotController,
-        curve: const Interval(0.4, 1.0, curve: Curves.easeInOut),
-      ),
-    );
   }
 
   @override
@@ -73,7 +45,6 @@ class _AiAssistantPageState extends State<AiAssistantPage>
     _focusNode.removeListener(_focusListener);
     _focusNode.dispose();
     _scrollController.dispose();
-    _dotController.dispose();
     super.dispose();
   }
 
@@ -88,8 +59,10 @@ class _AiAssistantPageState extends State<AiAssistantPage>
   }
 
   void _sendStarterPrompt() {
+    if (_isSending) return;
     final state = context.read<AiBloc>().state;
     if (state is AiLoaded && state.isLoading) return;
+    _isSending = true;
     context
         .read<AiBloc>()
         .add(SendAiMessage(message: AppStrings.aiStarterPrompt));
@@ -98,22 +71,22 @@ class _AiAssistantPageState extends State<AiAssistantPage>
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
-      }
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text(
           'Aqar Assistant',
@@ -155,10 +128,16 @@ class _AiAssistantPageState extends State<AiAssistantPage>
       body: GestureDetector(
         onTap: () => _focusNode.unfocus(),
         child: BlocListener<AiBloc, AiState>(
-          listenWhen: (previous, current) =>
-              current is AiLoaded &&
-              (current.messages.isNotEmpty || current.errorMessage != null),
+          listenWhen: (previous, current) {
+            if (current is! AiLoaded) return false;
+            if (current.errorMessage != null) return true;
+            final prevLen = previous is AiLoaded ? previous.messages.length : 0;
+            return current.messages.length != prevLen;
+          },
           listener: (context, state) {
+            if (state is AiLoaded && !state.isLoading) {
+              _isSending = false;
+            }
             _scrollToBottom();
             if (state is AiLoaded && state.errorMessage != null) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -182,11 +161,14 @@ class _AiAssistantPageState extends State<AiAssistantPage>
               return Column(
                 children: [
                   Expanded(
-                    child: messages.isEmpty
-                        ? _buildEmptyState()
-                        : _buildChatList(messages, isLoading),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: messages.isEmpty
+                          ? _buildEmptyState()
+                          : _buildChatList(messages, isLoading),
+                    ),
                   ),
-                  _buildInputBar(bottomInset, isLoading),
+                  _buildInputBar(isLoading),
                 ],
               );
             },
@@ -225,6 +207,7 @@ class _AiAssistantPageState extends State<AiAssistantPage>
 
   Widget _buildEmptyState() {
     return Center(
+      key: const ValueKey('empty'),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
@@ -318,258 +301,98 @@ class _AiAssistantPageState extends State<AiAssistantPage>
 
   Widget _buildChatList(List<AiMessageEntity> messages, bool isLoading) {
     return ListView.builder(
+      key: const ValueKey('chat'),
       controller: _scrollController,
       reverse: true,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       itemCount: messages.length + (isLoading ? 1 : 0),
       itemBuilder: (_, i) {
-        if (i == 0 && isLoading) return _buildTypingIndicator();
-        final msg = messages[messages.length - 1 - i];
-        return _buildMessageBubble(msg);
+        if (i == 0 && isLoading) return const AiTypingIndicator();
+        final msgIndex = messages.length - 1 - i + (isLoading ? 1 : 0);
+        final msg = messages[msgIndex];
+        return AiMessageBubble(msg: msg);
       },
     );
   }
 
-  Widget _buildMessageBubble(AiMessageEntity msg) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final bubbleMaxWidth = (screenWidth - 32) * 0.78;
-
-    if (msg.isUser) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: bubbleMaxWidth),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(4),
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
-            child: Text(
-              msg.text,
-              softWrap: true,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textPrimary,
-              ),
-            ),
+  Widget _buildInputBar(bool isSending) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Align(
-        alignment: Alignment.centerLeft,
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 28,
-              height: 28,
-              decoration: const BoxDecoration(
-                color: _navy,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.auto_awesome,
-                size: 14,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: bubbleMaxWidth),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: const BoxDecoration(
-                    color: _navy,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(4),
-                      topRight: Radius.circular(20),
-                      bottomLeft: Radius.circular(20),
-                      bottomRight: Radius.circular(20),
-                    ),
+            Expanded(
+              child: TextField(
+                controller: _messageController,
+                focusNode: _focusNode,
+                enabled: !isSending,
+                minLines: 1,
+                maxLines: 4,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _handleSend(),
+                decoration: InputDecoration(
+                  hintText: AppStrings.aiTypeMessage,
+                  filled: true,
+                  fillColor: AppColors.surfaceLight,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        msg.text,
-                        softWrap: true,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                      if (msg.properties != null && msg.properties!.isNotEmpty)
-                        ...msg.properties!
-                            .map((p) => AiPropertyCard(property: p)),
-                    ],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
                   ),
                 ),
               ),
+            ),
+            const SizedBox(width: 10),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _messageController,
+              builder: (context, value, _) {
+                final canSend = value.text.trim().isNotEmpty && !isSending;
+                return GestureDetector(
+                  onTap: canSend ? _handleSend : null,
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: canSend
+                          ? AppColors.primary
+                          : AppColors.textHint.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_upward,
+                      size: 22,
+                      color: Colors.white,
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildTypingIndicator() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: const BoxDecoration(
-              color: _navy,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.auto_awesome,
-              size: 14,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: AnimatedBuilder(
-              animation: _dotController,
-              builder: (_, __) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildDot(_dot1),
-                    const SizedBox(width: 5),
-                    _buildDot(_dot2),
-                    const SizedBox(width: 5),
-                    _buildDot(_dot3),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDot(Animation<double> animation) {
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: AppColors.textHint.withValues(alpha: animation.value),
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-
-  Widget _buildInputBar(double bottomInset, bool isSending) {
-    return Container(
-      color: Colors.white,
-      child: AnimatedPadding(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-        padding: EdgeInsets.only(bottom: bottomInset),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    focusNode: _focusNode,
-                    enabled: !isSending,
-                    minLines: 1,
-                    maxLines: 4,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _handleSend(),
-                    decoration: InputDecoration(
-                      hintText: AppStrings.aiTypeMessage,
-                      filled: true,
-                      fillColor: AppColors.surfaceLight,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 14,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _messageController,
-                  builder: (context, value, _) {
-                    final canSend = value.text.trim().isNotEmpty && !isSending;
-                    return GestureDetector(
-                      onTap: canSend ? _handleSend : null,
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: canSend
-                              ? AppColors.primary
-                              : AppColors.textHint.withValues(alpha: 0.35),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_upward,
-                          size: 22,
-                          color: Colors.white,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
+

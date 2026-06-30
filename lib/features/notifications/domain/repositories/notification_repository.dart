@@ -5,4 +5,5 @@ import '../entities/notification_entity.dart';
 abstract class NotificationRepository {
   Future<Either<Failure, (List<NotificationEntity>, int)>> getNotifications();
   Future<Either<Failure, void>> markAsRead(String notificationId);
+  Future<Either<Failure, void>> updatePreferences({required bool email, required bool sms});
 }

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:equatable/equatable.dart';
 
 class NotificationEntity extends Equatable {
@@ -22,17 +23,35 @@ class NotificationEntity extends Equatable {
   });
 
   factory NotificationEntity.fromJson(Map<String, dynamic> json) {
+    String? safeString(dynamic v) {
+      if (v == null) return null;
+      if (v is String) return v;
+      return v.toString();
+    }
+
+    String? safeMetadata(dynamic v) {
+      if (v == null) return null;
+      if (v is String) return v;
+      return jsonEncode(v);
+    }
+
+    DateTime safeDateTime(dynamic v) {
+      if (v == null) return DateTime.now();
+      if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
+      if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+      if (v is num) return DateTime.fromMillisecondsSinceEpoch(v.toInt());
+      return DateTime.now();
+    }
+
     return NotificationEntity(
-      notificationId: json['notification_id'] as String? ?? '',
-      receiver: json['receiver'] as String? ?? '',
-      type: json['event_type'] as String? ?? '',
-      title: json['notification_title'] as String? ?? '',
-      body: json['notification_body'] as String? ?? '',
-      metadata: json['metadata'] as String?,
+      notificationId: safeString(json['notification_id']) ?? '',
+      receiver: safeString(json['receiver']) ?? '',
+      type: safeString(json['event_type']) ?? '',
+      title: safeString(json['notification_title']) ?? '',
+      body: safeString(json['notification_body']) ?? '',
+      metadata: safeMetadata(json['metadata']),
       viewed: json['viewed'] == true || json['viewed'] == 1,
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()
-          : DateTime.now(),
+      createdAt: safeDateTime(json['created_at']),
     );
   }
 
