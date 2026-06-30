@@ -7,6 +7,7 @@ import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'package:aqar/core/network/api_client.dart';
 import 'package:aqar/core/services/notification_service.dart';
+import 'package:aqar/core/services/storage_service.dart';
 import 'package:aqar/core/network/socket_service.dart';
 import 'package:aqar/core/services/escrow_service.dart';
 import 'package:aqar/features/auth/data/repositories/auth_repository_impl.dart';
@@ -176,6 +177,7 @@ Future<void> configureDependencies() async {
       () => SocketService(sl<FlutterSecureStorage>()));
   sl.registerLazySingleton<EscrowService>(() => EscrowService());
   sl.registerLazySingleton<NotificationService>(() => NotificationService());
+  sl.registerLazySingleton<StorageService>(() => StorageService(sl()));
 
   // ========== AUTH ==========
   sl.registerLazySingleton<AuthRemoteDataSource>(

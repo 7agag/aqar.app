@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aqar/core/services/storage_service.dart';
 import 'package:aqar/core/theme/app_colors.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:aqar/features/auth/presentation/bloc/auth_state.dart';
 import 'package:aqar/features/onboarding/presentation/pages/onboarding_page.dart';
+import 'package:aqar/injection_container.dart' as di;
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -36,11 +41,40 @@ class _SplashPageState extends State<SplashPage>
 
     _controller.forward();
 
-    Future.delayed(const Duration(milliseconds: 3200), () {
+    Future.delayed(const Duration(milliseconds: 3200), () async {
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const OnboardingPage()),
+      final storage = di.sl<StorageService>();
+
+      if (!storage.hasSeenOnboarding) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const OnboardingPage()),
+        );
+        return;
+      }
+
+      final authBloc = context.read<AuthBloc>();
+      var authState = authBloc.state;
+
+      if (authState is AuthProfileLoaded) {
+        Navigator.of(context).pushReplacementNamed('/home');
+        return;
+      }
+
+      if (authState is AuthUnauthenticated) {
+        Navigator.of(context).pushReplacementNamed('/auth');
+        return;
+      }
+
+      await authBloc.stream.firstWhere(
+        (s) => s is AuthProfileLoaded || s is AuthUnauthenticated,
       );
+      if (!mounted) return;
+      authState = authBloc.state;
+      if (authState is AuthProfileLoaded) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/auth');
+      }
     });
   }
 

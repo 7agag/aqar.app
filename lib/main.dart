@@ -57,6 +57,8 @@ void main() async {
   await di.configureDependencies();
 
   final prefs = await SharedPreferences.getInstance();
+  di.sl.registerLazySingleton<SharedPreferences>(() => prefs);
+
   final savedLocale = prefs.getString('locale') ?? '';
   if (savedLocale.isNotEmpty) {
     AppStrings.locale = savedLocale;
@@ -287,6 +289,10 @@ class _AqarAppState extends State<AqarApp> with WidgetsBindingObserver {
             _notificationSub?.cancel();
             _notificationSub = null;
             socketService.disconnect();
+            _navigatorKey.currentState?.pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const AuthPage()),
+              (route) => route.isFirst,
+            );
           }
         },
         child: MaterialApp(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:aqar/core/services/storage_service.dart';
 import 'package:aqar/core/theme/app_colors.dart';
-import 'package:aqar/features/property/presentation/pages/home_page.dart';
+import 'package:aqar/features/auth/presentation/pages/auth_page.dart';
+import 'package:aqar/injection_container.dart' as di;
 
 class _OnboardingItem {
   final IconData icon;
@@ -48,9 +50,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
     ),
   ];
 
-  void _goToHome() {
+  Future<void> _completeOnboarding() async {
+    await di.sl<StorageService>().setHasSeenOnboarding(true);
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomePage()),
+      MaterialPageRoute(builder: (_) => const AuthPage()),
     );
   }
 
@@ -69,7 +73,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
-                onPressed: _goToHome,
+                onPressed: _completeOnboarding,
                 child: Text(
                   'Skip',
                   style: TextStyle(
@@ -147,7 +151,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: _currentPage == _pages.length - 1 ? _goToHome : () {
+              onPressed: _currentPage == _pages.length - 1 ? _completeOnboarding : () {
                 _pageController.nextPage(
                   duration: const Duration(milliseconds: 400),
                   curve: Curves.easeInOut,
