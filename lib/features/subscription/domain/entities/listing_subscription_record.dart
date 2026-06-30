@@ -1,3 +1,5 @@
+import 'package:aqar/core/utils/parse_utils.dart';
+
 enum ListingSubscriptionPaymentState {
   unpaid('UNPAID'),
   pending('PENDING'),
@@ -33,14 +35,14 @@ class ListingSubscriptionRecord {
 
   factory ListingSubscriptionRecord.fromJson(Map<String, dynamic> json) {
     return ListingSubscriptionRecord(
-      propertyId: (json['propertyId'] as num).toInt(),
-      subscriptionId: json['subscriptionId'] as String,
+      propertyId: parseInt(json['propertyId']),
+      subscriptionId: json['subscriptionId']?.toString() ?? '',
       propertyName: json['propertyName'] as String? ?? '',
-      planMonths: (json['planMonths'] as num).toInt(),
-      amount: (json['amount'] as num).toDouble(),
-      paymentState: ListingSubscriptionPaymentState.fromValue(json['paymentState'] as String),
-      createdAt: DateTime.fromMillisecondsSinceEpoch((json['createdAt'] as num).toInt()),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch((json['updatedAt'] as num).toInt()),
+      planMonths: parseInt(json['planMonths']),
+      amount: parseDouble(json['amount']),
+      paymentState: ListingSubscriptionPaymentState.fromValue(json['paymentState']?.toString() ?? ''),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(parseInt(json['createdAt'], 0)),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(parseInt(json['updatedAt'], 0)),
     );
   }
 

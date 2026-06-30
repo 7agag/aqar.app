@@ -68,3 +68,5 @@ enum PricingUnit {
   static PricingUnit fromValue(String v) =>
       values.firstWhere((e) => e.value == v, orElse: () => day);
 }
+
+enum PropertyContext { owner, renter, visitor }

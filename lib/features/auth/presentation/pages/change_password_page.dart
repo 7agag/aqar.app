@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/services/biometric_auth_guard.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -31,13 +32,22 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     super.dispose();
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final state = context.read<AuthBloc>().state;
+    final bloc = context.read<AuthBloc>();
+    final messenger = ScaffoldMessenger.of(context);
+    final state = bloc.state;
     final email = state is AuthProfileLoaded ? state.user.email : '';
+
+    final guardOk = await BiometricAuthGuard.guard(
+      context,
+      reason: 'Authenticate to change your password',
+    );
+    if (!guardOk) return;
+
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Unable to verify your identity. Please log in again.'),
           backgroundColor: AppColors.error,
@@ -46,7 +56,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       return;
     }
 
-    context.read<AuthBloc>().add(ChangePasswordRequested(
+    bloc.add(ChangePasswordRequested(
       email: email,
       currentPassword: _currentCtl.text,
       newPassword: _newCtl.text,

@@ -1,5 +1,6 @@
 // lib/features/property/presentation/pages/home_page.dart
 
+import 'package:aqar/core/extensions/num_formatting.dart';
 import 'package:aqar/features/favorite/presentation/bloc/favorite_bloc.dart';
 import 'package:aqar/features/favorite/presentation/pages/favorites_page.dart';
 import 'package:aqar/features/map/presentation/pages/map_page.dart';
@@ -8,16 +9,31 @@ import 'package:aqar/features/auth/presentation/pages/profile_page.dart';
 import 'package:aqar/features/property/presentation/pages/all_properties_page.dart';
 import 'package:aqar/features/property/presentation/pages/property_detail_page.dart';
 import 'package:aqar/features/ai/presentation/pages/ai_assistant_page.dart';
+import 'package:aqar/features/ai/presentation/bloc/ai_bloc.dart';
+import 'package:aqar/features/ai/presentation/bloc/ai_state.dart';
 import 'package:aqar/features/notifications/presentation/pages/notifications_page.dart';
+import 'package:aqar/features/notifications/presentation/bloc/notification_bloc.dart';
+import 'package:aqar/features/notifications/presentation/bloc/notification_event.dart';
+import 'package:aqar/features/notifications/presentation/bloc/notification_state.dart';
 import 'package:aqar/features/chat/presentation/pages/chat_list_page.dart';
+import 'package:aqar/features/chat/presentation/bloc/chat_bloc.dart';
+import 'package:aqar/features/chat/presentation/bloc/chat_event.dart';
+import 'package:aqar/features/chat/presentation/bloc/chat_state.dart';
 import 'package:aqar/features/rent_request/presentation/pages/rent_requests_page.dart';
+import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
+import 'package:aqar/features/rent_request/presentation/bloc/rent_request_event.dart';
+import 'package:aqar/features/rent_request/presentation/bloc/rent_request_state.dart';
 import 'package:aqar/features/auth/presentation/widgets/auth_guard.dart';
 import 'package:aqar/core/navigation/property_detail_navigator.dart';
+import 'package:aqar/core/services/ai_unread_service.dart';
+import 'package:aqar/core/widgets/badge_icon.dart';
+import 'package:aqar/injection_container.dart' as di;
+import 'package:aqar/features/ai/data/mappers/ai_property_mapper.dart';
+import 'package:aqar/features/ai/domain/usecases/search_ai_properties_usecase.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/refreshable_widget.dart';
 import '../../domain/entities/property_filter_params.dart';
 import '../../domain/entities/property_entity.dart';
 import '../../domain/entities/property_enums.dart';
@@ -51,7 +67,8 @@ class _HomePageState extends State<HomePage>
   int _rentCount = 0;
   Set<int> _favoriteIds = {};
 
-  // Advanced filters (بدون Location)
+  // Advanced filters
+  String? _activeLocation;
   double? _activeMinPrice;
   double? _activeMaxPrice;
   int? _activeBedrooms;
@@ -60,8 +77,13 @@ class _HomePageState extends State<HomePage>
   double? _activeMinSize;
   double? _activeMaxSize;
 
+  bool _isAiSearch = false;
+  bool _isAiSearching = false;
+  List<PropertyEntity> _aiSearchResults = [];
+
   int? _detailPropertyId;
   bool _showDetail = false;
+  bool _aiHasUnread = false;
 
   // Loading
   bool _isLoading = false;
@@ -69,6 +91,7 @@ class _HomePageState extends State<HomePage>
   List<PropertyEntity> _allProperties = [];
 
   bool get _hasActiveAdvancedFilters =>
+      _activeLocation != null ||
       _activeMinPrice != null ||
       _activeMaxPrice != null ||
       _activeBedrooms != null ||
@@ -183,12 +206,88 @@ class _HomePageState extends State<HomePage>
         );
   }
 
-  // ========== البحث (عند الضغط على Enter فقط) ==========
+  void _reloadWithFilters() {
+    if (_isLoading) return;
+
+    String? listingType = _isBuy ? 'forSale' : 'forRent';
+    String? effectiveLocation = _activeLocation ?? _searchText?.trim();
+    if (effectiveLocation != null && effectiveLocation.isEmpty) {
+      effectiveLocation = null;
+    }
+
+    context.read<PropertyBloc>().add(
+          GetPropertiesRequested(
+            params: PropertyFilterParams(
+              location: effectiveLocation,
+              minPrice: _activeMinPrice,
+              maxPrice: _activeMaxPrice,
+              bedrooms: _activeBedrooms,
+              bathrooms: _activeBathrooms,
+              minSize: _activeMinSize,
+              maxSize: _activeMaxSize,
+              listingType: listingType,
+            ),
+          ),
+        );
+  }
+
   void _performSearch(String query) {
+    final trimmed = query.trim();
     setState(() {
-      _searchText = query.trim().isEmpty ? null : query.trim();
-      _nearbyCache = null;
+      _searchText = trimmed.isEmpty ? null : trimmed;
     });
+    if (trimmed.isNotEmpty) {
+      _searchWithAi(trimmed);
+    } else {
+      setState(() {
+        _isAiSearch = false;
+        _aiSearchResults = [];
+      });
+    }
+  }
+
+  Future<void> _searchWithAi(String query) async {
+    setState(() => _isAiSearching = true);
+    final useCase = di.sl<SearchAiPropertiesUseCase>();
+    final result = await useCase(SearchAiPropertiesParams(query: query));
+    if (!mounted) return;
+    result.fold(
+      (failure) {
+        setState(() {
+          _isAiSearch = false;
+          _isAiSearching = false;
+          _aiSearchResults = [];
+        });
+        // Navigate to SearchPage as fallback
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SearchPage(initialQuery: query),
+          ),
+        );
+      },
+      (properties) {
+        if (properties.isEmpty) {
+          setState(() {
+            _isAiSearch = false;
+            _isAiSearching = false;
+            _aiSearchResults = [];
+          });
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SearchPage(initialQuery: query),
+            ),
+          );
+          return;
+        }
+        setState(() {
+          _isAiSearch = true;
+          _isAiSearching = false;
+          _aiSearchResults = properties.map(mapAiPropertyToEntity).toList();
+        });
+      },
+    );
   }
 
   // ========== الفلاتر المتقدمة ==========
@@ -204,6 +303,7 @@ class _HomePageState extends State<HomePage>
       backgroundColor: Colors.transparent,
       builder: (_) => AdvancedSearchSheet(
         isBuy: _isBuy,
+        initialLocation: _activeLocation,
         initialMinPrice: _activeMinPrice,
         initialMaxPrice: _activeMaxPrice,
         initialBedrooms: _activeBedrooms,
@@ -214,6 +314,7 @@ class _HomePageState extends State<HomePage>
         allProperties: allProps,
         onApply: (filter) {
           setState(() {
+            _activeLocation = filter.location;
             _activeMinPrice = filter.minPrice;
             _activeMaxPrice = filter.maxPrice;
             _activeBedrooms = filter.bedrooms;
@@ -222,29 +323,40 @@ class _HomePageState extends State<HomePage>
             _activeMinSize = filter.minSize;
             _activeMaxSize = filter.maxSize;
           });
+          _reloadWithFilters();
         },
       ),
     );
   }
 
   // ========== مسح الفلاتر ==========
+  void _clearLocationFilter() {
+    setState(() {
+      _activeLocation = null;
+    });
+    _reloadWithFilters();
+  }
+
   void _clearPriceFilter() {
     setState(() {
       _activeMinPrice = null;
       _activeMaxPrice = null;
     });
+    _reloadWithFilters();
   }
 
   void _clearBedroomsFilter() {
     setState(() {
       _activeBedrooms = null;
     });
+    _reloadWithFilters();
   }
 
   void _clearBathroomsFilter() {
     setState(() {
       _activeBathrooms = null;
     });
+    _reloadWithFilters();
   }
 
   void _clearSizeFilter() {
@@ -252,16 +364,19 @@ class _HomePageState extends State<HomePage>
       _activeMinSize = null;
       _activeMaxSize = null;
     });
+    _reloadWithFilters();
   }
 
   void _clearRentalDurationFilter() {
     setState(() {
       _activeRentalDuration = null;
     });
+    _reloadWithFilters();
   }
 
   void _clearAllFilters() {
     setState(() {
+      _activeLocation = null;
       _activeMinPrice = null;
       _activeMaxPrice = null;
       _activeBedrooms = null;
@@ -284,6 +399,10 @@ class _HomePageState extends State<HomePage>
     _loadCounts();
     _loadFavorites();
     propertyDetailNavigator.addListener(_onDetailNavigatorChanged);
+    context.read<ChatBloc>().add(const GetInboxRequested());
+    context.read<NotificationBloc>().add(const GetNotificationsRequested());
+    context.read<RentRequestBloc>().add(const LoadRentRequests());
+    AiUnreadService().clear();
   }
 
   @override
@@ -340,10 +459,9 @@ class _HomePageState extends State<HomePage>
   void _toggleBuyRent(bool isBuy) {
     setState(() {
       _isBuy = isBuy;
-      _allProperties = [];
       _clearNearbyCache();
     });
-    _loadProperties();
+    _reloadWithFilters();
   }
 
   void _selectTab(int index) {
@@ -390,18 +508,148 @@ class _HomePageState extends State<HomePage>
         ),
       ],
       child: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _buildHeader()),
-            SliverToBoxAdapter(child: _buildSearchBar()),
-            SliverToBoxAdapter(child: _buildFilters()),
-            SliverToBoxAdapter(child: _buildBuyRentToggle()),
-            SliverToBoxAdapter(child: _buildSponsoredSection()),
-            SliverToBoxAdapter(child: _buildNearbySection()),
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        child: Column(
+          children: [
+            _buildHeader(),
+            _buildSearchBar(),
+            Expanded(
+              child: _isAiSearching
+                  ? const Center(
+                      child:
+                          CircularProgressIndicator(color: AppColors.primary),
+                    )
+                  : _isAiSearch
+                      ? _buildAiSearchResults()
+                      : CustomScrollView(
+                          slivers: [
+                            SliverToBoxAdapter(child: _buildFilters()),
+                            SliverToBoxAdapter(child: _buildBuyRentToggle()),
+                            SliverToBoxAdapter(child: _buildSponsoredSection()),
+                            SliverToBoxAdapter(child: _buildNearbySection()),
+                            const SliverToBoxAdapter(
+                                child: SizedBox(height: 100)),
+                          ],
+                        ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAiSearchResults() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome,
+                        size: 12, color: AppColors.primary),
+                    SizedBox(width: 4),
+                    Text(
+                      'AI Search',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '${_aiSearchResults.length} ${_aiSearchResults.length == 1 ? 'result' : 'results'}',
+                style: const TextStyle(fontSize: 12, color: AppColors.textHint),
+              ),
+              const Spacer(),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isAiSearch = false;
+                    _aiSearchResults = [];
+                    _searchText = null;
+                  });
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.borderLight),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.close, size: 12, color: AppColors.textHint),
+                      SizedBox(width: 4),
+                      Text(
+                        'Clear',
+                        style:
+                            TextStyle(fontSize: 11, color: AppColors.textHint),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () async => _searchWithAi(_searchText ?? ''),
+            color: AppColors.primary,
+            child: GridView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.8,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: _aiSearchResults.length,
+              itemBuilder: (context, index) {
+                final property = _aiSearchResults[index];
+                return SponsoredPropertyCard(
+                  property: property,
+                  onTap: () {
+                    if (property.propertyId > 0) {
+                      propertyDetailNavigator.value = property.propertyId;
+                    }
+                  },
+                  onFavTap: () {
+                    final isFav = _favoriteIds.contains(property.propertyId);
+                    if (isFav) {
+                      context
+                          .read<FavoriteBloc>()
+                          .add(RemoveFavoriteEvent(property.propertyId));
+                      setState(() => _favoriteIds.remove(property.propertyId));
+                    } else {
+                      context
+                          .read<FavoriteBloc>()
+                          .add(AddFavoriteEvent(property.propertyId));
+                      setState(() => _favoriteIds.add(property.propertyId));
+                    }
+                  },
+                  isFavorite: _favoriteIds.contains(property.propertyId),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -430,38 +678,69 @@ class _HomePageState extends State<HomePage>
           ),
           Row(
             children: [
-              IconButton(
-                onPressed: () {
-                  _loadProperties();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MyRequestsPage(),
-                    ),
+              BlocBuilder<RentRequestBloc, RentRequestState>(
+                builder: (context, state) {
+                  final count = state is RentRequestsLoaded
+                      ? (state.sent
+                              .where((r) => r.state.name == 'pending')
+                              .length +
+                          state.received
+                              .where((r) => r.state.name == 'pending')
+                              .length)
+                      : 0;
+                  return BadgeIcon(
+                    icon: Icons.inbox_outlined,
+                    count: count,
+                    badgeColor: const Color(0xFFE67E22),
+                    onPressed: () {
+                      _loadProperties();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const MyRequestsPage(),
+                        ),
+                      );
+                    },
                   );
                 },
-                icon: const Icon(Icons.inbox_outlined,
-                    color: AppColors.textPrimary),
               ),
-              IconButton(
-                onPressed: () {
-                  _loadProperties();
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const ChatListPage()));
+              BlocBuilder<ChatBloc, ChatState>(
+                builder: (context, state) {
+                  final count = state is InboxLoaded
+                      ? state.threads
+                          .fold<int>(0, (sum, t) => sum + t.unreadCount)
+                      : 0;
+                  return BadgeIcon(
+                    icon: Icons.chat_outlined,
+                    count: count,
+                    badgeColor: const Color(0xFF3498DB),
+                    onPressed: () {
+                      _loadProperties();
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ChatListPage()));
+                    },
+                  );
                 },
-                icon: const Icon(Icons.chat_outlined,
-                    color: AppColors.textPrimary),
               ),
-              IconButton(
-                onPressed: () {
-                  _loadProperties();
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const NotificationsPage()));
+              BlocBuilder<NotificationBloc, NotificationState>(
+                builder: (context, state) {
+                  final count =
+                      state is NotificationsLoaded ? state.unreadCount : 0;
+                  return BadgeIcon(
+                    icon: Icons.notifications_outlined,
+                    count: count,
+                    badgeColor: AppColors.error,
+                    onPressed: () {
+                      _loadProperties();
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const NotificationsPage()));
+                    },
+                  );
                 },
-                icon: const Icon(Icons.notifications_outlined,
-                    color: AppColors.textPrimary),
               ),
             ],
           ),
@@ -490,6 +769,13 @@ class _HomePageState extends State<HomePage>
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
+            if (_activeLocation != null)
+              FilterChipWidget(
+                label: 'Location: $_activeLocation',
+                isSelected: true,
+                onTap: _onFilterTap,
+                onRemove: _clearLocationFilter,
+              ),
             if (_activeMinPrice != null || _activeMaxPrice != null)
               FilterChipWidget(
                 label: _priceFilterLabel,
@@ -540,6 +826,7 @@ class _HomePageState extends State<HomePage>
   }
 
   bool get _hasVisibleFilterChips =>
+      _activeLocation != null ||
       _activeMinPrice != null ||
       _activeMaxPrice != null ||
       (_activeRentalDuration != null && _activeRentalDuration != 'all') ||
@@ -551,18 +838,22 @@ class _HomePageState extends State<HomePage>
   String get _priceFilterLabel {
     final min = _activeMinPrice?.toInt();
     final max = _activeMaxPrice?.toInt();
-    if (min != null && max != null) return '\$$min - \$$max';
-    if (min != null) return 'From \$$min';
-    if (max != null) return 'Up to \$$max';
+    if (min != null && max != null) {
+      return '\$${min.formatWithCommas()} - \$${max.formatWithCommas()}';
+    }
+    if (min != null) return 'From \$${min.formatWithCommas()}';
+    if (max != null) return 'Up to \$${max.formatWithCommas()}';
     return '';
   }
 
   String get _sizeFilterLabel {
     final min = _activeMinSize?.toInt();
     final max = _activeMaxSize?.toInt();
-    if (min != null && max != null) return '$min - $max sqft';
-    if (min != null) return 'Min $min sqft';
-    if (max != null) return 'Max $max sqft';
+    if (min != null && max != null) {
+      return '${min.formatWithCommas()} - ${max.formatWithCommas()} sqft';
+    }
+    if (min != null) return 'Min ${min.formatWithCommas()} sqft';
+    if (max != null) return 'Max ${max.formatWithCommas()} sqft';
     return '';
   }
 
@@ -623,10 +914,10 @@ class _HomePageState extends State<HomePage>
   Widget _buildSponsoredSection() {
     final sponsored = _sponsoredProperties;
     final screenWidth = MediaQuery.of(context).size.width;
-    double cardWidth = screenWidth * 0.42;
-    if (cardWidth > 260) cardWidth = 260;
+    double cardWidth = screenWidth * 0.48;
+    if (cardWidth > 300) cardWidth = 300;
     if (cardWidth < 180) cardWidth = 180;
-    final double cardHeight = (cardWidth * 0.6) + 90;
+    final double cardHeight = (cardWidth * 0.58) + 105;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -780,12 +1071,37 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return RefreshableWidget(
-      onRefresh: _loadProperties,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: Stack(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: BlocListener<AiBloc, AiState>(
+        listener: (context, state) {
+          final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? true;
+          if (state is AiLoaded &&
+              !state.isLoading &&
+              state.notifyUnread &&
+              isCurrentRoute) {
+            final lastMsg =
+                state.messages.isNotEmpty ? state.messages.last : null;
+            if (lastMsg != null && !lastMsg.isUser) {
+              AiUnreadService().setHasUnread(true);
+              setState(() => _aiHasUnread = true);
+            }
+          }
+        },
+        child: Stack(
           children: [
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0x0FD4AF37),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
             IndexedStack(
               index: _currentIndex,
               children: [
@@ -811,67 +1127,90 @@ class _HomePageState extends State<HomePage>
               ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => requireVerifiedUser(
-            context,
-            onAllowed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const AiAssistantPage())),
-          ),
-          backgroundColor: AppColors.textPrimary,
-          shape: const CircleBorder(),
-          child: const Icon(
-            Icons.smart_toy_outlined,
-            color: Colors.white,
-            size: 24,
-          ),
-        ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 20,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            onTap: _selectTab,
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            selectedItemColor: AppColors.primary,
-            unselectedItemColor: AppColors.textSecondary,
-            selectedLabelStyle: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+      ),
+      floatingActionButton: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          FloatingActionButton(
+            onPressed: () => requireVerifiedUser(
+              context,
+              onAllowed: () {
+                AiUnreadService().clear();
+                setState(() => _aiHasUnread = false);
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const AiAssistantPage()));
+              },
             ),
-            unselectedLabelStyle: const TextStyle(fontSize: 11),
-            elevation: 0,
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_rounded),
-                label: 'HOME',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.search_rounded),
-                label: 'SEARCH',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.map_outlined),
-                label: 'MAP',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.favorite_border_rounded),
-                label: 'SAVED',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline_rounded),
-                label: 'PROFILE',
-              ),
-            ],
+            backgroundColor: AppColors.textPrimary,
+            shape: const CircleBorder(),
+            child: const Icon(
+              Icons.smart_toy_outlined,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
+          if (_aiHasUnread)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2ECC71),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+              ),
+            ),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: _selectTab,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.textSecondary,
+          selectedLabelStyle: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          elevation: 0,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'HOME',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.search_rounded),
+              label: 'SEARCH',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.map_outlined),
+              label: 'MAP',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.favorite_border_rounded),
+              label: 'SAVED',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              label: 'PROFILE',
+            ),
+          ],
         ),
       ),
     );

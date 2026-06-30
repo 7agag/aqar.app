@@ -19,17 +19,21 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
 
     on<GetNotificationsRequested>((event, emit) async {
       emit(NotificationLoading());
-      final result = await getNotifications(NoParams());
-      result.fold(
-        (failure) => emit(NotificationError(failure.message)),
-        (data) {
-          final (notifications, unreadCount) = data;
-          emit(NotificationsLoaded(
-            notifications: notifications,
-            unreadCount: unreadCount,
-          ));
-        },
-      );
+      try {
+        final result = await getNotifications(NoParams());
+        result.fold(
+          (failure) => emit(NotificationError(failure.message)),
+          (data) {
+            final (notifications, unreadCount) = data;
+            emit(NotificationsLoaded(
+              notifications: notifications,
+              unreadCount: unreadCount,
+            ));
+          },
+        );
+      } catch (e) {
+        emit(NotificationError(e.toString()));
+      }
     });
 
     on<MarkNotificationReadRequested>((event, emit) async {

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/extensions/num_formatting.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../domain/entities/property_entity.dart';
@@ -35,17 +36,6 @@ class _InstallmentCalculatorState extends State<InstallmentCalculator> {
     if (r == 0 || n == 0) return;
     final monthly = principal * (r * pow(1 + r, n)) / (pow(1 + r, n) - 1);
     _monthlyResult = monthly;
-  }
-
-  String _fmt(double v) {
-    final parts = v.toStringAsFixed(0).split('.');
-    final intPart = parts[0];
-    final buf = StringBuffer();
-    for (var i = 0; i < intPart.length; i++) {
-      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-      buf.write(intPart[i]);
-    }
-    return buf.toString();
   }
 
   @override
@@ -88,7 +78,7 @@ class _InstallmentCalculatorState extends State<InstallmentCalculator> {
               ),
               const Spacer(),
               Text(
-                'EGP ${_fmt(widget.property.priceValue)}',
+                'EGP ${widget.property.priceValue.formatWithCommas()}',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -133,7 +123,7 @@ class _InstallmentCalculatorState extends State<InstallmentCalculator> {
             },
           ),
           Text(
-            'EGP ${_fmt(widget.property.priceValue * _downPaymentPercent / 100)}',
+            'EGP ${(widget.property.priceValue * _downPaymentPercent / 100).formatWithCommas()}',
             style: const TextStyle(
               fontSize: 13,
               color: AppColors.textSecondary,
@@ -199,7 +189,7 @@ class _InstallmentCalculatorState extends State<InstallmentCalculator> {
                         ),
                       ),
                       Text(
-                        'EGP ${_fmt(_monthlyResult!)}',
+                        'EGP ${_monthlyResult!.formatWithCommas()}',
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -220,7 +210,7 @@ class _InstallmentCalculatorState extends State<InstallmentCalculator> {
                         ),
                       ),
                       Text(
-                        'EGP ${_fmt(_monthlyResult! * _years * 12)}',
+                        'EGP ${(_monthlyResult! * _years * 12).formatWithCommas()}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/extensions/num_formatting.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/localization/app_strings.dart';
 import '../../../auth/presentation/widgets/auth_guard.dart';
@@ -26,17 +27,6 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
   }
 
   double get _totalCost => _days * widget.property.pricePerDay;
-
-  String _fmt(double v) {
-    final parts = v.toStringAsFixed(2).split('.');
-    final intPart = parts[0];
-    final buf = StringBuffer();
-    for (var i = 0; i < intPart.length; i++) {
-      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-      buf.write(intPart[i]);
-    }
-    return '$buf.${parts[1]}';
-  }
 
   Future<void> _pickDate({required bool isStart}) async {
     final now = DateTime.now();
@@ -107,7 +97,7 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
           ),
           const SizedBox(height: 16),
           Text(
-            '${AppStrings.pricePerDayLabel}: ${AppStrings.egp} ${_fmt(widget.property.pricePerDay)} / ${AppStrings.day}',
+            '${AppStrings.pricePerDayLabel}: ${AppStrings.egp} ${widget.property.pricePerDay.formatWithCommas()} / ${AppStrings.day}',
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
@@ -225,7 +215,7 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
                 style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               Text(
-                '${AppStrings.egp} ${_fmt(_totalCost)}',
+                '${AppStrings.egp} ${_totalCost.formatWithCommas(decimals: 2)}',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

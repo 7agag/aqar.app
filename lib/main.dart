@@ -2,6 +2,7 @@
 
 import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/core/network/socket_service.dart';
+import 'package:aqar/core/services/app_permission_service.dart';
 import 'package:aqar/core/services/escrow_service.dart';
 import 'package:aqar/core/services/notification_service.dart';
 import 'package:aqar/core/theme/app_theme.dart';
@@ -20,12 +21,14 @@ import 'package:aqar/features/purchase_request/presentation/bloc/purchase_reques
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
 import 'package:aqar/features/review/presentation/bloc/review_bloc.dart';
 import 'package:aqar/features/subscription/presentation/bloc/subscription_bloc.dart';
+import 'package:aqar/features/ai/presentation/bloc/ai_bloc.dart';
 import 'package:aqar/features/property/presentation/bloc/property_bloc.dart';
 import 'package:aqar/features/property/presentation/pages/home_page.dart';
 import 'package:aqar/features/splash/presentation/pages/splash_page.dart';
 import 'package:aqar/features/payment/presentation/pages/payment_result_screen.dart';
 import 'package:aqar/injection_container.dart' as di;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -38,6 +41,9 @@ import 'dart:developer' as developer;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
+
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
   await di.configureDependencies();
 
   final prefs = await SharedPreferences.getInstance();
@@ -83,6 +89,9 @@ class _AqarAppState extends State<AqarApp> with WidgetsBindingObserver {
     _appLinks.uriLinkStream.listen(_handleDeepLink);
     _appLinks.getInitialLink().then(_handleDeepLink);
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppPermissionService.requestStartupPermissions();
+    });
   }
 
   @override
@@ -166,6 +175,9 @@ class _AqarAppState extends State<AqarApp> with WidgetsBindingObserver {
         ),
         BlocProvider<SubscriptionBloc>(
           create: (context) => di.sl<SubscriptionBloc>(),
+        ),
+        BlocProvider<AiBloc>(
+          create: (context) => di.sl<AiBloc>(),
         ),
       ],
       child: BlocListener<AuthBloc, AuthState>(

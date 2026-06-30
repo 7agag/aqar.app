@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "aqar" "\0"
+            VALUE "FileDescription", "Aqar" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "aqar" "\0"
+            VALUE "InternalName", "Aqar" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "aqar.exe" "\0"
-            VALUE "ProductName", "aqar" "\0"
+            VALUE "OriginalFilename", "Aqar.exe" "\0"
+            VALUE "ProductName", "Aqar" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aqar/core/extensions/num_formatting.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/property/domain/entities/property_entity.dart';
 import 'package:aqar/features/property/presentation/widgets/property_image.dart';
@@ -15,17 +16,7 @@ class MapBottomSheet extends StatelessWidget {
     required this.onViewDetails,
   });
 
-  String get _formattedPrice {
-    final v = property.priceValue;
-    final parts = v.toStringAsFixed(0).split('.');
-    final intPart = parts[0];
-    final buf = StringBuffer();
-    for (var i = 0; i < intPart.length; i++) {
-      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-      buf.write(intPart[i]);
-    }
-    return buf.toString();
-  }
+  String get _formattedPrice => property.priceValue.formatWithCommas();
 
   @override
   Widget build(BuildContext context) {

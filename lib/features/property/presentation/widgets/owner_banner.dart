@@ -77,12 +77,8 @@ class OwnerBanner extends StatelessWidget {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    Text(
-                      ' (${_rate.round()} reviews)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textHint.withValues(alpha: 0.8),
-                      ),
+                    SizedBox(
+                      width: 8,
                     ),
                   ],
                 ),

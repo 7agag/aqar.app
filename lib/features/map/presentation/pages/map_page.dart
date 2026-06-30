@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:aqar/core/extensions/num_formatting.dart';
 import 'package:aqar/core/navigation/property_detail_navigator.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/favorite/presentation/bloc/favorite_bloc.dart';
@@ -18,8 +19,10 @@ import '../widgets/map_search_bar.dart';
 import '../widgets/price_pill_marker.dart';
 import '../widgets/cluster_marker.dart';
 import '../widgets/property_info_window.dart';
+
 import '../widgets/map_bottom_sheet.dart';
 import '../widgets/map_filter_bar.dart';
+import '../../../../core/widgets/compass_needle.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -28,15 +31,17 @@ class MapPage extends StatefulWidget {
   State<MapPage> createState() => _MapPageState();
 }
 
-class _MapPageState extends State<MapPage> {
+class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
   final _mapController = MapController();
   PropertyEntity? _selectedProperty;
+  bool _showSheet = false;
   String _searchQuery = '';
   MapFilter _filter = MapFilter.all;
   List<PropertyEntity> _allProperties = [];
   Position? _userPosition;
   Timer? _clusterDebounce;
   double _currentZoom = 12;
+  double _bearing = 0;
   bool _locating = false;
 
   static const _cairoCenter = LatLng(30.0444, 31.2357);
@@ -151,11 +156,17 @@ class _MapPageState extends State<MapPage> {
 
   void _selectProperty(PropertyEntity p) {
     _mapController.move(LatLng(p.latitude!, p.longitude!), 15);
-    setState(() => _selectedProperty = p);
+    setState(() {
+      _selectedProperty = p;
+      _showSheet = false;
+    });
   }
 
   void _deselectProperty() {
-    setState(() => _selectedProperty = null);
+    setState(() {
+      _selectedProperty = null;
+      _showSheet = false;
+    });
   }
 
   String? _distanceText(PropertyEntity p) {
@@ -214,6 +225,25 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
+  Future<void> _resetToNorth() async {
+    final start = _mapController.camera.rotation;
+    if (start == 0) return;
+    final controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    final animation = Tween(begin: start, end: 0.0).animate(
+      CurvedAnimation(parent: controller, curve: Curves.easeOutCubic),
+    );
+    controller.addListener(() {
+      _mapController.rotate(animation.value);
+    });
+    controller.forward();
+    await Future.delayed(const Duration(milliseconds: 300));
+    controller.dispose();
+    if (mounted) setState(() => _bearing = 0);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -253,6 +283,11 @@ class _MapPageState extends State<MapPage> {
                       }
                     });
                   }
+                  if (event is MapEventRotateEnd) {
+                    setState(() {
+                      _bearing = _mapController.camera.rotation;
+                    });
+                  }
                 },
               ),
               children: [
@@ -261,25 +296,6 @@ class _MapPageState extends State<MapPage> {
                       'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
                   userAgentPackageName: 'com.aqar.app',
                 ),
-                if (_selectedProperty != null &&
-                    _selectedProperty!.latitude != null &&
-                    _selectedProperty!.longitude != null)
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: LatLng(_selectedProperty!.latitude!,
-                            _selectedProperty!.longitude!),
-                        width: 260,
-                        height: 290,
-                        child: PropertyInfoWindow(
-                          property: _selectedProperty!,
-                          onViewDetails: () => propertyDetailNavigator.value =
-                              _selectedProperty!.propertyId,
-                          onClose: _deselectProperty,
-                        ),
-                      ),
-                    ],
-                  ),
                 MarkerLayer(
                   markers: _buildMarkers(),
                 ),
@@ -294,6 +310,28 @@ class _MapPageState extends State<MapPage> {
                         borderStrokeWidth: 1.0,
                         radius: min(_userPosition!.accuracy, 25.0),
                         useRadiusInMeter: true,
+                      ),
+                    ],
+                  ),
+                if (_selectedProperty != null &&
+                    _selectedProperty!.latitude != null &&
+                    _selectedProperty!.longitude != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: LatLng(_selectedProperty!.latitude!,
+                            _selectedProperty!.longitude!),
+                        width: 260,
+                        height: 290,
+                        child: PropertyInfoWindow(
+                          property: _selectedProperty!,
+                          onViewDetails: () {
+                            propertyDetailNavigator.value =
+                                _selectedProperty!.propertyId;
+                            setState(() => _showSheet = true);
+                          },
+                          onClose: _deselectProperty,
+                        ),
                       ),
                     ],
                   ),
@@ -341,7 +379,7 @@ class _MapPageState extends State<MapPage> {
                 right: 16,
                 child: _buildSearchDropdown(),
               ),
-            if (_selectedProperty != null)
+            if (_selectedProperty != null && _showSheet)
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -394,6 +432,17 @@ class _MapPageState extends State<MapPage> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.my_location_rounded, size: 20),
+                  ),
+                  Opacity(
+                    opacity: _bearing.abs() <= 3 ? 0.35 : 1.0,
+                    child: FloatingActionButton.small(
+                      heroTag: 'north',
+                      onPressed: _resetToNorth,
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppColors.navyBlue,
+                      elevation: 2,
+                      child: CompassNeedle(rotation: _bearing),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   FloatingActionButton.small(
@@ -493,7 +542,7 @@ class _MapPageState extends State<MapPage> {
                       style: const TextStyle(fontSize: 11), maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                   trailing: Text(
-                    '${p.priceValue.toStringAsFixed(0)} EGP',
+                    '${p.priceValue.formatWithCommas()} EGP',
                     style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

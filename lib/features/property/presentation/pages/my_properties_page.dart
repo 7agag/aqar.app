@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/extensions/num_formatting.dart';
 import '../../../../core/navigation/property_detail_navigator.dart';
 import '../../../../core/services/biometric_auth_guard.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -229,8 +230,8 @@ class _ShimmerCard extends StatelessWidget {
                 borderRadius:
                     const BorderRadius.horizontal(left: Radius.circular(14)),
                 child: Container(
-                  width: 120,
-                  height: 90,
+                  width: 140,
+                  height: 105,
                   color: Colors.grey.withValues(alpha: opacity),
                 ),
               ),
@@ -327,8 +328,8 @@ class _PropertyCard extends StatelessWidget {
                   borderRadius: const BorderRadius.horizontal(
                       left: Radius.circular(14)),
                   child: SizedBox(
-                    width: 120,
-                    height: 90,
+                    width: 140,
+                    height: 105,
                     child: property.images.isNotEmpty
                         ? Image.network(
                             property.images.first,
@@ -373,7 +374,7 @@ class _PropertyCard extends StatelessWidget {
                                     .withValues(alpha: 0.7))),
                         const SizedBox(height: 8),
                         Text(
-                            'EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
+                            'EGP ${property.priceValue.formatWithCommas()}${property.pricingUnitSuffix}',
                             style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
@@ -425,7 +426,6 @@ class _ActionRow extends StatefulWidget {
 
 class _ActionRowState extends State<_ActionRow> {
   final _scrollController = ScrollController();
-  bool _isOverflowing = false;
   bool _atEnd = true;
 
   bool get _canManage =>
@@ -436,7 +436,7 @@ class _ActionRowState extends State<_ActionRow> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureOverflow());
+
   }
 
   @override
@@ -454,21 +454,10 @@ class _ActionRowState extends State<_ActionRow> {
     }
   }
 
-  void _measureOverflow() {
-    if (_scrollController.hasClients) {
-      final maxScroll = _scrollController.position.maxScrollExtent;
-      if ((maxScroll > 0) != _isOverflowing) {
-        setState(() {
-          _isOverflowing = maxScroll > 0;
-          _atEnd = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isSale = widget.property.listingType == ListingType.forSale;
+    final isPendingRent = !isSale && !widget.property.isVerified;
     final showBoost = widget.property.isVerified &&
         widget.property.isAvailable &&
         !widget.property.isSponsored;
@@ -481,39 +470,41 @@ class _ActionRowState extends State<_ActionRow> {
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
       ),
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-      child: _isOverflowing
-          ? Stack(
-              children: [
-                SingleChildScrollView(
-                  controller: _scrollController,
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: _buildButtons(context, isSale, showBoost, isDeleted),
-                ),
-                if (!_atEnd)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: 24,
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.centerRight,
-                            end: Alignment.centerLeft,
-                            colors: [
-                              AppColors.background.withValues(alpha: 0.9),
-                              AppColors.background.withValues(alpha: 0),
-                            ],
-                          ),
-                        ),
-                      ),
+      child: Stack(
+        children: [
+          SingleChildScrollView(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: isPendingRent
+                ? Center(
+                    child: _buildButtons(context, isSale, showBoost, isDeleted),
+                  )
+                : _buildButtons(context, isSale, showBoost, isDeleted),
+          ),
+          if (!_atEnd)
+            Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 24,
+              child: IgnorePointer(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        AppColors.background.withValues(alpha: 0.9),
+                        AppColors.background.withValues(alpha: 0),
+                      ],
                     ),
                   ),
-              ],
-            )
-          : Center(child: _buildButtons(context, isSale, showBoost, isDeleted)),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

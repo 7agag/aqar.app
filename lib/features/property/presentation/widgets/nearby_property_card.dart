@@ -2,6 +2,7 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../../../core/extensions/num_formatting.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/property_entity.dart';
 import 'property_image.dart';
@@ -57,7 +58,7 @@ class NearbyPropertyCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -78,8 +79,8 @@ class NearbyPropertyCard extends StatelessWidget {
               child: property.images.isNotEmpty
                   ? PropertyImage(
                       imageUrl: property.images.first,
-                      width: 80,
-                      height: 80,
+                      width: 100,
+                      height: 100,
                     )
                   : _buildPlaceholder(),
             ),
@@ -130,7 +131,7 @@ class NearbyPropertyCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '\$${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
+                        '\$${property.priceValue.formatWithCommas()}${property.pricingUnitSuffix}',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,

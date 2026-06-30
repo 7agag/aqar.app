@@ -16,6 +16,7 @@ class LeaseEntity extends Equatable {
   final String? propertyName;
   final String? location;
   final String? images;
+  final String? leaseDocumentUrl;
   final double? priceValue;
 
   const LeaseEntity({
@@ -33,6 +34,7 @@ class LeaseEntity extends Equatable {
     this.propertyName,
     this.location,
     this.images,
+    this.leaseDocumentUrl,
     this.priceValue,
   });
 
@@ -57,10 +59,9 @@ class LeaseEntity extends Equatable {
       renterName: json['renter_name'] as String?,
       propertyName: json['property_name'] as String?,
       location: json['location'] as String?,
-      images: json['images'] as String?,
-      priceValue: json['price_value'] != null
-          ? (json['price_value'] as num).toDouble()
-          : null,
+      images: json['images'] is List ? (json['images'] as List).join(',') : json['images'] as String?,
+      leaseDocumentUrl: json['lease_document_url'] as String?,
+      priceValue: double.tryParse(json['price_value']?.toString() ?? ''),
     );
   }
 
@@ -79,6 +80,7 @@ class LeaseEntity extends Equatable {
     'property_name': propertyName,
     'location': location,
     'images': images,
+    'lease_document_url': leaseDocumentUrl,
     'price_value': priceValue,
   };
 
@@ -86,6 +88,6 @@ class LeaseEntity extends Equatable {
   List<Object?> get props => [
     leaseId, requestId, renterId, ownerId, propertyId, rentingType,
     status, checkInDate, checkOutDate, nextBillingDate,
-    renterName, propertyName, location, images, priceValue,
+    renterName, propertyName, location, images, leaseDocumentUrl, priceValue,
   ];
 }

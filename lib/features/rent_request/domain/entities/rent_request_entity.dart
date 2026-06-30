@@ -14,6 +14,7 @@ class RentRequestEntity {
   final String? perspective;
   final String? ownerId;
   final String? paymentId;
+  final String? leaseId;
 
   const RentRequestEntity({
     required this.requestId,
@@ -29,5 +30,6 @@ class RentRequestEntity {
     this.perspective,
     this.ownerId,
     this.paymentId,
+    this.leaseId,
   });
 }

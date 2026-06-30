@@ -12,6 +12,7 @@ class AddReviewSheet extends StatefulWidget {
 
 class _AddReviewSheetState extends State<AddReviewSheet> {
   double _rating = 5;
+  bool _isSubmitting = false;
   final _phraseController = TextEditingController();
 
   @override
@@ -111,19 +112,31 @@ class _AddReviewSheetState extends State<AddReviewSheet> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: () {
-                widget.onSubmit(
-                  _rating,
-                  _phraseController.text.trim(),
-                );
-              },
-              child: const Text(
-                'Submit Review',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              onPressed: _isSubmitting
+                  ? null
+                  : () {
+                      setState(() => _isSubmitting = true);
+                      widget.onSubmit(
+                        _rating,
+                        _phraseController.text.trim(),
+                      );
+                    },
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      'Submit Review',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
         ],

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:aqar/core/utils/parse_utils.dart';
 import 'package:aqar/features/subscription/domain/entities/listing_subscription_record.dart';
 import 'package:aqar/features/property/domain/entities/property_entity.dart';
 import 'package:aqar/core/network/api_client.dart';
@@ -101,10 +102,10 @@ class SubscriptionStorageService {
       final data = res.data;
       final record = ListingSubscriptionRecord(
         propertyId: propertyId,
-        subscriptionId: data['subscription_id'] as String,
+        subscriptionId: data['subscription_id']?.toString() ?? '',
         propertyName: '',
         planMonths: planMonths,
-        amount: (data['amount'] as num).toDouble(),
+        amount: parseDouble(data['amount']),
         paymentState: ListingSubscriptionPaymentState.unpaid,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -121,16 +122,16 @@ class SubscriptionStorageService {
       final dio = di.sl<ApiClient>().dio;
       final res = await dio.get('/subscription/$propertyId');
       final data = res.data;
-      final months = (data['plan_months'] as num).toInt();
+      final months = parseInt(data['plan_months']);
       if (months < 1) return null;
 
       final status = data['status'] as String? ?? 'UNPAID';
       final record = ListingSubscriptionRecord(
         propertyId: propertyId,
-        subscriptionId: data['subscription_id'] as String,
+        subscriptionId: data['subscription_id']?.toString() ?? '',
         propertyName: '',
         planMonths: months,
-        amount: (data['amount'] as num).toDouble(),
+        amount: parseDouble(data['amount']),
         paymentState: ListingSubscriptionPaymentState.fromValue(status),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

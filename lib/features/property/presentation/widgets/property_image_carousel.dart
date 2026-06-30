@@ -7,6 +7,7 @@ class PropertyImageCarousel extends StatelessWidget {
   final VoidCallback onTap;
   final int currentIndex;
   final ValueChanged<int> onIndexChanged;
+  final PageController pageController;
 
   const PropertyImageCarousel({
     super.key,
@@ -14,6 +15,7 @@ class PropertyImageCarousel extends StatelessWidget {
     required this.onTap,
     required this.currentIndex,
     required this.onIndexChanged,
+    required this.pageController,
   });
 
   @override
@@ -43,6 +45,7 @@ class PropertyImageCarousel extends StatelessWidget {
     return Stack(
       children: [
         PageView.builder(
+          controller: pageController,
           itemCount: images.length,
           onPageChanged: onIndexChanged,
           itemBuilder: (context, index) {
@@ -79,8 +82,8 @@ class PropertyImageCarousel extends StatelessWidget {
                   '${currentIndex + 1} / ${images.length}',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -94,14 +97,15 @@ class PropertyImageCarousel extends StatelessWidget {
 
   Widget _buildProgressBar() {
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(images.length, (i) {
         final isActive = i == currentIndex;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
-          margin: const EdgeInsets.symmetric(horizontal: 2),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
           width: isActive ? 24 : 8,
-          height: 3,
+          height: 4,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(2),
             color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),

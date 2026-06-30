@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aqar/core/extensions/num_formatting.dart';
 import 'package:aqar/core/theme/app_colors.dart';
+import 'package:aqar/features/rent_request/domain/entities/rent_request_entity.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_bloc.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_event.dart';
 import 'package:aqar/features/rent_request/presentation/bloc/rent_request_state.dart';
@@ -144,7 +146,7 @@ class _MyRequestsPageState extends State<MyRequestsPage>
     );
   }
 
-  Widget _buildRentList(List list, {required bool isSent}) {
+  Widget _buildRentList(List<RentRequestEntity> list, {required bool isSent}) {
     if (list.isEmpty) {
       return _emptyState(
         icon: isSent ? Icons.send_outlined : Icons.inbox_outlined,
@@ -162,14 +164,13 @@ class _MyRequestsPageState extends State<MyRequestsPage>
         padding: const EdgeInsets.all(16),
         itemCount: list.length,
         itemBuilder: (context, index) {
-          final r = list[index];
-          return _buildRentCard(r, isSent);
+          return _buildRentCard(list[index], isSent);
         },
       ),
     );
   }
 
-  Widget _buildRentCard(dynamic r, bool isSent) {
+  Widget _buildRentCard(RentRequestEntity r, bool isSent) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -227,7 +228,7 @@ class _MyRequestsPageState extends State<MyRequestsPage>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '\$${r.totalPrice.toStringAsFixed(0)} · ${r.rentingType.label}',
+                      '\$${r.totalPrice.formatWithCommas()} · ${r.rentingType.label}',
                       style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
                     ),
                   ],

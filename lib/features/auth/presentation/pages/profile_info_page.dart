@@ -165,8 +165,6 @@ class ProfileInfoPage extends StatelessWidget {
           _infoRow(Icons.person_outline, 'Second Name', user.secondName),
           const Divider(height: 1, indent: AppSpacing.lg, endIndent: AppSpacing.lg),
           _infoRow(Icons.email_outlined, 'Email', user.email),
-          const Divider(height: 1, indent: AppSpacing.lg, endIndent: AppSpacing.lg),
-          _infoRow(Icons.phone_outlined, 'Phone', user.email),
           const SizedBox(height: AppSpacing.md),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),

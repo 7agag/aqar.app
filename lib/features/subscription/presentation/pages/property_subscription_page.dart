@@ -6,7 +6,7 @@ import 'package:aqar/core/config/app_config.dart';
 import 'package:aqar/injection_container.dart' as di;
 import 'package:aqar/features/property/domain/entities/property_entity.dart';
 import 'package:aqar/features/property/domain/entities/property_enums.dart';
-import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
+import 'package:aqar/features/payment/presentation/pages/payment_gateway_page.dart';
 import 'package:aqar/features/payment/presentation/mixins/payment_verification_mixin.dart';
 import 'package:aqar/features/subscription/domain/entities/sale_subscription_state.dart';
 import 'package:aqar/features/subscription/domain/entities/listing_subscription_record.dart';
@@ -34,6 +34,8 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
   int _selectedPlan = 1;
   bool _creating = false;
   bool _paying = false;
+  bool _changingPlan = false;
+  bool _isProcessingPayment = false;
 
   Timer? _autoPollTimer;
 
@@ -52,6 +54,12 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
     super.dispose();
   }
 
+  static num? _parseNum(dynamic v) {
+    if (v is num) return v;
+    if (v is String) return num.tryParse(v);
+    return null;
+  }
+
   Future<void> _loadPage() async {
     setState(() {
       _loading = true;
@@ -64,18 +72,18 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
       final data = res.data;
       PropertyEntity property;
       property = PropertyEntity(
-        propertyId: ((data['property_id'] is num ? data['property_id'] : data['id']) as num? ?? 0).toInt(),
+        propertyId: (_parseNum(data['property_id']) ?? _parseNum(data['id']) ?? 0).toInt(),
         ownerId: (data['owner_id'] as String?) ?? '',
         propertyName: (data['property_name'] as String?) ?? '',
         propertyDesc: (data['property_desc'] as String?) ?? '',
         location: (data['location'] as String?) ?? '',
         pricingUnit: PricingUnit.fromValue(data['pricing_unit'] as String? ?? data['pricingUnit'] as String? ?? 'month'),
-        priceValue: ((data['price_value'] ?? data['priceValue']) as num?)?.toDouble() ?? 0,
-        pricePerDay: ((data['price_per_day'] ?? data['pricePerDay']) as num?)?.toDouble() ?? 0,
+        priceValue: (_parseNum(data['price_value']) ?? _parseNum(data['priceValue']) ?? 0).toDouble(),
+        pricePerDay: (_parseNum(data['price_per_day']) ?? _parseNum(data['pricePerDay']) ?? 0).toDouble(),
         size: (data['size'] as String?) ?? '',
-        bedroomsNo: ((data['bedrooms_no'] ?? data['bedroomsNo']) as num?)?.toInt() ?? 0,
-        bedsNo: ((data['beds_no'] ?? data['bedsNo']) as num?)?.toInt() ?? 0,
-        bathroomsNo: ((data['bathrooms_no'] ?? data['bathroomsNo']) as num?)?.toInt() ?? 0,
+        bedroomsNo: (_parseNum(data['bedrooms_no']) ?? _parseNum(data['bedroomsNo']) ?? 0).toInt(),
+        bedsNo: (_parseNum(data['beds_no']) ?? _parseNum(data['bedsNo']) ?? 0).toInt(),
+        bathroomsNo: (_parseNum(data['bathrooms_no']) ?? _parseNum(data['bathroomsNo']) ?? 0).toInt(),
         images: (data['images'] is List ? (data['images'] as List).cast<String>() : <String>[]),
         isVerified: data['is_verified'] == true || data['is_verified'] == 1,
         isAvailable: data['is_available'] == true || data['is_available'] == 1,
@@ -83,7 +91,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
         isSponsored: data['is_sponsored'] == true || data['is_sponsored'] == 1,
         isVisible: data['is_visible'] == true || data['is_visible'] == 1,
         listingType: ListingType.fromValue(data['property_type'] as String? ?? data['listingType'] as String? ?? 'for_rent'),
-        rate: (data['rate'] as num?)?.toDouble(),
+        rate: _parseNum(data['rate'])?.toDouble(),
         listingStatus: ListingStatus.fromValue(data['listing_status'] as String? ?? data['listingStatus'] as String?),
         listingExpiry: _parseDate(data, 'listing_expiry') ?? _parseDate(data, 'listingExpiry'),
         ownerFirstName: (data['owner_first_name'] as String?) ?? (data['ownerFirstName'] as String?),
@@ -142,6 +150,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
       setState(() {
         _property = property;
         _localSub = freshLocal;
+        _selectedPlan = freshLocal?.planMonths ?? 1;
         _loading = false;
       });
     } catch (e) {
@@ -223,7 +232,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
     final isPending = uiState == SaleSubscriptionState.awaitingVerification ||
         uiState == SaleSubscriptionState.paymentPending;
 
-    if (isPending) {
+    if (isPending && !_isProcessingPayment) {
       _startAutoPoll();
     } else {
       _stopAutoPoll();
@@ -340,6 +349,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
     if (_localSub == null) return const SizedBox.shrink();
 
     final sub = _localSub!;
+    final canChange = _uiState == SaleSubscriptionState.readyToPay;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -354,7 +364,8 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
           const Text('Subscription Details',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const SizedBox(height: 12),
-          _detailRow('Plan', '${sub.planMonths} Month${sub.planMonths > 1 ? 's' : ''}'),
+          _detailRow('Plan', '${sub.planMonths} Month${sub.planMonths > 1 ? 's' : ''}',
+              trailing: canChange ? _buildChangePlanButton() : null),
           _detailRow('Amount', 'EGP ${sub.amount.toInt()}'),
           _detailRow('Status', sub.paymentState.value),
           _detailRow('ID', sub.subscriptionId.length > 8 ? '${sub.subscriptionId.substring(0, 8).toUpperCase()}...' : sub.subscriptionId),
@@ -363,14 +374,35 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Widget _buildChangePlanButton() {
+    return GestureDetector(
+      onTap: () => setState(() => _changingPlan = !_changingPlan),
+      child: Text(
+        _changingPlan ? 'Cancel' : 'Change',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value, {Widget? trailing}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+          if (trailing != null)
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              const SizedBox(width: 8),
+              trailing,
+            ])
+          else
+            Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
         ],
       ),
     );
@@ -408,10 +440,30 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
             ),
           ],
           if (uiState == SaleSubscriptionState.readyToPay) ...[
+            if (_changingPlan) ...[
+              const Text('Change Plan',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              const SizedBox(height: 16),
+              _buildPlanSelector(),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _creating ? null : _handleChangePlan,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary, foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(_creating ? 'Saving...' : 'Confirm Change'),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _paying ? null : _handlePay,
+                onPressed: _paying ? null : startPaymentFlow,
                 icon: const Icon(Icons.payment_rounded, size: 18),
                 label: Text(_paying ? 'Preparing payment...' : 'Pay Listing Fee'),
                 style: ElevatedButton.styleFrom(
@@ -565,8 +617,47 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
     }
   }
 
-  Future<void> _handlePay() async {
+  Future<void> _handleChangePlan() async {
+    setState(() => _creating = true);
+    try {
+      await _storageService.deleteStoredListingSubscription(widget.propertyId);
+      final sub = await _storageService.createSubscriptionForProperty(
+        widget.propertyId, _selectedPlan,
+      );
+      if (!mounted) return;
+      if (sub != null) {
+        setState(() {
+          _localSub = sub;
+          _changingPlan = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Plan changed successfully.'),
+            backgroundColor: AppColors.success),
+        );
+        await _loadPage();
+      } else {
+        setState(() => _creating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not change plan. A subscription already exists for this property.'),
+            backgroundColor: AppColors.error),
+        );
+        await _loadPage();
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _creating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to change plan.'),
+          backgroundColor: AppColors.error),
+      );
+      await _loadPage();
+    }
+  }
+
+  Future<void> startPaymentFlow() async {
     if (_localSub == null || _paying) return;
+    _stopAutoPoll();
+    _isProcessingPayment = true;
     setState(() => _paying = true);
 
     try {
@@ -580,67 +671,88 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
         _localSub = _localSub!.copyWith(paymentState: ListingSubscriptionPaymentState.pending);
       });
 
-      final dio = di.sl<ApiClient>().dio;
-      final res = await dio.post('/api/payment/', data: {
-        'subscription_id': _localSub!.subscriptionId,
-        'redirect': AppConfig.subscriptionCallbackUrl(widget.propertyId, _localSub!.subscriptionId),
-      });
+      await _executePayment();
+    } catch (e) {
+      await _cleanupPayment('Payment failed: $e');
+    }
+  }
 
-      final url = res.data['url'] as String?;
-      if (url == null) throw Exception('Missing payment URL');
+  Future<void> _executePayment() async {
+    final dio = di.sl<ApiClient>().dio;
+    final res = await dio.post('/api/payment/', data: {
+      'subscription_id': _localSub!.subscriptionId,
+      'redirect': AppConfig.subscriptionCallbackUrl(
+        widget.propertyId, _localSub!.subscriptionId,
+      ),
+    });
 
-      if (!mounted) return;
-      setState(() => _paying = false);
+    final url = res.data['url'] as String?;
+    if (url == null) throw Exception('Missing payment URL');
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(children: [
-            Icon(Icons.payment_rounded, color: Colors.white, size: 18),
-            SizedBox(width: 8),
-            Expanded(child: Text('Payment tab opened')),
-          ]),
-          backgroundColor: AppColors.navyBlue,
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 3),
-        ),
-      );
+    if (!mounted) return;
+    setState(() => _paying = false);
+    // _isProcessingPayment stays true — prevents auto-poll while gateway open
 
-      final paymentResult = await KashierWebViewPage.open(
-        context,
-        url: url,
-        propertyId: widget.propertyId,
-        paymentType: VerificationType.subscription,
-      );
-      if (!mounted) return;
-
-      if (paymentResult != null && paymentResult['status'] == 'success') {
+    final paymentResult = await PaymentGatewayPage.open(
+      context,
+      itemName: 'Selling Plan (${_localSub!.planMonths}mo)',
+      amount: _localSub!.amount.toDouble(),
+      generatePaymentUrl: () async {
+        final url = await _fetchFreshPaymentUrl();
+        if (url == null) throw Exception('Failed to fetch payment URL');
+        return url;
+      },
+      isVerified: (data) =>
+          ['active', 'under_negotiation', 'sold']
+              .contains(data['listing_status']),
+      onPaymentSuccess: (pid) async {
         await _pendingService.clearPendingSubscriptionPayment();
         await _storageService.updateStoredListingSubscriptionState(
           widget.propertyId, ListingSubscriptionPaymentState.paid,
         );
-        if (!mounted) return;
-        await showPaymentSuccess(
-          successTitle: 'Payment Confirmed!',
-          successMessage: 'Your subscription is now active!',
-        );
-        await _loadPage();
-      } else if (paymentResult != null && mounted) {
-        await _pendingService.clearPendingSubscriptionPayment();
-        await _loadPage();
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _paying = false);
-      await _pendingService.clearPendingSubscriptionPayment();
-      await _storageService.updateStoredListingSubscriptionState(
-        widget.propertyId, ListingSubscriptionPaymentState.unpaid,
-      );
+      },
+    );
+
+    if (!mounted) return;
+    _isProcessingPayment = false;
+
+    if (paymentResult == true) {
+      await _loadPage();
+    } else {
+      await _cleanupPayment(null);
+    }
+  }
+
+  Future<void> _cleanupPayment(String? errorMessage) async {
+    if (!mounted) return;
+    _isProcessingPayment = false;
+    setState(() => _paying = false);
+    await _pendingService.clearPendingSubscriptionPayment();
+    await _storageService.updateStoredListingSubscriptionState(
+      widget.propertyId, ListingSubscriptionPaymentState.unpaid,
+    );
+    if (errorMessage != null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Payment failed: $e'),
+        SnackBar(content: Text(errorMessage),
           backgroundColor: AppColors.error),
       );
-      await _loadPage();
+    }
+    await _loadPage();
+  }
+
+  Future<String?> _fetchFreshPaymentUrl() async {
+    try {
+      final dio = di.sl<ApiClient>().dio;
+      final res = await dio.post('/api/payment/', data: {
+        'subscription_id': _localSub!.subscriptionId,
+        'redirect': AppConfig.subscriptionCallbackUrl(
+          widget.propertyId, _localSub!.subscriptionId,
+        ),
+      });
+      return res.data['url'] as String?;
+    } catch (_) {
+      return null;
     }
   }
 

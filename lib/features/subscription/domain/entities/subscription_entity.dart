@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:aqar/core/utils/parse_utils.dart';
 
 class SubscriptionEntity extends Equatable {
   final String subscriptionId;
@@ -22,10 +23,10 @@ class SubscriptionEntity extends Equatable {
   factory SubscriptionEntity.fromJson(Map<String, dynamic> json) {
     return SubscriptionEntity(
       subscriptionId: json['subscription_id'] as String? ?? '',
-      propertyId: (json['property_id'] as num?)?.toInt() ?? 0,
+      propertyId: parseInt(json['property_id']),
       ownerId: (json['owner_id'] as String?) ?? '',
-      planMonths: (json['plan_months'] as num?)?.toInt() ?? 0,
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      planMonths: parseInt(json['plan_months']),
+      amount: parseDouble(json['amount']),
       status: json['status'] as String? ?? 'UNPAID',
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)

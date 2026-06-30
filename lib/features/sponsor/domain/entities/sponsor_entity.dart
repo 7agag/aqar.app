@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:aqar/core/utils/parse_utils.dart';
 
 class SponsorEntity extends Equatable {
   final int propertyId;
@@ -17,9 +18,9 @@ class SponsorEntity extends Equatable {
 
   factory SponsorEntity.fromJson(Map<String, dynamic> json) {
     return SponsorEntity(
-      propertyId: (json['property_id'] as num?)?.toInt() ?? 0,
-      duration: (json['duration'] as num?)?.toInt() ?? 0,
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      propertyId: parseInt(json['property_id']),
+      duration: parseInt(json['duration']),
+      amount: parseDouble(json['amount']),
       checkoutUrl: json['url'] as String?,
       status: json['status'] as String? ?? 'PENDING',
     );

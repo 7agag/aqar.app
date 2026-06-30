@@ -131,6 +131,17 @@ import 'package:aqar/features/purchase_request/domain/usecases/cancel_purchase_r
 import 'package:aqar/features/purchase_request/domain/usecases/mark_property_sold_usecase.dart';
 import 'package:aqar/features/purchase_request/presentation/bloc/purchase_request_bloc.dart';
 
+// ========== AI IMPORTS ==========
+import 'package:aqar/features/ai/data/datasources/ai_remote_datasource.dart';
+import 'package:aqar/features/ai/data/repositories/ai_repository_impl.dart';
+import 'package:aqar/features/ai/data/services/ai_chat_history_service.dart';
+import 'package:aqar/features/ai/data/services/ai_session_service.dart';
+import 'package:aqar/features/ai/domain/repositories/ai_repository.dart';
+import 'package:aqar/features/ai/domain/usecases/recommend_similar_properties_usecase.dart';
+import 'package:aqar/features/ai/domain/usecases/search_ai_properties_usecase.dart';
+import 'package:aqar/features/ai/domain/usecases/send_ai_message_usecase.dart';
+import 'package:aqar/features/ai/presentation/bloc/ai_bloc.dart';
+
 // ========== RENT REQUEST IMPORTS ==========
 import 'package:aqar/features/rent_request/data/datasources/rent_request_remote_datasource.dart';
 import 'package:aqar/features/rent_request/data/repositories/rent_request_repository_impl.dart';
@@ -153,17 +164,26 @@ final sl = GetIt.instance;
 )
 Future<void> configureDependencies() async {
   // Core
-  sl.registerLazySingleton<FlutterSecureStorage>(() => const FlutterSecureStorage());
-  sl.registerLazySingleton<InternetConnectionChecker>(() => InternetConnectionChecker.createInstance());
-  sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl<InternetConnectionChecker>()));
-  sl.registerLazySingleton<ApiClient>(() => ApiClient(sl<FlutterSecureStorage>()));
-  sl.registerLazySingleton<SocketService>(() => SocketService(sl<FlutterSecureStorage>()));
+  sl.registerLazySingleton<FlutterSecureStorage>(
+      () => const FlutterSecureStorage());
+  sl.registerLazySingleton<InternetConnectionChecker>(
+      () => InternetConnectionChecker.createInstance());
+  sl.registerLazySingleton<NetworkInfo>(
+      () => NetworkInfoImpl(sl<InternetConnectionChecker>()));
+  sl.registerLazySingleton<ApiClient>(
+      () => ApiClient(sl<FlutterSecureStorage>()));
+  sl.registerLazySingleton<SocketService>(
+      () => SocketService(sl<FlutterSecureStorage>()));
   sl.registerLazySingleton<EscrowService>(() => EscrowService());
   sl.registerLazySingleton<NotificationService>(() => NotificationService());
 
   // ========== AUTH ==========
-  sl.registerLazySingleton<AuthRemoteDataSource>(() => AuthRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl<AuthRemoteDataSource>(), sl<FlutterSecureStorage>(), sl<NetworkInfo>()));
+  sl.registerLazySingleton<AuthRemoteDataSource>(
+      () => AuthRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(
+      sl<AuthRemoteDataSource>(),
+      sl<FlutterSecureStorage>(),
+      sl<NetworkInfo>()));
   sl.registerLazySingleton(() => LoginUseCase(sl()));
   sl.registerLazySingleton(() => RegisterUseCase(sl()));
   sl.registerLazySingleton(() => ForgotPasswordUseCase(sl()));
@@ -192,8 +212,10 @@ Future<void> configureDependencies() async {
       ));
 
   // ========== PROPERTY ==========
-  sl.registerLazySingleton<PropertyRemoteDataSource>(() => PropertyRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<PropertyRepository>(() => PropertyRepositoryImpl(sl()));
+  sl.registerLazySingleton<PropertyRemoteDataSource>(
+      () => PropertyRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<PropertyRepository>(
+      () => PropertyRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetPropertiesUseCase(sl()));
   sl.registerLazySingleton(() => GetPropertyByIdUseCase(sl()));
   sl.registerLazySingleton(() => GetMyPropertiesUseCase(sl()));
@@ -202,41 +224,50 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton(() => EditPropertyImagesUseCase(sl()));
   sl.registerLazySingleton(() => DeletePropertyUseCase(sl()));
   sl.registerFactory(() => PropertyBloc(
-    getProperties: sl(),
-    getPropertyById: sl(),
-    getMyProperties: sl(),
-    addProperty: sl(),
-    editProperty: sl(),
-    editPropertyImages: sl(),
-    deleteProperty: sl(),
-  ));
+        getProperties: sl(),
+        getPropertyById: sl(),
+        getMyProperties: sl(),
+        addProperty: sl(),
+        editProperty: sl(),
+        editPropertyImages: sl(),
+        deleteProperty: sl(),
+      ));
 
   // ========== CHAT ==========
-  sl.registerLazySingleton<ChatRemoteDataSource>(() => ChatRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<ChatRemoteDataSource>(
+      () => ChatRemoteDataSourceImpl(sl()));
   sl.registerLazySingleton<ChatRepository>(() => ChatRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetInboxUseCase(sl()));
   sl.registerLazySingleton(() => GetChatHistoryUseCase(sl()));
   sl.registerLazySingleton(() => SendMessageUseCase(sl()));
   sl.registerLazySingleton(() => MarkAsReadUseCase(sl()));
   sl.registerFactory(() => ChatBloc(
-    getInbox: sl(),
-    getChatHistory: sl(),
-    sendMessage: sl(),
-    markAsRead: sl(),
-  ));
+        getInbox: sl(),
+        getChatHistory: sl(),
+        sendMessage: sl(),
+        markAsRead: sl(),
+      ));
 
   // ========== FAVORITE ==========
-  sl.registerLazySingleton<FavoriteRemoteDataSource>(() => FavoriteRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<FavoriteRepository>(() => FavoriteRepositoryImpl(sl()));
+  sl.registerLazySingleton<FavoriteRemoteDataSource>(
+      () => FavoriteRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<FavoriteRepository>(
+      () => FavoriteRepositoryImpl(sl()));
   sl.registerLazySingleton(() => AddToFavoriteUseCase(sl()));
   sl.registerLazySingleton(() => RemoveFromFavoriteUseCase(sl()));
   sl.registerLazySingleton(() => GetFavoritesUseCase(sl()));
   sl.registerLazySingleton(() => CompareFavoritesUseCase(sl()));
-  sl.registerFactory(() => FavoriteBloc(addToFavorite: sl(), removeFromFavorite: sl(), getFavorites: sl(), compareFavoritesUseCase: sl()));
+  sl.registerFactory(() => FavoriteBloc(
+      addToFavorite: sl(),
+      removeFromFavorite: sl(),
+      getFavorites: sl(),
+      compareFavoritesUseCase: sl()));
 
   // ========== PAYMENT ==========
-  sl.registerLazySingleton<PaymentRemoteDataSource>(() => PaymentRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<PaymentRepository>(() => PaymentRepositoryImpl(sl()));
+  sl.registerLazySingleton<PaymentRemoteDataSource>(
+      () => PaymentRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<PaymentRepository>(
+      () => PaymentRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetBalanceUseCase(sl()));
   sl.registerLazySingleton(() => GetTransactionsUseCase(sl()));
   sl.registerLazySingleton(() => GetPaymentLinkUseCase(sl()));
@@ -245,74 +276,86 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton(() => CancelRefundRequestUseCase(sl()));
   sl.registerLazySingleton(() => GetTransferStatusUseCase(sl()));
   sl.registerFactory(() => WalletBloc(
-    getBalance: sl(),
-    getTransactions: sl(),
-    requestWithdrawal: sl(),
-  ));
+        getBalance: sl(),
+        getTransactions: sl(),
+        requestWithdrawal: sl(),
+      ));
 
   // ========== INVOICE ==========
-  sl.registerLazySingleton<InvoiceRemoteDataSource>(() => InvoiceRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<InvoiceRepository>(() => InvoiceRepositoryImpl(sl()));
+  sl.registerLazySingleton<InvoiceRemoteDataSource>(
+      () => InvoiceRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<InvoiceRepository>(
+      () => InvoiceRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetRenterInvoicesUseCase(sl()));
   sl.registerLazySingleton(() => GetOwnerInvoicesUseCase(sl()));
   sl.registerLazySingleton(() => GetInvoiceStatsUseCase(sl()));
   sl.registerFactory(() => InvoiceBloc(
-    getRenterInvoices: sl(),
-    getOwnerInvoices: sl(),
-    getInvoiceStats: sl(),
-  ));
+        getRenterInvoices: sl(),
+        getOwnerInvoices: sl(),
+        getInvoiceStats: sl(),
+      ));
 
   // ========== LEASE ==========
-  sl.registerLazySingleton<LeaseRemoteDataSource>(() => LeaseRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<LeaseRemoteDataSource>(
+      () => LeaseRemoteDataSourceImpl(sl()));
   sl.registerLazySingleton<LeaseRepository>(() => LeaseRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetRenterLeasesUseCase(sl()));
   sl.registerLazySingleton(() => GetOwnerLeasesUseCase(sl()));
   sl.registerLazySingleton(() => GetLeaseDetailUseCase(sl()));
   sl.registerFactory(() => LeaseBloc(
-    getRenterLeases: sl(),
-    getOwnerLeases: sl(),
-    getLeaseDetail: sl(),
-  ));
+        getRenterLeases: sl(),
+        getOwnerLeases: sl(),
+        getLeaseDetail: sl(),
+      ));
 
   // ========== NOTIFICATIONS ==========
-  sl.registerLazySingleton<NotificationRemoteDataSource>(() => NotificationRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<NotificationRepository>(() => NotificationRepositoryImpl(sl()));
+  sl.registerLazySingleton<NotificationRemoteDataSource>(
+      () => NotificationRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<NotificationRepository>(
+      () => NotificationRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetNotificationsUseCase(sl()));
   sl.registerLazySingleton(() => MarkNotificationReadUseCase(sl()));
   sl.registerFactory(() => NotificationBloc(
-    getNotifications: sl(),
-    markNotificationRead: sl(),
-  ));
+        getNotifications: sl(),
+        markNotificationRead: sl(),
+      ));
 
   // ========== SUBSCRIPTION ==========
-  sl.registerLazySingleton<SubscriptionRemoteDataSource>(() => SubscriptionRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<SubscriptionRepository>(() => SubscriptionRepositoryImpl(sl()));
+  sl.registerLazySingleton<SubscriptionRemoteDataSource>(
+      () => SubscriptionRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<SubscriptionRepository>(
+      () => SubscriptionRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetSubscriptionUseCase(sl()));
   sl.registerLazySingleton(() => CreateSubscriptionUseCase(sl()));
   sl.registerFactory(() => SubscriptionBloc(
-    getSubscriptionUseCase: sl(),
-    createSubscriptionUseCase: sl(),
-  ));
+        getSubscriptionUseCase: sl(),
+        createSubscriptionUseCase: sl(),
+      ));
 
   // ========== SPONSOR ==========
-  sl.registerLazySingleton<SponsorRemoteDataSource>(() => SponsorRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<SponsorRepository>(() => SponsorRepositoryImpl(sl()));
+  sl.registerLazySingleton<SponsorRemoteDataSource>(
+      () => SponsorRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<SponsorRepository>(
+      () => SponsorRepositoryImpl(sl()));
   sl.registerLazySingleton(() => CreateSponsorCheckoutUseCase(sl()));
   sl.registerFactory(() => SponsorBloc(createCheckoutUseCase: sl()));
 
   // ========== REVIEW ==========
-  sl.registerLazySingleton<ReviewRemoteDataSource>(() => ReviewRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<ReviewRemoteDataSource>(
+      () => ReviewRemoteDataSourceImpl(sl()));
   sl.registerLazySingleton<ReviewRepository>(() => ReviewRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetReviewsUseCase(sl()));
   sl.registerLazySingleton(() => AddReviewUseCase(sl()));
   sl.registerFactory(() => ReviewBloc(
-    getReviewsUseCase: sl(),
-    addReviewUseCase: sl(),
-  ));
+        getReviewsUseCase: sl(),
+        addReviewUseCase: sl(),
+      ));
 
   // ========== PURCHASE REQUEST ==========
-  sl.registerLazySingleton<PurchaseRequestRemoteDataSource>(() => PurchaseRequestRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<PurchaseRequestRepository>(() => PurchaseRequestRepositoryImpl(sl()));
+  sl.registerLazySingleton<PurchaseRequestRemoteDataSource>(
+      () => PurchaseRequestRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<PurchaseRequestRepository>(
+      () => PurchaseRequestRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetMyPurchaseRequestsUseCase(sl()));
   sl.registerLazySingleton(() => GetReceivedPurchaseRequestsUseCase(sl()));
   sl.registerLazySingleton(() => CreatePurchaseRequestUseCase(sl()));
@@ -320,17 +363,33 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton(() => CancelPurchaseRequestUseCase(sl()));
   sl.registerLazySingleton(() => MarkPropertySoldUseCase(sl()));
   sl.registerFactory(() => PurchaseRequestBloc(
-    getMyRequestsUseCase: sl(),
-    getReceivedRequestsUseCase: sl(),
-    createRequestUseCase: sl(),
-    updateStatusUseCase: sl(),
-    cancelRequestUseCase: sl(),
-    markPropertySoldUseCase: sl(),
-  ));
+        getMyRequestsUseCase: sl(),
+        getReceivedRequestsUseCase: sl(),
+        createRequestUseCase: sl(),
+        updateStatusUseCase: sl(),
+        cancelRequestUseCase: sl(),
+        markPropertySoldUseCase: sl(),
+      ));
+
+  // ========== AI ==========
+  sl.registerLazySingleton<AiSessionService>(() => AiSessionService(sl()));
+  sl.registerLazySingleton<AiChatHistoryService>(() => AiChatHistoryService());
+  sl.registerLazySingleton<AiRemoteDataSource>(() => AiRemoteDataSourceImpl());
+  sl.registerLazySingleton<AiRepository>(() => AiRepositoryImpl(sl()));
+  sl.registerLazySingleton(() => SendAiMessageUseCase(sl()));
+  sl.registerLazySingleton(() => SearchAiPropertiesUseCase(sl()));
+  sl.registerLazySingleton(() => RecommendSimilarPropertiesUseCase(sl()));
+  sl.registerFactory(() => AiBloc(
+        sendAiMessage: sl(),
+        sessionService: sl(),
+        historyService: sl(),
+      ));
 
   // ========== RENT REQUEST ==========
-  sl.registerLazySingleton<RentRequestRemoteDataSource>(() => RentRequestRemoteDataSourceImpl(sl()));
-  sl.registerLazySingleton<RentRequestRepository>(() => RentRequestRepositoryImpl(sl()));
+  sl.registerLazySingleton<RentRequestRemoteDataSource>(
+      () => RentRequestRemoteDataSourceImpl(sl()));
+  sl.registerLazySingleton<RentRequestRepository>(
+      () => RentRequestRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetSentRequestsUseCase(sl()));
   sl.registerLazySingleton(() => GetReceivedRequestsUseCase(sl()));
   sl.registerLazySingleton(() => CreateRentRequestUseCase(sl()));
@@ -339,13 +398,12 @@ Future<void> configureDependencies() async {
   sl.registerLazySingleton(() => CancelRentRequestUseCase(sl()));
   sl.registerLazySingleton(() => GetRentRequestByIdUseCase(sl()));
   sl.registerFactory(() => RentRequestBloc(
-    getSentRequests: sl(),
-    getReceivedRequests: sl(),
-    createRequest: sl(),
-    acceptRequest: sl(),
-    rejectRequest: sl(),
-    cancelRequest: sl(),
-    getRentRequestByIdUseCase: sl(),
-  ));
-
+        getSentRequests: sl(),
+        getReceivedRequests: sl(),
+        createRequest: sl(),
+        acceptRequest: sl(),
+        rejectRequest: sl(),
+        cancelRequest: sl(),
+        getRentRequestByIdUseCase: sl(),
+      ));
 }

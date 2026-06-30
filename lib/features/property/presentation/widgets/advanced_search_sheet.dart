@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/extensions/num_formatting.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/aqar_button.dart';
 import '../../domain/entities/property_entity.dart';
@@ -221,7 +222,7 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
               const SizedBox(height: 20),
             ],
             _buildLabel(
-                'Price Range  (\$${_minPrice.toInt()} - \$${_maxPrice.toInt()})'),
+                'Price Range  (\$${_minPrice.toInt().formatWithCommas()} - \$${_maxPrice.toInt().formatWithCommas()})'),
             RangeSlider(
               values: RangeValues(_minPrice, _maxPrice),
               min: 0,

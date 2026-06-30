@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aqar/core/extensions/num_formatting.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/chat/data/utils/agreement_utils.dart';
 
@@ -84,7 +85,7 @@ class AgreementCard extends StatelessWidget {
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               Text(
-                'EGP ${data.price.toStringAsFixed(0)}',
+                'EGP ${data.price.formatWithCommas()}',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,

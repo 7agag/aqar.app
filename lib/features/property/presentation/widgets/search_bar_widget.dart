@@ -8,6 +8,7 @@ class SearchBarWidget extends StatefulWidget {
   final VoidCallback onFilterTap;
   final bool hasActiveFilters;
   final String? currentQuery;
+  final String hintText;
 
   const SearchBarWidget({
     super.key,
@@ -15,6 +16,7 @@ class SearchBarWidget extends StatefulWidget {
     required this.onFilterTap,
     this.hasActiveFilters = false,
     this.currentQuery,
+    this.hintText = 'Describe what you want...',
   });
 
   @override
@@ -83,9 +85,9 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
               controller: _controller,
               focusNode: _focusNode,
               onSubmitted: widget.onSubmitted, // ✅ البحث عند الضغط على Enter
-              decoration: const InputDecoration(
-                hintText: 'Search by name, location...',
-                hintStyle: TextStyle(
+              decoration: InputDecoration(
+                hintText: widget.hintText,
+                hintStyle: const TextStyle(
                   color: AppColors.textHint,
                   fontSize: 14,
                 ),

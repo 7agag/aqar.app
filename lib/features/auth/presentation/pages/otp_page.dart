@@ -7,6 +7,23 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
+class OtpPasteFormatter extends TextInputFormatter {
+  final void Function(String text) onPaste;
+  const OtpPasteFormatter({required this.onPaste});
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.length - oldValue.text.length > 1) {
+      onPaste(newValue.text);
+      return oldValue;
+    }
+    return newValue;
+  }
+}
+
 class OtpPage extends StatefulWidget {
   final String email;
 
@@ -17,9 +34,10 @@ class OtpPage extends StatefulWidget {
 }
 
 class _OtpPageState extends State<OtpPage> {
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  final _controllers = List.generate(6, (_) => TextEditingController());
+  final _focusNodes = List.generate(6, (_) => FocusNode());
+
+  String get _otpCode => _controllers.map((c) => c.text).join();
 
   int _resendSeconds = 60;
   bool _canResend = false;
@@ -47,19 +65,31 @@ class _OtpPageState extends State<OtpPage> {
     });
   }
 
-  String get _otpCode => _controllers.map((c) => c.text).join();
+  void _handlePaste(String pasted) {
+    final digits = pasted.replaceAll(RegExp(r'[^0-9]'), '');
+    Future.microtask(() {
+      for (int i = 0; i < digits.length && i < 6; i++) {
+        _controllers[i].text = digits[i];
+      }
+      final target = (digits.length - 1).clamp(0, 5);
+      _focusNodes[target].requestFocus();
+      if (mounted) setState(() {});
+    });
+  }
 
   void _onOtpChanged(String value, int index) {
-    if (value.length == 1 && index < 5) {
-      _focusNodes[index + 1].requestFocus();
-    }
-    if (value.isEmpty && index > 0) {
-      _focusNodes[index - 1].requestFocus();
+    if (value.isEmpty) {
+      if (index > 0) _focusNodes[index - 1].requestFocus();
+    } else {
+      if (index < 5) _focusNodes[index + 1].requestFocus();
+      if (_otpCode.length == 6 && mounted) {
+        context.read<AuthBloc>().add(
+          VerifyOtpRequested(email: widget.email, otp: _otpCode),
+        );
+      }
     }
     setState(() {});
   }
-
-  bool get _isOtpComplete => _otpCode.length == 6;
 
   @override
   void dispose() {
@@ -122,7 +152,7 @@ class _OtpPageState extends State<OtpPage> {
             ),
           ),
           body: SafeArea(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -185,15 +215,81 @@ class _OtpPageState extends State<OtpPage> {
 
                   // OTP Fields
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(
-                      6,
-                      (index) => _OtpBox(
-                        controller: _controllers[index],
-                        focusNode: _focusNodes[index],
-                        onChanged: (v) => _onOtpChanged(v, index),
-                      ),
-                    ),
+                    children: List.generate(6, (index) {
+                      return Flexible(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: AspectRatio(
+                            aspectRatio: 0.85,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: _focusNodes[index].hasFocus
+                                    ? [
+                                        BoxShadow(
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.2),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: TextFormField(
+                                controller: _controllers[index],
+                                focusNode: _focusNodes[index],
+                                onChanged: (v) => _onOtpChanged(v, index),
+                                textAlign: TextAlign.center,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  OtpPasteFormatter(onPaste: _handlePaste),
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(1),
+                                ],
+                                autofillHints: index == 0
+                                    ? const [AutofillHints.oneTimeCode]
+                                    : null,
+                                autofocus: index == 0,
+                                cursorColor: AppColors.primary,
+                                cursorHeight: 26,
+                                cursorWidth: 1.5,
+                                style: const TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                                decoration: InputDecoration(
+                                  counterText: '',
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.all(0),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    borderSide: const BorderSide(
+                                      color: AppColors.primary,
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
 
                   const SizedBox(height: 40),
@@ -202,7 +298,7 @@ class _OtpPageState extends State<OtpPage> {
                   AqarButton(
                     text: 'Verify',
                     isLoading: isLoading,
-                    onPressed: _isOtpComplete
+                    onPressed: _otpCode.length == 6
                         ? () {
                             context.read<AuthBloc>().add(
                                   VerifyOtpRequested(
@@ -273,53 +369,3 @@ class _OtpPageState extends State<OtpPage> {
   }
 }
 
-class _OtpBox extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final ValueChanged<String> onChanged;
-
-  const _OtpBox({
-    required this.controller,
-    required this.focusNode,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48,
-      height: 56,
-      child: TextFormField(
-        controller: controller,
-        focusNode: focusNode,
-        onChanged: onChanged,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        maxLength: 1,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        style: const TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
-        ),
-        decoration: InputDecoration(
-          counterText: '',
-          filled: true,
-          fillColor: AppColors.surfaceLight,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.borderLight),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.borderLight),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-          ),
-        ),
-      ),
-    );
-  }
-}

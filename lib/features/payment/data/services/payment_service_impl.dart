@@ -41,7 +41,7 @@ class PaymentServiceImpl implements PaymentService {
         return PaymentResultEntity(success: false, message: 'Session ended');
       }
 
-      if (result == true) {
+      if (result?['status'] == 'success') {
         if (requestId != null && propertyId != null && ownerId != null && ownerId.isNotEmpty) {
           final authState = _authBloc.state;
           if (authState is AuthProfileLoaded) {

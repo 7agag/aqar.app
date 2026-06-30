@@ -18,13 +18,16 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   Future<(List<NotificationEntity>, int)> getNotifications() async {
     try {
       final response = await apiClient.dio.get('/api/notification');
-      final data = response.data as Map<String, dynamic>;
-      final dataObj = data['data'] as Map<String, dynamic>?;
+      final raw = response.data;
+      if (raw is! Map<String, dynamic>) {
+        return (const <NotificationEntity>[], 0);
+      }
+      final dataObj = raw['data'] as Map<String, dynamic>?;
       final unreadCount = dataObj?['unreadCount'] as int? ?? 0;
       final rawList = dataObj?['notifications'] as List?;
       if (rawList == null) return (const <NotificationEntity>[], unreadCount);
       final notifications = rawList
-          .cast<Map<String, dynamic>>()
+          .whereType<Map<String, dynamic>>()
           .map((e) => NotificationEntity.fromJson(e))
           .toList();
       return (notifications, unreadCount);
@@ -34,6 +37,8 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
         e.response?.data?['message'] ?? 'Failed to fetch notifications',
         statusCode: e.response?.statusCode,
       );
+    } catch (_) {
+      return (const <NotificationEntity>[], 0);
     }
   }
 

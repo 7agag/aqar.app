@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:aqar/core/utils/parse_utils.dart';
 
 class ReviewEntity extends Equatable {
   final String reviewId;
@@ -28,7 +29,7 @@ class ReviewEntity extends Equatable {
       reviewId: (json['review_id'] as int?)?.toString() ?? '',
       propertyId: json['property_id'] as int?,
       rentId: json['rent_id']?.toString(),
-      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      rating: parseDouble(json['rating']),
       phrase: (json['phrase'] as String?) ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()

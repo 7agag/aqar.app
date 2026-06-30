@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:aqar/core/utils/parse_utils.dart';
 
 enum AgreementMessageType { request, accepted, declined, none }
 
@@ -29,7 +30,7 @@ class AgreementData {
       return AgreementData(
         propertyId: json['propertyId'] as int,
         propertyName: json['propertyName'] as String? ?? '',
-        price: (json['price'] as num?)?.toDouble() ?? 0,
+        price: parseDouble(json['price']),
         terms: json['terms'] as String? ?? '',
       );
     } catch (_) {

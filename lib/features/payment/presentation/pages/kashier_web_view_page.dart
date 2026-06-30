@@ -5,7 +5,6 @@ import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/payment/presentation/widgets/payment_web_overlay.dart';
 import 'package:aqar/features/payment/presentation/mixins/payment_verification_mixin.dart';
 import 'package:aqar/features/payment/presentation/pages/payment_result_screen.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class KashierWebViewPage extends StatefulWidget {
@@ -90,7 +89,10 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
   bool _hasError = false;
   String _errorMessage = '';
   Timer? _loadingTimer;
+  Timer? _retryTimer;
   bool _paymentProcessed = false;
+  int _retryCount = 0;
+  static const int _maxAutoRetries = 1;
 
   @override
   void initState() {
@@ -119,6 +121,15 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
               _processPaymentResponse(url);
               return;
             }
+            if (url.contains('kashier.io/error') ||
+                url.contains('kashier.io/expired') ||
+                url.contains('status=failed') ||
+                url.contains('status=expired')) {
+              if (!_paymentProcessed) {
+                _handleExpiredSession();
+              }
+              return;
+            }
             if (mounted) setState(() => _isLoading = true);
           },
           onPageFinished: (_) {
@@ -145,12 +156,14 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
                 _errorMessage = error.description;
                 _isLoading = false;
               });
+              _handleWebViewError(error.description);
             }
           },
         ),
       )
       ..loadRequest(uri);
 
+    _clearWebViewCache();
     _loadingTimer = Timer(const Duration(seconds: 30), () {
       if (mounted && _isLoading) {
         setState(() {
@@ -162,9 +175,32 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
     });
   }
 
+  Future<void> _clearWebViewCache() async {
+    try {
+      await _controller.clearCache();
+    } catch (_) {}
+  }
+
+  void _handleWebViewError(String description) {
+    final isDnsError = description.contains('ERR_NAME_NOT_RESOLVED') ||
+        description.contains('ERR_INTERNET_DISCONNECTED') ||
+        description.contains('ERR_CONNECTION_TIMED_OUT') ||
+        description.contains('ERR_CONNECTION_REFUSED');
+
+    if (isDnsError && _retryCount < _maxAutoRetries) {
+      _retryCount++;
+      _retryTimer?.cancel();
+      _retryTimer = Timer(const Duration(seconds: 1), _retry);
+      return;
+    }
+
+    if (mounted) Navigator.pop(context, {'status': 'session_expired'});
+  }
+
   @override
   void dispose() {
     _loadingTimer?.cancel();
+    _retryTimer?.cancel();
     super.dispose();
   }
 
@@ -173,7 +209,8 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
     _paymentProcessed = true;
 
     final uri = Uri.parse(urlString);
-    final paymentStatus = uri.queryParameters['paymentStatus'];
+    final paymentStatus = uri.queryParameters['status'] ??
+        uri.queryParameters['paymentStatus'];
     final pid = uri.queryParameters['propertyId'];
     final amount = uri.queryParameters['amount'];
     final type = uri.queryParameters['type'] ??
@@ -183,7 +220,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
     final propertyId = int.tryParse(pid ?? '') ?? widget.propertyId ?? 0;
 
     final result = <String, String?>{
-      'status': paymentStatus == 'SUCCESS' ? 'success' : 'failed',
+      'status': paymentStatus?.toUpperCase() == 'SUCCESS' ? 'success' : 'failed',
       'propertyId': '$propertyId',
       'amount': amount,
       'type': type,
@@ -194,6 +231,8 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
   }
 
   Future<void> _retry() async {
+    if (!mounted) return;
+    _retryTimer?.cancel();
     _loadingTimer?.cancel();
     setState(() {
       _hasError = false;
@@ -209,14 +248,14 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
         });
       }
     });
-    await _controller.loadRequest(Uri.parse(widget.url));
+    final uri = Uri.tryParse(widget.url);
+    if (uri != null) await _controller.loadRequest(uri);
   }
 
-  Future<void> _openInBrowser() async {
-    final uri = Uri.parse(widget.url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+  void _handleExpiredSession() {
+    _loadingTimer?.cancel();
+    _retryTimer?.cancel();
+    if (mounted) Navigator.pop(context, {'status': 'session_expired'});
   }
 
   void _confirmClose() {
@@ -224,20 +263,25 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('إلغاء عملية الدفع؟'),
-        content: const Text('سيتم إلغاء عملية الدفع الجارية.'),
+        title: const Text('Cancel payment?'),
+        content: const Text(
+          'The current payment will be cancelled if you leave.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('استمرار'),
+            child: const Text('Continue'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(ctx);
               if (mounted) Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            child: const Text('نعم، إلغاء'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Yes, cancel'),
           ),
         ],
       ),
@@ -257,11 +301,17 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
           leading: IconButton(
             icon: const Icon(Icons.close_rounded),
             color: AppColors.textPrimary,
-            onPressed: _isLoading ? _confirmClose : () => Navigator.pop(context),
+            onPressed: _isLoading
+                ? _confirmClose
+                : () => Navigator.pop(context),
           ),
           title: const Text(
-            'بوابة الدفع الآمنة',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            'Secure Payment Gateway',
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
           ),
           centerTitle: true,
           backgroundColor: Colors.white,
@@ -280,27 +330,12 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
                 minHeight: 2,
               ),
             Expanded(
-              child: _hasError ? _buildErrorState() : WebViewWidget(controller: _controller),
+              child: _hasError
+                  ? _buildErrorState()
+                  : WebViewWidget(controller: _controller),
             ),
           ],
         ),
-        bottomNavigationBar: _hasError
-            ? null
-            : SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: _openInBrowser,
-                      child: const Text(
-                        'فتح في المتصفح',
-                        style: TextStyle(fontSize: 13, color: AppColors.textHint),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
       ),
     );
   }
@@ -319,18 +354,31 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
                 color: AppColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.wifi_off_rounded, size: 32, color: AppColors.error),
+              child: const Icon(
+                Icons.wifi_off_rounded,
+                size: 32,
+                color: AppColors.error,
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
-              'تعذر تحميل صفحة الدفع',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              'Unable to load payment page',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              _errorMessage.isNotEmpty ? _errorMessage : 'تأكد من اتصالك بالإنترنت وحاول مرة أخرى',
+              _errorMessage.isNotEmpty
+                  ? _errorMessage
+                  : 'Check your internet connection and try again.',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
             const SizedBox(height: 32),
             SizedBox(
@@ -341,21 +389,17 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.navyBlue,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('إعادة المحاولة', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton(
-                onPressed: _openInBrowser,
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: const Text(
+                  'Retry',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                child: const Text('فتح في المتصفح', style: TextStyle(fontSize: 15)),
               ),
             ),
           ],

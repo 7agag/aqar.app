@@ -8,10 +8,14 @@ class SocketService {
   io.Socket? _socket;
   bool _connecting = false;
   final _messageController = StreamController<Map<String, dynamic>>.broadcast();
+  final _connectionController = StreamController<bool>.broadcast();
+  final _notificationController = StreamController<Map<String, dynamic>>.broadcast();
 
   SocketService(this._storage);
 
   Stream<Map<String, dynamic>> get onMessage => _messageController.stream;
+  Stream<bool> get onConnectionChange => _connectionController.stream;
+  Stream<Map<String, dynamic>> get onNotification => _notificationController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -41,6 +45,7 @@ class SocketService {
 
       _socket!.onConnect((_) {
         _connecting = false;
+        _connectionController.add(true);
       });
 
       _socket!.on('new_chat_message', (data) {
@@ -49,8 +54,15 @@ class SocketService {
         }
       });
 
+      _socket!.on('new_notification', (data) {
+        if (data is Map<String, dynamic>) {
+          _notificationController.add(data);
+        }
+      });
+
       _socket!.onDisconnect((reason) {
         _connecting = false;
+        _connectionController.add(false);
       });
 
       _socket!.onConnectError((error) {
@@ -69,6 +81,7 @@ class SocketService {
   void _disconnectCurrent() {
     if (_socket == null) return;
     _socket!.off('new_chat_message');
+    _socket!.off('new_notification');
     _socket!.disconnect();
     _socket!.close();
     _socket = null;
@@ -78,5 +91,7 @@ class SocketService {
     _connecting = false;
     _disconnectCurrent();
     _messageController.close();
+    _connectionController.close();
+    _notificationController.close();
   }
 }

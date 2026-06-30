@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/extensions/num_formatting.dart';
 import '../../../../core/network/socket_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../injection_container.dart' as di;
@@ -60,6 +61,9 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     _messageController = TextEditingController();
     _focusNode = FocusNode();
     _scrollController = ScrollController();
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) _scrollToTop();
+    });
 
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthProfileLoaded) {
@@ -67,7 +71,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     }
     _isOwner = _currentUserId == widget.partnerId;
     _agreementPriceController = TextEditingController(
-      text: widget.propertyPrice?.toStringAsFixed(0) ?? '',
+      text: widget.propertyPrice?.formatWithCommas() ?? '',
     );
     _agreementTermsController = TextEditingController();
 
@@ -78,6 +82,30 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     }
 
     _socketSub = di.sl<SocketService>().onMessage.listen(_handleSocketMessage);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_currentUserId == null) {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthProfileLoaded) {
+        _currentUserId = authState.user.id;
+      }
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatDetailsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.threadId != null && oldWidget.threadId != widget.threadId) {
+      _chatId = widget.threadId;
+      setState(() {
+        _messages.clear();
+      });
+      context.read<ChatBloc>().add(GetChatHistoryRequested(chatId: widget.threadId!));
+      context.read<ChatBloc>().add(MarkAsReadRequested(chatId: widget.threadId!));
+    }
   }
 
   void _handleSocketMessage(Map<String, dynamic> data) {
@@ -180,6 +208,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     _messageController.dispose();
     _agreementPriceController.dispose();
     _agreementTermsController.dispose();
+    _focusNode.removeListener(() {});
     _focusNode.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -217,6 +246,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -327,44 +357,75 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
             ),
           ],
         ),
-      body: BlocListener<ChatBloc, ChatState>(
+      body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is ChatHistoryLoaded && (widget.threadId == null || state.chatId == widget.threadId)) {
-            _chatId = state.chatId;
-            setState(() {
-              _messages.clear();
-              _messages.addAll(state.messages.reversed);
-            });
+          if (state is AuthProfileLoaded) {
+            _currentUserId = state.user.id;
           }
         },
-        child: GestureDetector(
-          onTap: () => _focusNode.unfocus(),
-          child: Column(
-            children: [
-              if (widget.propertyId != null)
-                RentStatusBanner(propertyId: widget.propertyId!),
-              Expanded(
-                child: _messages.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'Start a conversation',
-                          style: TextStyle(color: AppColors.textHint),
+        child: BlocListener<ChatBloc, ChatState>(
+          listener: (context, state) {
+            if (state is ChatHistoryLoaded && (widget.threadId == null || state.chatId == widget.threadId)) {
+              _chatId = state.chatId;
+              setState(() {
+                _messages.clear();
+                _messages.addAll(state.messages.reversed.map((m) => ChatMessageEntity(
+                  messageId: m.messageId,
+                  senderId: m.senderId,
+                  content: m.content,
+                  isRead: true,
+                  createdAt: m.createdAt,
+                )));
+              });
+            }
+          },
+          child: GestureDetector(
+            onTap: () => _focusNode.unfocus(),
+            child: Column(
+              children: [
+                if (widget.propertyId != null)
+                  RentStatusBanner(propertyId: widget.propertyId!),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      if (widget.threadId != null) {
+                        context.read<ChatBloc>().add(
+                          GetChatHistoryRequested(chatId: widget.threadId!),
+                        );
+                      }
+                    },
+                    child: _messages.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: const [
+                              SizedBox(
+                                height: 200,
+                                child: Center(
+                                  child: Text(
+                                    'Start a conversation',
+                                    style: TextStyle(color: AppColors.textHint),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            reverse: true,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                            itemCount: _messages.length,
+                            itemBuilder: (_, i) {
+                            final msg = _messages[i];
+                            final isSender = msg.senderId == _currentUserId;
+                            return _buildMessageBubble(msg, isSender);
+                          },
                         ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        reverse: true,
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                        itemCount: _messages.length,
-                        itemBuilder: (_, i) {
-                          final msg = _messages[i];
-                          final isSender = msg.senderId == _currentUserId;
-                          return _buildMessageBubble(msg, isSender);
-                        },
-                      ),
+                  ),
               ),
               _buildInputBar(bottomInset),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -522,7 +583,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
 
   void _showAgreementSheet(BuildContext context) {
     _agreementPriceController.text =
-        widget.propertyPrice?.toStringAsFixed(0) ?? '';
+        widget.propertyPrice?.formatWithCommas() ?? '';
     _agreementTermsController.clear();
 
     showModalBottomSheet(
@@ -630,20 +691,21 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
   Widget _buildInputBar(double bottomInset) {
     return Container(
       color: Colors.white,
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
+      child: AnimatedPadding(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(

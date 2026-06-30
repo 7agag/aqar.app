@@ -172,7 +172,7 @@ class _AllPropertiesPageState extends State<AllPropertiesPage> {
         padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.9,
+          childAspectRatio: 0.8,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),

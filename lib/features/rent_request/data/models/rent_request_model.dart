@@ -16,6 +16,7 @@ class RentRequestModel extends RentRequestEntity {
     super.perspective,
     super.ownerId,
     super.paymentId,
+    super.leaseId,
   });
 
   factory RentRequestModel.fromJson(Map<String, dynamic> json) {
@@ -33,6 +34,7 @@ class RentRequestModel extends RentRequestEntity {
       perspective: json['perspective']?.toString(),
       ownerId: json['owner_id']?.toString(),
       paymentId: json['payment_id']?.toString(),
+      leaseId: json['lease_id']?.toString(),
     );
   }
 
@@ -64,6 +66,7 @@ class RentRequestModel extends RentRequestEntity {
         if (perspective != null) 'perspective': perspective,
         if (ownerId != null) 'owner_id': ownerId,
         if (paymentId != null) 'payment_id': paymentId,
+        if (leaseId != null) 'lease_id': leaseId,
       };
 }
 

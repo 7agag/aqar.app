@@ -4,7 +4,9 @@ import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/core/widgets/aqar_button.dart';
 import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/core/config/app_config.dart';
+import 'package:aqar/core/network/api_client.dart';
 import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
+import 'package:aqar/features/payment/presentation/pages/payment_gateway_page.dart';
 import 'package:aqar/features/payment/presentation/mixins/payment_verification_mixin.dart';
 import 'package:aqar/features/subscription/data/services/pending_payment_service.dart';
 import 'package:aqar/injection_container.dart' as di;
@@ -90,25 +92,40 @@ class _SponsorshipPageState extends State<SponsorshipPage>
   }
 
   void _onCheckoutReady(String url) {
-    KashierWebViewPage.open(
+    final plan = _plans[_selectedPlan];
+    PaymentGatewayPage.open(
       context,
-      url: url,
-      propertyId: widget.propertyId,
-      paymentType: VerificationType.sponsorship,
-    ).then((result) async {
+      itemName: plan.name,
+      amount: double.parse(plan.price),
+      generatePaymentUrl: () => _fetchFreshSponsorUrl(),
+      isVerified: (data) => data['is_sponsored'] == true,
+      onPaymentSuccess: (pid) async {
+        await PropertyOverrideService().markAsSponsored(pid);
+        if (!mounted) return;
+        KashierWebViewPage.navigateToResult(
+          context,
+          paymentStatus: 'success',
+          propertyId: pid,
+          type: 'sponsor',
+          amount: plan.price,
+        );
+      },
+    ).then((success) {
       if (!mounted) return;
-      if (result == null || result['status'] == 'failed' || result['status'] == 'cancelled') return;
-      final pid = int.tryParse(result['propertyId'] ?? '') ?? widget.propertyId;
-      await PropertyOverrideService().markAsSponsored(pid);
-      if (!mounted) return;
-      KashierWebViewPage.navigateToResult(
-        context,
-        paymentStatus: 'success',
-        propertyId: pid,
-        type: 'sponsor',
-        amount: result['amount'],
-      );
+      if (success != true) {
+        _pendingService.clearPendingSponsorshipPayment();
+      }
     });
+  }
+
+  Future<String> _fetchFreshSponsorUrl() async {
+    final dio = di.sl<ApiClient>().dio;
+    final res = await dio.post('/api/sponser', data: {
+      'property_id': widget.propertyId,
+      'duration': _selectedDuration,
+      'redirect': AppConfig.sponsorshipCallbackUrl(widget.propertyId),
+    });
+    return res.data['url'] as String;
   }
 
   void _onError(String message) {
@@ -158,13 +175,16 @@ class _SponsorshipPageState extends State<SponsorshipPage>
                             groupValue: _selectedPlan,
                             onChanged: (v) =>
                                 setState(() => _selectedPlan = v!),
-                            child: ListView.separated(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              itemCount: _plans.length,
-                              separatorBuilder: (_, __) =>
-                                  const SizedBox(height: 16),
-                              itemBuilder: (_, i) => _buildPlanCard(i),
+                            child: RefreshIndicator(
+                              onRefresh: () async => setState(() {}),
+                              child: ListView.separated(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20),
+                                itemCount: _plans.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: 16),
+                                itemBuilder: (_, i) => _buildPlanCard(i),
+                              ),
                             ),
                           ),
                         ),

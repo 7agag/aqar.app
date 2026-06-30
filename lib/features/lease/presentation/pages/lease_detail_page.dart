@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/extensions/num_formatting.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../property/presentation/widgets/property_image.dart';
 import '../bloc/lease_bloc.dart';
 import '../bloc/lease_event.dart';
 import '../bloc/lease_state.dart';
@@ -79,55 +81,134 @@ class _LeaseDetailPageState extends State<LeaseDetailPage> {
           }
           if (state is LeaseDetailLoaded) {
             final lease = state.lease;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (lease.propertyName != null)
-                    Text(lease.propertyName!,
-                        style: const TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 20),
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderLight),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
+            final statusColor = switch (lease.status) {
+              'UPCOMING' => const Color(0xFF3B82F6),
+              'IN_PROGRESS' => AppColors.success,
+              'COMPLETED' => AppColors.textHint,
+              'CANCELLED' => AppColors.error,
+              'OVERDUE' => AppColors.error,
+              _ => AppColors.textHint,
+            };
+            final statusLabel = switch (lease.status) {
+              'UPCOMING' => 'Upcoming',
+              'IN_PROGRESS' => 'In Progress',
+              'COMPLETED' => 'Completed',
+              'CANCELLED' => 'Cancelled',
+              'OVERDUE' => 'Overdue',
+              _ => lease.status,
+            };
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<LeaseBloc>().add(GetLeaseDetailRequested(leaseId: widget.leaseId));
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        _buildInfoRow('Status', lease.status),
-                        _buildInfoRow('Renting Type', lease.rentingType),
-                        if (lease.renterName != null)
-                          _buildInfoRow('Renter', lease.renterName!),
-                        _buildInfoRow('Check-in', _formatDate(lease.checkInDate)),
-                        _buildInfoRow('Check-out', _formatDate(lease.checkOutDate)),
-                        if (lease.nextBillingDate != null)
-                          _buildInfoRow('Next Billing', _formatDate(lease.nextBillingDate!)),
-                        if (lease.priceValue != null)
-                          _buildInfoRow('Price',
-                              '${lease.priceValue!.toStringAsFixed(0)} EGP'),
-                        if (lease.location != null)
-                          _buildInfoRow('Location', lease.location!),
+                        if (lease.propertyName != null)
+                          Expanded(
+                            child: Text(lease.propertyName!,
+                                style: const TextStyle(
+                                    fontSize: 22, fontWeight: FontWeight.bold)),
+                          ),
+                        const SizedBox(width: 8),
+                        _buildStatusBadge(statusColor, statusLabel),
                       ],
                     ),
-                  ),
-                ],
+                    if (lease.images != null && lease.images!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 200,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: lease.images!.split(',').length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (_, i) => ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: PropertyImage(
+                              imageUrl: lease.images!.split(',')[i].trim(),
+                              width: MediaQuery.of(context).size.width * 0.75,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          _buildInfoRow('Renting Type', lease.rentingType),
+                          if (lease.renterName != null)
+                            _buildInfoRow('Renter', lease.renterName!),
+                          _buildInfoRow('Check-in', _formatDate(lease.checkInDate)),
+                          _buildInfoRow('Check-out', _formatDate(lease.checkOutDate)),
+                          if (lease.nextBillingDate != null)
+                            _buildInfoRow('Next Billing', _formatDate(lease.nextBillingDate!)),
+                          if (lease.priceValue != null)
+                            _buildInfoRow('Price',
+                                '${lease.priceValue!.formatWithCommas()} EGP'),
+
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(Color color, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

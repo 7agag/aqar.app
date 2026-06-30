@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aqar/core/extensions/num_formatting.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/property/domain/entities/property_entity.dart';
 import 'package:aqar/features/property/presentation/widgets/property_image.dart';
@@ -31,8 +32,8 @@ class SponsoredPropertyCard extends StatelessWidget {
         double cardWidth = constraints.maxWidth;
         if (cardWidth.isInfinite || cardWidth == 0) {
           final screenWidth = MediaQuery.of(context).size.width;
-          cardWidth = screenWidth * 0.42;
-          if (cardWidth > 260) cardWidth = 260;
+          cardWidth = screenWidth * 0.48;
+          if (cardWidth > 300) cardWidth = 300;
           if (cardWidth < 180) cardWidth = 180;
         }
 
@@ -202,7 +203,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
-                                '\$${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
+                                '\$${property.priceValue.formatWithCommas()}${property.pricingUnitSuffix}',
                                 style: TextStyle(
                                   fontSize: priceFontSize,
                                   fontWeight: FontWeight.w800,

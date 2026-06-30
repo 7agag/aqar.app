@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/extensions/num_formatting.dart';
 import '../../../../core/navigation/property_detail_navigator.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../bloc/property_bloc.dart';
@@ -58,29 +59,34 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
   }
 
   Widget _buildShimmer() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 18, width: 140,
-            decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(4),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 18, width: 140,
+          decoration: BoxDecoration(
+            color: Colors.grey.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(4),
           ),
-          const SizedBox(height: 12),
-          ...List.generate(2, (_) => _ShimmerCard(controller: _shimmerCtrl)),
-        ],
-      ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 180,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            itemCount: 2,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, __) => _ShimmerCard(controller: _shimmerCtrl, width: 160),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildError(String message) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('My Listings',
@@ -109,16 +115,13 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildContent(List<PropertyEntity> properties) {
     final visible = properties.where((p) => p.isVisible).toList();
     final count = visible.length;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -154,12 +157,14 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
           else
             Builder(
               builder: (context) {
-                final cardWidth = (MediaQuery.of(context).size.width * 0.4).clamp(140, 220).toDouble();
-                final cardHeight = (cardWidth * 1.15).clamp(160, 230).toDouble();
+                final cardWidth = (MediaQuery.of(context).size.width * 0.5).clamp(160, 250).toDouble();
+                final cardHeight = (cardWidth * 1.35).clamp(190, 300).toDouble();
                 return SizedBox(
                   height: cardHeight,
                   child: ListView.separated(
+                    clipBehavior: Clip.antiAlias,
                     scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
                     itemCount: count,
                     separatorBuilder: (_, __) => const SizedBox(width: 10),
                     itemBuilder: (context, index) => _PropertyCardHorizontal(
@@ -178,8 +183,7 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
               },
             ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildEmpty() {
@@ -248,46 +252,41 @@ class _AddPropertyPageWrapper extends StatelessWidget {
 
 class _ShimmerCard extends StatelessWidget {
   final AnimationController controller;
-  const _ShimmerCard({required this.controller});
+  final double width;
+  const _ShimmerCard({required this.controller, required this.width});
 
   @override
   Widget build(BuildContext context) {
+    final imageHeight = width * 0.58;
     return AnimatedBuilder(
       animation: controller,
       builder: (_, __) {
         final opacity = 0.2 + (controller.value * 0.4);
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          width: width,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.borderLight.withValues(alpha: 0.3)),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: Container(
-                  width: 90, height: 100,
+                  height: imageHeight,
                   color: Colors.grey.withValues(alpha: opacity),
                 ),
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        height: 12, width: 120,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: opacity),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        height: 10, width: 80,
+                        height: 12, width: width * 0.7,
                         decoration: BoxDecoration(
                           color: Colors.grey.withValues(alpha: opacity),
                           borderRadius: BorderRadius.circular(4),
@@ -295,7 +294,15 @@ class _ShimmerCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Container(
-                        height: 10, width: 60,
+                        height: 12, width: width * 0.4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: opacity),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        height: 12, width: width * 0.6,
                         decoration: BoxDecoration(
                           color: Colors.grey.withValues(alpha: opacity),
                           borderRadius: BorderRadius.circular(4),
@@ -394,19 +401,30 @@ class _PropertyCardHorizontal extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(
-                      child: Text(
-                        property.propertyName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
+                    Text(
+                      property.propertyName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    if (property.location.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          property.location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -417,7 +435,7 @@ class _PropertyCardHorizontal extends StatelessWidget {
                         const SizedBox(width: 3),
                         Text(
                           chipLabel,
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: chipColor),
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: chipColor),
                         ),
                       ],
                     ),
@@ -426,11 +444,11 @@ class _PropertyCardHorizontal extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            'EGP ${property.priceValue.toStringAsFixed(0)}${property.pricingUnitSuffix}',
+                            'EGP ${property.priceValue.formatWithCommas()}${property.pricingUnitSuffix}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: 15,
                               fontWeight: FontWeight.w800,
                               color: AppColors.navyBlue,
                             ),
@@ -439,7 +457,10 @@ class _PropertyCardHorizontal extends StatelessWidget {
                         const SizedBox(width: 4),
                         GestureDetector(
                           onTap: onEdit,
-                          child: Icon(Icons.edit_outlined, size: 16, color: AppColors.textHint.withValues(alpha: 0.6)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(2),
+                            child: Icon(Icons.edit_outlined, size: 18, color: AppColors.textHint.withValues(alpha: 0.6)),
+                          ),
                         ),
                       ],
                     ),

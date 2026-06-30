@@ -139,14 +139,6 @@ class _SettingsPageState extends State<SettingsPage> {
               MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
             ),
           ),
-          _buildTile(
-            Icons.delete_outline_rounded,
-            'Delete Account',
-            'Permanently remove your account',
-            const TrailingChevron(),
-            textColor: AppColors.error,
-            onTap: () => _confirmDeleteAccount(context),
-          ),
           const SizedBox(height: 24),
           _buildSection('Support'),
           _buildTile(
@@ -236,34 +228,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _confirmDeleteAccount(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Account'),
-        content: const Text(
-          'This action is permanent. All your data, listings, and messages will be removed.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Account deletion requested')),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class TrailingSwitch extends StatelessWidget {

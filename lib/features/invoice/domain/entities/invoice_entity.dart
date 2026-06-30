@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:aqar/core/utils/parse_utils.dart';
 
 class InvoiceEntity extends Equatable {
   final String invoiceId;
@@ -37,7 +38,7 @@ class InvoiceEntity extends Equatable {
       leaseId: json['lease_id'] as String? ?? '',
       renterId: json['renter_id'] as String? ?? '',
       ownerId: json['owner_id'] as String? ?? '',
-      amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+      amount: parseDouble(json['amount']),
       dueDate: json['due_date'] != null
           ? DateTime.tryParse(json['due_date'] as String) ?? DateTime.now()
           : DateTime.now(),
@@ -128,7 +129,7 @@ class RenterStats extends Equatable {
       unpaidCount: (json['unpaid_count'] as int?) ?? 0,
       overdueCount: (json['overdue_count'] as int?) ?? 0,
       paidCount: (json['paid_count'] as int?) ?? 0,
-      totalDue: (json['total_due'] as num?)?.toDouble() ?? 0.0,
+      totalDue: parseDouble(json['total_due']),
       nextDueDate: json['next_due_date'] != null
           ? DateTime.tryParse(json['next_due_date'] as String)
           : null,
@@ -160,7 +161,7 @@ class OwnerStats extends Equatable {
       totalInvoices: (json['total_invoices'] as int?) ?? 0,
       pendingCount: (json['pending_count'] as int?) ?? 0,
       paidCount: (json['paid_count'] as int?) ?? 0,
-      expectedIncome: (json['expected_income'] as num?)?.toDouble() ?? 0.0,
+      expectedIncome: parseDouble(json['expected_income']),
       delinquentTenants: (json['delinquent_tenants'] as int?) ?? 0,
     );
   }

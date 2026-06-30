@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aqar/core/services/biometric_auth_guard.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/core/widgets/aqar_button.dart';
 import 'package:aqar/features/notifications/presentation/pages/notifications_page.dart';
@@ -8,8 +9,6 @@ import 'package:aqar/features/payment/presentation/bloc/wallet_event.dart';
 import 'package:aqar/features/payment/presentation/bloc/wallet_state.dart';
 import 'package:aqar/features/payment/domain/entities/balance_entity.dart';
 import 'package:aqar/features/payment/domain/entities/payment_entity.dart';
-
-enum _TransactionFilter { all, deposits, withdrawals }
 
 class _WithdrawMethod {
   final IconData icon;
@@ -59,12 +58,6 @@ IconData _txIcon(String? type) {
   }
 }
 
-bool _isDeposit(TransactionEntity t) {
-  return t.value >= 0 &&
-      t.paymentType != 'withdrawal' &&
-      t.paymentType != 'commission';
-}
-
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
 
@@ -82,8 +75,10 @@ class _WalletPageState extends State<WalletPage>
   late final AnimationController _skeletonController;
 
   bool _showBalance = true;
-  _TransactionFilter _filter = _TransactionFilter.all;
   int _displayCount = 5;
+
+  double get _responsiveHPad =>
+      MediaQuery.of(context).size.width > 400 ? 20.0 : 9.1;
 
   static const _withdrawMethods = [
     _WithdrawMethod(
@@ -117,19 +112,6 @@ class _WalletPageState extends State<WalletPage>
   void dispose() {
     _skeletonController.dispose();
     super.dispose();
-  }
-
-  List<TransactionEntity> _filtered(List<TransactionEntity> txs) {
-    return txs.where((t) {
-      switch (_filter) {
-        case _TransactionFilter.deposits:
-          return _isDeposit(t);
-        case _TransactionFilter.withdrawals:
-          return !_isDeposit(t);
-        case _TransactionFilter.all:
-          return true;
-      }
-    }).toList();
   }
 
   Map<String, List<TransactionEntity>> _sectioned(List<TransactionEntity> txs) {
@@ -181,15 +163,6 @@ class _WalletPageState extends State<WalletPage>
         borderRadius: BorderRadius.vertical(top: Radius.circular(_kRadiusSheet)),
       ),
       builder: (_) => _WithdrawFormSheet(method: method),
-    );
-  }
-
-  void _handleHistory() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Full transaction history coming soon'),
-        duration: Duration(seconds: 1),
-      ),
     );
   }
 
@@ -352,9 +325,8 @@ class _WalletPageState extends State<WalletPage>
 
   Widget _buildBody(WalletLoaded state) {
     final allTxs = state.transactions;
-    final filteredTxs = _filtered(allTxs);
-    final sections = _sectioned(filteredTxs);
-    final hasMore = filteredTxs.length > _displayCount;
+    final sections = _sectioned(allTxs);
+    final hasMore = allTxs.length > _displayCount;
 
     return RefreshIndicator(
       color: AppColors.primary,
@@ -370,9 +342,7 @@ class _WalletPageState extends State<WalletPage>
             const SizedBox(height: _kGap),
             _buildQuickActions(),
             const SizedBox(height: 28),
-            _buildFilterChips(),
-            const SizedBox(height: 16),
-            if (filteredTxs.isEmpty)
+            if (allTxs.isEmpty)
               _buildEmptyFilterState()
             else
               ..._buildTransactionSections(sections, hasMore),
@@ -386,7 +356,7 @@ class _WalletPageState extends State<WalletPage>
   Widget _buildBalanceCard(BalanceEntity balance) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(_kPad, _kPad, _kPad, 0),
+      margin: EdgeInsets.fromLTRB(_responsiveHPad, _kPad, _responsiveHPad, 0),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -417,85 +387,97 @@ class _WalletPageState extends State<WalletPage>
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: _showBalance
-                    ? TweenAnimationBuilder<double>(
-                        key: const ValueKey('visible'),
-                        tween: Tween(
-                            begin: 0, end: balance.availableBalance),
-                        duration: const Duration(milliseconds: 800),
-                        curve: Curves.easeOutCubic,
-                        builder: (_, value, __) {
-                          final formatted = value.round().toString();
-                          return Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                formatted,
+              Flexible(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: _showBalance
+                      ? TweenAnimationBuilder<double>(
+                          key: const ValueKey('visible'),
+                          tween: Tween(
+                              begin: 0, end: balance.availableBalance),
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeOutCubic,
+                          builder: (_, value, __) {
+                            final formatted = value.round().toString();
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    formatted,
+                                    style: const TextStyle(
+                                      fontSize: 36,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      height: 1.1,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: 4),
+                                  child: Text(
+                                    'ج.م',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        )
+                      : Row(
+                          key: const ValueKey('hidden'),
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                '••••••',
                                 style: const TextStyle(
                                   fontSize: 36,
                                   fontWeight: FontWeight.w800,
                                   color: Colors.white,
                                   height: 1.1,
                                 ),
-                                overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(width: 6),
-                              const Padding(
-                                padding: EdgeInsets.only(bottom: 4),
-                                child: Text(
-                                  'ج.م',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Padding(
+                              padding: EdgeInsets.only(bottom: 4),
+                              child: Text(
+                                'ج.م',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
                                 ),
                               ),
-                            ],
-                          );
-                        },
-                      )
-                    : Row(
-                        key: const ValueKey('hidden'),
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            '••••••',
-                            style: const TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              height: 1.1,
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 4),
-                            child: Text(
-                              'ج.م',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                ),
               ),
               const Spacer(),
-              IconButton(
-                icon: Icon(
-                  _showBalance
-                      ? Icons.visibility_rounded
-                      : Icons.visibility_off_rounded,
-                  color: Colors.white,
-                  size: 24,
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: IconButton(
+                  icon: Icon(
+                    _showBalance
+                        ? Icons.visibility_rounded
+                        : Icons.visibility_off_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () =>
+                      setState(() => _showBalance = !_showBalance),
                 ),
-                onPressed: () =>
-                    setState(() => _showBalance = !_showBalance),
               ),
             ],
           ),
@@ -505,11 +487,6 @@ class _WalletPageState extends State<WalletPage>
             child: AqarButton(
               text: 'Withdraw Funds',
               onPressed: _showWithdrawSheet,
-              suffix: const Icon(
-                Icons.arrow_upward_rounded,
-                size: 18,
-                color: Colors.white,
-              ),
             ),
           ),
         ],
@@ -519,25 +496,18 @@ class _WalletPageState extends State<WalletPage>
 
   Widget _buildQuickActions() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _kPad),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildActionChip(
-              Icons.arrow_upward_rounded, 'Withdraw', _showWithdrawSheet),
-          const SizedBox(width: 16),
-          _buildActionChip(Icons.history_rounded, 'History', _handleHistory),
-        ],
-      ),
+      padding: EdgeInsets.symmetric(horizontal: _responsiveHPad),
+      child: _buildActionChip(
+          Icons.arrow_upward_rounded, 'Withdraw', _showWithdrawSheet),
     );
   }
 
   Widget _buildActionChip(IconData icon, String label, VoidCallback onTap) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(_kRadiusCard),
@@ -564,61 +534,14 @@ class _WalletPageState extends State<WalletPage>
                 ),
               ),
             ],
-          ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildFilterChips() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _kPad),
-      child: Row(
-        children: _TransactionFilter.values.map((f) {
-          final isSelected = _filter == f;
-          final label = switch (f) {
-            _TransactionFilter.all => 'All',
-            _TransactionFilter.deposits => 'Deposits',
-            _TransactionFilter.withdrawals => 'Withdrawals',
-          };
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () => setState(() => _filter = f),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.borderLight,
-                  ),
-                ),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }
 
   Widget _buildEmptyFilterState() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _kPad, vertical: 48),
+      padding: EdgeInsets.symmetric(horizontal: _responsiveHPad, vertical: 48),
       child: Center(
         child: Column(
           children: [
@@ -626,7 +549,7 @@ class _WalletPageState extends State<WalletPage>
                 size: 48, color: Colors.grey.shade300),
             const SizedBox(height: 12),
             const Text(
-              'No transactions match this filter',
+              'No transactions yet',
               style: TextStyle(fontSize: 14, color: AppColors.textHint),
             ),
           ],
@@ -645,8 +568,8 @@ class _WalletPageState extends State<WalletPage>
       final txs = sections[key]!;
       widgets.add(Padding(
         padding: EdgeInsets.only(
-          left: _kPad,
-          right: _kPad,
+          left: _responsiveHPad,
+          right: _responsiveHPad,
           top: key == _sectionOrder.first ? 0 : 8,
           bottom: 8,
         ),
@@ -664,7 +587,7 @@ class _WalletPageState extends State<WalletPage>
       }
       if (hasMore && key == _sectionOrder.last) {
         widgets.add(Padding(
-          padding: const EdgeInsets.symmetric(horizontal: _kPad, vertical: 12),
+          padding: EdgeInsets.symmetric(horizontal: _responsiveHPad, vertical: 12),
           child: GestureDetector(
             onTap: () => setState(() => _displayCount = _displayCount == 0 ? 5 : 0),
             child: Container(
@@ -701,7 +624,7 @@ class _WalletPageState extends State<WalletPage>
     final icon = _txIcon(tx.paymentType);
     final label = _txTypeLabel(tx.paymentType);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _kPad, vertical: 4),
+      padding: EdgeInsets.fromLTRB(_responsiveHPad, 4, _responsiveHPad, 4),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -751,13 +674,16 @@ class _WalletPageState extends State<WalletPage>
                 ],
               ),
             ),
-            Text(
-              '${tx.value.abs().round().toString()} ج.م',
-              textDirection: TextDirection.rtl,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: color,
+            Flexible(
+              child: Text(
+                '${tx.value.abs().round().toString()} ج.م',
+                textDirection: TextDirection.rtl,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
               ),
             ),
           ],
@@ -939,10 +865,16 @@ class _WithdrawFormSheetState extends State<_WithdrawFormSheet> {
               onPressed: _isSubmitting
                   ? null
                   : () async {
-                      setState(() => _isSubmitting = true);
+                      final bloc = context.read<WalletBloc>();
                       final navigator = Navigator.of(context);
+                      final guardOk = await BiometricAuthGuard.guard(
+                        context,
+                        reason: 'Authenticate to confirm your withdrawal',
+                      );
+                      if (!guardOk || !mounted) return;
+                      setState(() => _isSubmitting = true);
                       final amount = double.tryParse(_amountCtl.text) ?? 0;
-                      context.read<WalletBloc>().add(
+                      bloc.add(
                             RequestWithdrawalTriggered(
                               amount: amount,
                               method: widget.method,

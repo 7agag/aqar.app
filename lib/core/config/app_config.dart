@@ -1,6 +1,6 @@
 class AppConfig {
   // الروابط الأساسية كـ Constants لضمان الأداء الأفضل
-  static const String _serverUrl = 'https://jovek-aqar.up.railway.app';
+  static const String _serverUrl = 'https://aqar.dpdns.org';
   static const String _vercelUrl = 'https://aqar-tan.vercel.app';
 
   /// الرابط الأساسي للسيرفر (API)
@@ -28,5 +28,11 @@ class AppConfig {
   static String get imageBaseUrl {
     const env = String.fromEnvironment('IMAGE_BASE_URL');
     return env.isNotEmpty ? env : _serverUrl;
+  }
+
+  /// رابط خدمة الذكاء الاصطناعي (AI Assistant)
+  static String get aiBaseUrl {
+    const env = String.fromEnvironment('AI_API_URL');
+    return env.isNotEmpty ? env : 'https://web-production-c0669.up.railway.app/api/v1';
   }
 }

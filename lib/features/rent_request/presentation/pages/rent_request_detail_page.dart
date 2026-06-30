@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:aqar/core/extensions/num_formatting.dart';
 import 'package:aqar/core/services/biometric_auth_guard.dart';
 import 'package:aqar/core/services/escrow_service.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:aqar/features/auth/presentation/bloc/auth_state.dart';
+import 'package:aqar/core/usecases/usecase.dart';
+import 'package:aqar/features/lease/domain/entities/lease_entity.dart';
+import 'package:aqar/features/lease/domain/usecases/get_owner_leases_usecase.dart';
+import 'package:aqar/features/lease/domain/usecases/get_renter_leases_usecase.dart';
+import 'package:aqar/features/lease/presentation/bloc/lease_bloc.dart';
+import 'package:aqar/features/lease/presentation/bloc/lease_event.dart';
+import 'package:aqar/features/lease/presentation/bloc/lease_state.dart';
+import 'package:aqar/features/lease/presentation/pages/lease_detail_page.dart';
 import 'package:aqar/features/payment/domain/usecases/get_payment_link_usecase.dart';
 import 'package:aqar/features/payment/presentation/pages/payment_gateway_page.dart';
 import 'package:aqar/features/rent_request/domain/entities/rent_request_entity.dart';
@@ -31,6 +40,8 @@ class RentRequestDetailPage extends StatefulWidget {
 class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
   RentRequestEntity? _request;
   bool _isFetching = true;
+  LeaseEntity? _lease;
+  bool _isLoadingLease = false;
 
   @override
   void initState() {
@@ -39,7 +50,35 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
   }
 
   void _loadRequest() {
+    setState(() {
+      _lease = null;
+      _isLoadingLease = false;
+    });
     context.read<RentRequestBloc>().add(GetRentRequestById(requestId: widget.requestId));
+  }
+
+  void _loadLease(String leaseId) {
+    setState(() => _isLoadingLease = true);
+    context.read<LeaseBloc>().add(GetLeaseDetailRequested(leaseId: leaseId));
+  }
+
+  Future<void> _findLeaseByRequestId(String requestId, bool isRenter) async {
+    setState(() => _isLoadingLease = true);
+    final useCase = isRenter
+        ? di.sl<GetRenterLeasesUseCase>()(NoParams())
+        : di.sl<GetOwnerLeasesUseCase>()(NoParams());
+    final result = await useCase;
+    if (!mounted) return;
+    result.fold(
+      (_) => setState(() => _isLoadingLease = false),
+      (leases) {
+        final match = leases.where((l) => l.requestId == requestId).firstOrNull;
+        setState(() {
+          _lease = match;
+          _isLoadingLease = false;
+        });
+      },
+    );
   }
 
   @override
@@ -48,27 +87,53 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
       appBar: AppBar(
         title: const Text('Request Details'),
       ),
-      body: BlocListener<RentRequestBloc, RentRequestState>(
-        listener: (context, state) {
-          if (state is RentRequestActionSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-            Navigator.pop(context);
-          }
-          if (state is RentRequestDetailLoaded && mounted) {
-            setState(() {
-              _request = state.request;
-              _isFetching = false;
-            });
-          }
-          if (state is RentRequestError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-          }
-        },
-        child: _buildBody(),
+      body: BlocProvider<LeaseBloc>(
+        create: (_) => di.sl<LeaseBloc>(),
+        child: MultiBlocListener(
+          listeners: [
+            BlocListener<RentRequestBloc, RentRequestState>(
+              listener: (context, state) {
+                if (state is RentRequestActionSuccess) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message)),
+                  );
+                  Navigator.pop(context);
+                }
+                if (state is RentRequestDetailLoaded && mounted) {
+                  setState(() {
+                    _request = state.request;
+                    _isFetching = false;
+                  });
+                  final req = state.request;
+                  if (req.leaseId != null) {
+                    _loadLease(req.leaseId!);
+                  } else if (di.sl<EscrowService>().getLease(req.requestId) != null) {
+                    _findLeaseByRequestId(req.requestId, widget.isSent);
+                  }
+                }
+                if (state is RentRequestError) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(state.message)),
+                  );
+                }
+              },
+            ),
+            BlocListener<LeaseBloc, LeaseState>(
+              listener: (context, state) {
+                if (state is LeaseDetailLoaded && mounted) {
+                  setState(() {
+                    _lease = state.lease;
+                    _isLoadingLease = false;
+                  });
+                }
+                if (state is LeaseError && mounted) {
+                  setState(() => _isLoadingLease = false);
+                }
+              },
+            ),
+          ],
+          child: _buildBody(),
+        ),
       ),
     );
   }
@@ -83,23 +148,41 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
       return const Center(child: Text('Request not found'));
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildInfoRow('Property', request.propertyName ?? 'Property #${request.propertyId}'),
-          _buildInfoRow('Type', request.rentingType.label),
-          _buildInfoRow('Check In', request.checkInDate.toString().substring(0, 10)),
-          _buildInfoRow('Check Out', request.checkOutDate.toString().substring(0, 10)),
-          _buildInfoRow('Total Price', '\$${request.totalPrice.toStringAsFixed(0)}'),
-          _buildInfoRow('Status', request.state.label),
-          _buildInfoRow('Requested', request.createdAt.toString().substring(0, 10)),
-          const SizedBox(height: 8),
-          _buildTimeline(request.state, di.sl<EscrowService>().getLease(request.requestId)),
-          const Spacer(),
-          ..._buildActionButtons(context, request),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        _loadRequest();
+        await context.read<RentRequestBloc>().stream.firstWhere(
+          (state) => state is RentRequestDetailLoaded || state is RentRequestError,
+        );
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildInfoRow('Property', request.propertyName ?? 'Property #${request.propertyId}'),
+            _buildInfoRow('Type', request.rentingType.label),
+            _buildInfoRow('Check In', request.checkInDate.toString().substring(0, 10)),
+            _buildInfoRow('Check Out', request.checkOutDate.toString().substring(0, 10)),
+            _buildInfoRow('Total Price', '\$${request.totalPrice.formatWithCommas()}'),
+            _buildInfoRow('Status', request.state.label),
+            _buildInfoRow('Requested', request.createdAt.toString().substring(0, 10)),
+            const SizedBox(height: 8),
+            _buildTimeline(request.state, di.sl<EscrowService>().getLease(request.requestId)),
+            if (_isLoadingLease)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+              )
+            else if (_lease != null)
+              _buildLeaseCard(_lease!)
+            else if (di.sl<EscrowService>().getLease(request.requestId) != null)
+              _buildLocalLeaseCard(request, di.sl<EscrowService>().getLease(request.requestId)!),
+            const SizedBox(height: 16),
+            ..._buildActionButtons(context, request),
+          ],
+        ),
       ),
     );
   }
@@ -131,7 +214,8 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
         completed: state == enums.RentRequestState.paid ||
                    (lease != null && (lease.status == LeaseStatus.escrowActive || lease.status == LeaseStatus.completed))),
       _TimelineStep(label: 'Done', icon: Icons.home_rounded,
-        completed: lease != null && (lease.status == LeaseStatus.tenantConfirmed || lease.status == LeaseStatus.completed)),
+        completed: state == enums.RentRequestState.paid ||
+                   (lease != null && (lease.status == LeaseStatus.tenantConfirmed || lease.status == LeaseStatus.completed))),
     ];
 
     final activeIdx = steps.lastIndexWhere((s) => s.completed);
@@ -185,6 +269,220 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
           );
         }),
       ),
+    );
+  }
+
+  Widget _buildLocalLeaseCard(RentRequestEntity request, LocalLease localLease) {
+    Color statusColor;
+    String statusLabel;
+    switch (localLease.status) {
+      case LeaseStatus.awaitingPayment:
+        statusColor = Colors.amber;
+        statusLabel = 'Awaiting Payment';
+        break;
+      case LeaseStatus.escrowActive:
+        statusColor = Colors.green;
+        statusLabel = 'Escrow Active';
+        break;
+      case LeaseStatus.tenantConfirmed:
+        statusColor = Colors.teal;
+        statusLabel = 'Confirmed';
+        break;
+      case LeaseStatus.completed:
+        statusColor = Colors.grey;
+        statusLabel = 'Completed';
+        break;
+      case LeaseStatus.cancelled:
+        statusColor = Colors.red;
+        statusLabel = 'Cancelled';
+        break;
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.description_outlined, size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Text(
+                'Lease Agreement',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 20),
+          _buildLeaseRow('Check In', request.checkInDate.toString().substring(0, 10)),
+          const SizedBox(height: 8),
+          _buildLeaseRow('Check Out', request.checkOutDate.toString().substring(0, 10)),
+          const SizedBox(height: 8),
+          _buildLeaseRow('Paid At', localLease.paidAt.toString().substring(0, 10)),
+          const SizedBox(height: 8),
+          _buildLeaseRow('Price', '\$${request.totalPrice.formatWithCommas()}'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeaseCard(LeaseEntity lease) {
+    Color statusColor;
+    String statusLabel;
+    switch (lease.status) {
+      case 'UPCOMING':
+        statusColor = Colors.blue;
+        statusLabel = 'Upcoming';
+        break;
+      case 'IN_PROGRESS':
+      case 'ACTIVE':
+        statusColor = Colors.green;
+        statusLabel = 'In Progress';
+        break;
+      case 'COMPLETED':
+        statusColor = Colors.grey;
+        statusLabel = 'Completed';
+        break;
+      case 'CANCELLED':
+        statusColor = Colors.red;
+        statusLabel = 'Cancelled';
+        break;
+      case 'OVERDUE':
+        statusColor = Colors.orange;
+        statusLabel = 'Overdue';
+        break;
+      default:
+        statusColor = AppColors.textSecondary;
+        statusLabel = lease.status;
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.description_outlined, size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              const Text(
+                'Lease Agreement',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 20),
+          _buildLeaseRow('Check In', lease.checkInDate.toString().substring(0, 10)),
+          const SizedBox(height: 8),
+          _buildLeaseRow('Check Out', lease.checkOutDate.toString().substring(0, 10)),
+          if (lease.priceValue != null) ...[
+            const SizedBox(height: 8),
+            _buildLeaseRow('Price', '\$${lease.priceValue!.formatWithCommas()}'),
+          ],
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('View Full Lease Details'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => BlocProvider<LeaseBloc>(
+                      create: (_) => di.sl<LeaseBloc>(),
+                      child: LeaseDetailPage(leaseId: lease.leaseId),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeaseRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 
@@ -364,6 +662,7 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
           ),
         ),
         onPressed: () async {
+          final messenger = ScaffoldMessenger.of(context);
           final confirmed = await _confirmAction(
             'Confirm Receipt',
             'Have you received the property as agreed? This will release the payment.',
@@ -371,7 +670,7 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
           if (confirmed) {
             await di.sl<EscrowService>().confirmReceipt(requestId);
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
+              messenger.showSnackBar(
                 const SnackBar(content: Text('Receipt confirmed. Payment released.')),
               );
               setState(() {});
@@ -477,6 +776,11 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
         ),
         onPressed: () async {
           final bloc = context.read<RentRequestBloc>();
+          final guardOk = await BiometricAuthGuard.guard(
+            context,
+            reason: 'Authenticate to cancel this rent request',
+          );
+          if (!guardOk) return;
           final confirmed = await _confirmAction(
             'Cancel Request',
             'Are you sure you want to cancel this rent request?',

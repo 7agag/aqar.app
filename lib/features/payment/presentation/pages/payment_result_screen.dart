@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/subscription/data/services/pending_payment_service.dart';
 
-class PaymentResultScreen extends StatelessWidget {
+class PaymentResultScreen extends StatefulWidget {
   final String paymentStatus;
   final int propertyId;
   final String type;
@@ -17,10 +17,19 @@ class PaymentResultScreen extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final isSuccess = paymentStatus == 'success';
+  State<PaymentResultScreen> createState() => _PaymentResultScreenState();
+}
 
+class _PaymentResultScreenState extends State<PaymentResultScreen> {
+  @override
+  void initState() {
+    super.initState();
     _clearPendingPayment();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSuccess = widget.paymentStatus == 'success';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -66,10 +75,10 @@ class PaymentResultScreen extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
-                if (amount != null && isSuccess) ...[
+                if (widget.amount != null && isSuccess) ...[
                   const SizedBox(height: 20),
                   Text(
-                    '$amount EGP',
+                    '${widget.amount} EGP',
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -108,12 +117,12 @@ class PaymentResultScreen extends StatelessWidget {
   }
 
   String get _successTitle {
-    if (type == 'sponsor') return 'Boost Activated!';
+    if (widget.type == 'sponsor') return 'Boost Activated!';
     return 'Subscription Active!';
   }
 
   String get _successMessage {
-    if (type == 'sponsor') {
+    if (widget.type == 'sponsor') {
       return 'Your listing is now boosted.\nIt will appear at the top of search results.';
     }
     return 'Your listing subscription is now active.\nYour listing is visible to buyers.';
@@ -125,7 +134,7 @@ class PaymentResultScreen extends StatelessWidget {
 
   void _clearPendingPayment() {
     final service = PendingPaymentService();
-    if (type == 'sponsor') {
+    if (widget.type == 'sponsor') {
       service.clearPendingSponsorshipPayment();
     } else {
       service.clearPendingSubscriptionPayment();

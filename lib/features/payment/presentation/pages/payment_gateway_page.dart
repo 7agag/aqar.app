@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:aqar/core/extensions/num_formatting.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
+import 'package:aqar/features/payment/presentation/widgets/payment_verification_overlay.dart';
 
 class PaymentGatewayPage extends StatefulWidget {
   final String itemName;
   final double amount;
   final Future<String> Function() generatePaymentUrl;
+  final bool Function(Map<String, dynamic> data)? isVerified;
+  final Future<void> Function(int propertyId)? onPaymentSuccess;
 
   const PaymentGatewayPage({
     super.key,
     required this.itemName,
     required this.amount,
     required this.generatePaymentUrl,
+    this.isVerified,
+    this.onPaymentSuccess,
   });
 
   static Future<bool?> open(
@@ -19,6 +25,8 @@ class PaymentGatewayPage extends StatefulWidget {
     required String itemName,
     required double amount,
     required Future<String> Function() generatePaymentUrl,
+    bool Function(Map<String, dynamic> data)? isVerified,
+    Future<void> Function(int propertyId)? onPaymentSuccess,
   }) {
     return Navigator.push<bool>(
       context,
@@ -27,6 +35,8 @@ class PaymentGatewayPage extends StatefulWidget {
           itemName: itemName,
           amount: amount,
           generatePaymentUrl: generatePaymentUrl,
+          isVerified: isVerified,
+          onPaymentSuccess: onPaymentSuccess,
         ),
       ),
     );
@@ -66,30 +76,8 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
     super.dispose();
   }
 
-  String get _formattedAmount {
-    final parts = widget.amount.toStringAsFixed(2).split('.');
-    final intPart = parts[0];
-    final buf = StringBuffer();
-    for (var i = 0; i < intPart.length; i++) {
-      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-      buf.write(intPart[i]);
-    }
-    return '$buf.${parts[1]}';
-  }
-
   double get _vat => widget.amount * 0.14;
   double get _total => widget.amount + _vat;
-
-  String _fmt(double v) {
-    final parts = v.toStringAsFixed(2).split('.');
-    final intPart = parts[0];
-    final buf = StringBuffer();
-    for (var i = 0; i < intPart.length; i++) {
-      if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
-      buf.write(intPart[i]);
-    }
-    return '$buf.${parts[1]}';
-  }
 
   Future<void> _handlePay() async {
     setState(() {
@@ -112,13 +100,39 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
       final result = await KashierWebViewPage.open(context, url: url);
       if (!mounted) return;
 
-      if (result == true) {
+      if (result != null && result['status'] == 'success') {
+        final pid = int.tryParse(result['propertyId'] ?? '') ?? 0;
+        if (pid > 0) {
+          final verify = widget.isVerified ??
+              (data) => ['active', 'under_negotiation', 'sold']
+                  .contains(data['listing_status']);
+          final confirmed = await PaymentVerificationOverlay.show(
+            context,
+            propertyId: pid,
+            isVerified: verify,
+            successTitle: 'Payment Confirmed!',
+            successMessage: 'Your payment has been processed successfully.',
+          );
+          if (!mounted) return;
+          if (confirmed) {
+            await widget.onPaymentSuccess?.call(pid);
+          } else {
+            setState(() {
+              _isProcessing = false;
+              _errorMessage = 'Payment could not be verified.';
+            });
+            return;
+          }
+        }
         setState(() {
           _isProcessing = false;
           _isSuccess = true;
         });
         _animationController.reset();
         _animationController.forward();
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) Navigator.pop(context, true);
+        });
       } else {
         setState(() {
           _isProcessing = false;
@@ -305,16 +319,16 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
             padding: EdgeInsets.symmetric(vertical: 14),
             child: Divider(height: 1, color: Color(0xFFF0F0F0)),
           ),
-          _buildAmountRow('السعر', _fmt(widget.amount)),
+          _buildAmountRow('السعر', widget.amount.formatWithCommas(decimals: 2)),
           const SizedBox(height: 8),
-          _buildAmountRow('ضريبة 14%', _fmt(_vat)),
+          _buildAmountRow('ضريبة 14%', _vat.formatWithCommas(decimals: 2)),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Divider(height: 1, color: Color(0xFFF0F0F0)),
           ),
           _buildAmountRow(
             'الإجمالي',
-            _fmt(_total),
+            _total.formatWithCommas(decimals: 2),
             total: true,
           ),
         ],
@@ -436,7 +450,7 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
           ),
           const SizedBox(height: 6),
           Text(
-            'تم خصم مبلغ $_formattedAmount ج.م',
+            'تم خصم مبلغ ${widget.amount.formatWithCommas(decimals: 2)} ج.م',
             style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 24),
@@ -452,7 +466,7 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
               children: [
                 _buildReceiptRow('الخدمة', widget.itemName),
                 const SizedBox(height: 10),
-                _buildReceiptRow('المبلغ', '$_formattedAmount ج.م'),
+                _buildReceiptRow('المبلغ', '${widget.amount.formatWithCommas(decimals: 2)} ج.م'),
                 const SizedBox(height: 10),
                 _buildReceiptRow('طريقة الدفع', 'Kashier'),
               ],

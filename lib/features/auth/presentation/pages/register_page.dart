@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/aqar_button.dart';
 import '../../../../core/widgets/aqar_text_field.dart';
-import '../../../../core/widgets/social_login_button.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -212,49 +211,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         );
                   }
                 },
-              ),
-
-              const SizedBox(height: 28),
-
-              // Divider
-              Row(
-                children: [
-                  const Expanded(
-                    child: Divider(color: AppColors.borderLight),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'OR CONTINUE WITH',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary.withValues(alpha: 0.7),
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ),
-                  const Expanded(
-                    child: Divider(color: AppColors.borderLight),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // Google — full width
-              SocialLoginButton(
-                label: 'Google',
-                icon: const Icon(Icons.android_outlined, size: 22),
-                onPressed: () {},
-              ),
-
-              const SizedBox(height: 12),
-
-              // Apple — full width
-              SocialLoginButton(
-                label: 'Apple',
-                icon: const Icon(Icons.apple, size: 22),
-                onPressed: () {},
               ),
 
               const SizedBox(height: 28),

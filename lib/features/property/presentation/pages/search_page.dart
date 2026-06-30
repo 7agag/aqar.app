@@ -1,13 +1,14 @@
-// lib/features/property/presentation/pages/search_page.dart
-
 import 'package:aqar/core/navigation/property_detail_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/extensions/num_formatting.dart';
+import '../../../../injection_container.dart' as di;
+import '../../../ai/data/mappers/ai_property_mapper.dart';
+import '../../../ai/domain/usecases/search_ai_properties_usecase.dart';
 import '../../../favorite/presentation/bloc/favorite_bloc.dart';
 import '../../domain/entities/property_filter_params.dart';
 import '../../domain/entities/property_entity.dart';
-import '../../domain/entities/property_enums.dart';
 import '../bloc/property_bloc.dart';
 import '../bloc/property_event.dart';
 import '../bloc/property_state.dart';
@@ -17,7 +18,8 @@ import '../widgets/filter_chip_widget.dart';
 import '../widgets/search_bar_widget.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final String? initialQuery;
+  const SearchPage({super.key, this.initialQuery});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -25,7 +27,6 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   String? _searchText;
-  List<PropertyEntity> _allProperties = [];
   List<PropertyEntity> _filteredProperties = [];
 
   String? _activeLocation;
@@ -41,6 +42,9 @@ class _SearchPageState extends State<SearchPage> {
   bool _isBuyFilterActive = false;
   bool _isRefreshing = false;
   Set<int> _favoriteIds = {};
+
+  bool _isAiSearch = false;
+  bool _isAiSearching = false;
 
   String _sortBy = 'newest';
   final List<String> _recentSearches = [];
@@ -58,25 +62,18 @@ class _SearchPageState extends State<SearchPage> {
   @override
   void initState() {
     super.initState();
-    _loadProperties();
+    if (widget.initialQuery != null) {
+      _performSearch(widget.initialQuery!);
+    } else {
+      _reloadWithFilters();
+    }
     _loadFavorites();
-  }
-
-  Future<void> _loadProperties() async {
-    if (_isRefreshing) return;
-    _isRefreshing = true;
-    context.read<PropertyBloc>().add(
-          GetPropertiesRequested(
-            params: const PropertyFilterParams(),
-          ),
-        );
   }
 
   void _loadFavorites() {
     context.read<FavoriteBloc>().add(GetFavoritesEvent());
   }
 
-  // ✅ البحث عند الضغط على Enter فقط
   void _performSearch(String query) {
     final trimmed = query.trim();
     setState(() {
@@ -86,7 +83,79 @@ class _SearchPageState extends State<SearchPage> {
       _recentSearches.insert(0, trimmed);
       if (_recentSearches.length > 5) _recentSearches.removeLast();
     }
-    _applyFilters();
+    if (trimmed.isNotEmpty) {
+      _searchWithAi(trimmed);
+    } else {
+      setState(() => _isAiSearch = false);
+      _reloadWithFilters();
+    }
+  }
+
+  Future<void> _searchWithAi(String query) async {
+    setState(() => _isAiSearching = true);
+    final useCase = di.sl<SearchAiPropertiesUseCase>();
+    final result = await useCase(SearchAiPropertiesParams(query: query));
+    if (!mounted) return;
+    result.fold(
+      (failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('AI search unavailable, showing matching listings.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        setState(() {
+          _isAiSearch = false;
+          _isAiSearching = false;
+        });
+        _reloadWithFilters();
+      },
+      (properties) {
+        if (properties.isEmpty) {
+          setState(() {
+            _isAiSearch = false;
+            _isAiSearching = false;
+          });
+          _reloadWithFilters();
+          return;
+        }
+        setState(() {
+          _isAiSearch = true;
+          _isAiSearching = false;
+          _filteredProperties = properties.map(mapAiPropertyToEntity).toList();
+        });
+      },
+    );
+  }
+
+  void _reloadWithFilters() {
+    if (_isRefreshing) return;
+    _isRefreshing = true;
+
+    String? listingType;
+    if (_isBuyFilterActive) {
+      listingType = _isBuy ? 'forSale' : 'forRent';
+    }
+
+    String? effectiveLocation = _activeLocation;
+    if (effectiveLocation == null && _searchText != null) {
+      effectiveLocation = _searchText;
+    }
+
+    context.read<PropertyBloc>().add(
+          GetPropertiesRequested(
+            params: PropertyFilterParams(
+              location: effectiveLocation,
+              minPrice: _activeMinPrice,
+              maxPrice: _activeMaxPrice,
+              bedrooms: _activeBedrooms,
+              bathrooms: _activeBathrooms,
+              minSize: _activeMinSize,
+              maxSize: _activeMaxSize,
+              listingType: listingType,
+            ),
+          ),
+        );
   }
 
   double _getNumericSize(String? sizeStr) {
@@ -94,91 +163,28 @@ class _SearchPageState extends State<SearchPage> {
     return double.tryParse(sizeStr) ?? 0;
   }
 
-  void _applyFilters() {
-    var filtered = List<PropertyEntity>.from(_allProperties);
-
-    if (_isBuyFilterActive) {
-      final targetType = _isBuy ? ListingType.forSale : ListingType.forRent;
-      filtered = filtered.where((p) => p.listingType == targetType).toList();
-    }
-
-    if (_searchText != null && _searchText!.isNotEmpty) {
-      final searchLower = _searchText!.toLowerCase();
-      filtered = filtered
-          .where((property) =>
-              property.propertyName.toLowerCase().contains(searchLower) ||
-              property.location.toLowerCase().contains(searchLower))
-          .toList();
-    }
-
-    if (_activeLocation != null && _activeLocation!.isNotEmpty) {
-      filtered = filtered
-          .where((p) =>
-              p.location.toLowerCase().contains(_activeLocation!.toLowerCase()))
-          .toList();
-    }
-    if (_activeMinPrice != null) {
-      filtered =
-          filtered.where((p) => p.priceValue >= _activeMinPrice!).toList();
-    }
-    if (_activeMaxPrice != null) {
-      filtered =
-          filtered.where((p) => p.priceValue <= _activeMaxPrice!).toList();
-    }
-    if (_activeBedrooms != null && _activeBedrooms! > 0) {
-      filtered =
-          filtered.where((p) => p.bedroomsNo >= _activeBedrooms!).toList();
-    }
-    if (_activeBathrooms != null && _activeBathrooms! > 0) {
-      filtered =
-          filtered.where((p) => p.bathroomsNo >= _activeBathrooms!).toList();
-    }
-    if (_activeRentalDuration != null && _activeRentalDuration != 'all') {
-      filtered = filtered
-          .where((p) =>
-              p.listingType == ListingType.forRent &&
-              p.pricingUnit.value == _activeRentalDuration)
-          .toList();
-    }
-    if (_activeMinSize != null) {
-      filtered = filtered
-          .where((p) => _getNumericSize(p.size) >= _activeMinSize!)
-          .toList();
-    }
-    if (_activeMaxSize != null) {
-      filtered = filtered
-          .where((p) => _getNumericSize(p.size) <= _activeMaxSize!)
-          .toList();
-    }
-
-    switch (_sortBy) {
-      case 'price_asc':
-        filtered.sort((a, b) => a.priceValue.compareTo(b.priceValue));
-        break;
-      case 'price_desc':
-        filtered.sort((a, b) => b.priceValue.compareTo(a.priceValue));
-        break;
-      case 'size_desc':
-        filtered.sort((a, b) =>
-            _getNumericSize(b.size).compareTo(_getNumericSize(a.size)));
-        break;
-      case 'newest':
-      default:
-        filtered.sort((a, b) => b.propertyId.compareTo(a.propertyId));
-        break;
-    }
-
+  void _applyClientSort() {
     setState(() {
-      _filteredProperties = filtered;
+      switch (_sortBy) {
+        case 'price_asc':
+          _filteredProperties.sort((a, b) => a.priceValue.compareTo(b.priceValue));
+          break;
+        case 'price_desc':
+          _filteredProperties.sort((a, b) => b.priceValue.compareTo(a.priceValue));
+          break;
+        case 'size_desc':
+          _filteredProperties.sort((a, b) =>
+              _getNumericSize(b.size).compareTo(_getNumericSize(a.size)));
+          break;
+        case 'newest':
+        default:
+          _filteredProperties.sort((a, b) => b.propertyId.compareTo(a.propertyId));
+          break;
+      }
     });
   }
 
   void _openAdvancedSearch() {
-    final currentState = context.read<PropertyBloc>().state;
-    List<PropertyEntity> allProps = [];
-    if (currentState is PropertiesLoaded) {
-      allProps = currentState.allProperties;
-    }
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -193,7 +199,7 @@ class _SearchPageState extends State<SearchPage> {
         initialRentalDuration: _activeRentalDuration,
         initialMinSize: _activeMinSize,
         initialMaxSize: _activeMaxSize,
-        allProperties: allProps,
+        allProperties: [],
         onApply: (filter) {
           setState(() {
             _isBuy = filter.isBuy;
@@ -203,11 +209,12 @@ class _SearchPageState extends State<SearchPage> {
             _activeMaxPrice = filter.maxPrice;
             _activeBedrooms = filter.bedrooms;
             _activeBathrooms = filter.bathrooms;
-            _activeRentalDuration = filter.rentalDuration;
+                  _activeRentalDuration = filter.rentalDuration;
             _activeMinSize = filter.minSize;
             _activeMaxSize = filter.maxSize;
+            _isAiSearch = false;
           });
-          _applyFilters();
+          _reloadWithFilters();
         },
       ),
     );
@@ -227,11 +234,11 @@ class _SearchPageState extends State<SearchPage> {
               isSelected: true,
               onTap: () {
                 setState(() => _isBuy = !_isBuy);
-                _applyFilters();
+                _reloadWithFilters();
               },
               onRemove: () {
                 setState(() => _isBuyFilterActive = false);
-                _applyFilters();
+                _reloadWithFilters();
               },
             ),
           if (_activeLocation != null)
@@ -241,7 +248,7 @@ class _SearchPageState extends State<SearchPage> {
               onTap: _openAdvancedSearch,
               onRemove: () {
                 setState(() => _activeLocation = null);
-                _applyFilters();
+                _reloadWithFilters();
               },
             ),
           if (_activeMinPrice != null || _activeMaxPrice != null)
@@ -298,18 +305,18 @@ class _SearchPageState extends State<SearchPage> {
   String get _priceFilterLabel {
     final min = _activeMinPrice?.toInt();
     final max = _activeMaxPrice?.toInt();
-    if (min != null && max != null) return '\$$min - \$$max';
-    if (min != null) return 'From \$$min';
-    if (max != null) return 'Up to \$$max';
+    if (min != null && max != null) return '\$${min.formatWithCommas()} - \$${max.formatWithCommas()}';
+    if (min != null) return 'From \$${min.formatWithCommas()}';
+    if (max != null) return 'Up to \$${max.formatWithCommas()}';
     return '';
   }
 
   String get _sizeFilterLabel {
     final min = _activeMinSize?.toInt();
     final max = _activeMaxSize?.toInt();
-    if (min != null && max != null) return '$min - $max sqft';
-    if (min != null) return 'Min $min sqft';
-    if (max != null) return 'Max $max sqft';
+    if (min != null && max != null) return '${min.formatWithCommas()} - ${max.formatWithCommas()} sqft';
+    if (min != null) return 'Min ${min.formatWithCommas()} sqft';
+    if (max != null) return 'Max ${max.formatWithCommas()} sqft';
     return '';
   }
 
@@ -318,17 +325,17 @@ class _SearchPageState extends State<SearchPage> {
       _activeMinPrice = null;
       _activeMaxPrice = null;
     });
-    _applyFilters();
+    _reloadWithFilters();
   }
 
   void _clearBedroomsFilter() {
     setState(() => _activeBedrooms = null);
-    _applyFilters();
+    _reloadWithFilters();
   }
 
   void _clearBathroomsFilter() {
     setState(() => _activeBathrooms = null);
-    _applyFilters();
+    _reloadWithFilters();
   }
 
   void _clearSizeFilter() {
@@ -336,12 +343,12 @@ class _SearchPageState extends State<SearchPage> {
       _activeMinSize = null;
       _activeMaxSize = null;
     });
-    _applyFilters();
+    _reloadWithFilters();
   }
 
   void _clearRentalDurationFilter() {
     setState(() => _activeRentalDuration = null);
-    _applyFilters();
+    _reloadWithFilters();
   }
 
   @override
@@ -360,12 +367,8 @@ class _SearchPageState extends State<SearchPage> {
             listener: (context, state) {
               if (state is PropertiesLoaded) {
                 _isRefreshing = false;
-                if (_allProperties != state.allProperties) {
-                  _allProperties = state.allProperties;
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    _applyFilters();
-                  });
-                }
+                _filteredProperties = state.allProperties;
+                _applyClientSort();
               }
               if (state is PropertyError) {
                 _isRefreshing = false;
@@ -422,83 +425,93 @@ class _SearchPageState extends State<SearchPage> {
                   ],
                 ),
               ),
-            // Sort + Results count row
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
                 children: [
+                  if (_isAiSearching)
+                    const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  if (_isAiSearching)
+                    const SizedBox(width: 6),
+                  if (_isAiSearch)
+                    Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.auto_awesome, size: 10, color: AppColors.primary),
+                          SizedBox(width: 3),
+                          Text(
+                            'AI',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   if (_filteredProperties.isNotEmpty)
                     Text(
                       '${_filteredProperties.length} ${_filteredProperties.length == 1 ? 'result' : 'results'}',
                       style: const TextStyle(fontSize: 12, color: AppColors.textHint),
                     ),
                   const Spacer(),
-                  Container(
-                    height: 32,
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.borderLight),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _sortBy,
-                        icon: const Icon(Icons.swap_vert, size: 16, color: AppColors.textHint),
-                        style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
-                        items: const [
-                          DropdownMenuItem(value: 'newest', child: Text('Newest')),
-                          DropdownMenuItem(value: 'price_asc', child: Text('Price: Low to High')),
-                          DropdownMenuItem(value: 'price_desc', child: Text('Price: High to Low')),
-                          DropdownMenuItem(value: 'size_desc', child: Text('Largest')),
-                        ],
-                        onChanged: (v) {
-                          if (v != null) {
-                            setState(() => _sortBy = v);
-                            _applyFilters();
-                          }
-                        },
+                  if (!_isAiSearch)
+                    Container(
+                      height: 32,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderLight),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _sortBy,
+                          icon: const Icon(Icons.swap_vert, size: 16, color: AppColors.textHint),
+                          style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                          items: const [
+                            DropdownMenuItem(value: 'newest', child: Text('Newest')),
+                            DropdownMenuItem(value: 'price_asc', child: Text('Price: Low to High')),
+                            DropdownMenuItem(value: 'price_desc', child: Text('Price: High to Low')),
+                            DropdownMenuItem(value: 'size_desc', child: Text('Largest')),
+                          ],
+                          onChanged: (v) {
+                            if (v != null) {
+                              setState(() => _sortBy = v);
+                              _applyClientSort();
+                            }
+                          },
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             ),
-            _buildFilters(),
+            if (!_isAiSearch) _buildFilters(),
             Expanded(
-              child: BlocBuilder<PropertyBloc, PropertyState>(
-                buildWhen: (previous, current) {
-                  return current is PropertiesLoaded ||
-                      current is PropertyLoading ||
-                      current is PropertyError;
-                },
-                builder: (context, state) {
-                  if (state is PropertyLoading && _allProperties.isEmpty) {
-                    return const Center(
-                      child:
-                          CircularProgressIndicator(color: AppColors.primary),
-                    );
-                  }
-                  if (state is PropertiesLoaded) {
-                    if (_filteredProperties.isEmpty) {
-                      return const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.search_off,
-                                size: 64, color: AppColors.textHint),
-                            SizedBox(height: 16),
-                            Text(
-                              'No results found',
-                              style: TextStyle(color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    return RefreshIndicator(
+              child: _filteredProperties.isNotEmpty
+                  ? RefreshIndicator(
                       onRefresh: () async {
-                        await _loadProperties();
+                        if (_isAiSearch && _searchText != null) {
+                          _searchWithAi(_searchText!);
+                        } else {
+                          _reloadWithFilters();
+                        }
                         _loadFavorites();
                       },
                       color: AppColors.primary,
@@ -508,7 +521,7 @@ class _SearchPageState extends State<SearchPage> {
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.9,
+                          childAspectRatio: 0.8,
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
                         ),
@@ -517,8 +530,11 @@ class _SearchPageState extends State<SearchPage> {
                           final property = _filteredProperties[index];
                           return SponsoredPropertyCard(
                             property: property,
-                            onTap: () =>
-                                propertyDetailNavigator.value = property.propertyId,
+                            onTap: () {
+                              if (property.propertyId > 0) {
+                                propertyDetailNavigator.value = property.propertyId;
+                              }
+                            },
                             onFavTap: () {
                               final isFav =
                                   _favoriteIds.contains(property.propertyId);
@@ -540,29 +556,58 @@ class _SearchPageState extends State<SearchPage> {
                           );
                         },
                       ),
-                    );
-                  }
-                  if (state is PropertyError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            state.message,
-                            style: const TextStyle(color: AppColors.error),
-                          ),
-                          const SizedBox(height: 8),
-                          ElevatedButton(
-                            onPressed: _loadProperties,
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
+                    )
+                  : BlocBuilder<PropertyBloc, PropertyState>(
+                      buildWhen: (previous, current) {
+                        return current is PropertiesLoaded ||
+                            current is PropertyLoading ||
+                            current is PropertyError;
+                      },
+                      builder: (context, state) {
+                        if (state is PropertyLoading || _isAiSearching) {
+                          return const Center(
+                            child: CircularProgressIndicator(color: AppColors.primary),
+                          );
+                        }
+                        if (state is PropertiesLoaded) {
+                          if (_filteredProperties.isEmpty && !_isAiSearching) {
+                            return const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.search_off,
+                                      size: 64, color: AppColors.textHint),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No results found',
+                                    style: TextStyle(color: AppColors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        }
+                        if (state is PropertyError && !_isAiSearch) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  state.message,
+                                  style: const TextStyle(color: AppColors.error),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  onPressed: _reloadWithFilters,
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
             ),
           ],
         ),

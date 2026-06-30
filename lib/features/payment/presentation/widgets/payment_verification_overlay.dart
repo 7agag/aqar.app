@@ -35,7 +35,7 @@ class PaymentVerificationOverlay extends StatefulWidget {
 
   static bool _neverVerified(Map<String, dynamic> data) => false;
 
-  PaymentVerificationOverlay._instant({
+  const PaymentVerificationOverlay._instant({
     required this.successTitle,
     required this.successMessage,
   })  : propertyId = 0,

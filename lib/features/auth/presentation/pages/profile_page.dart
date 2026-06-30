@@ -2,15 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:async';
+import '../../../../core/network/socket_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../property/presentation/bloc/property_bloc.dart';
+import '../../../property/presentation/bloc/property_event.dart';
+import '../../../property/presentation/bloc/property_state.dart';
+import '../../../property/presentation/widgets/profile_properties_widget.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import '../../domain/entities/user_entity.dart';
 import 'profile_info_page.dart';
-import 'package:aqar/features/property/presentation/bloc/property_bloc.dart';
-import 'package:aqar/features/property/presentation/widgets/profile_properties_widget.dart';
+import 'package:aqar/features/lease/presentation/pages/lease_list_page.dart';
 import 'package:aqar/features/rent_request/presentation/pages/rent_requests_page.dart';
 import 'package:aqar/features/payment/presentation/pages/invoices_page.dart';
 import 'package:aqar/features/payment/presentation/pages/wallet_page.dart';
@@ -29,7 +34,9 @@ class _ProfilePageState extends State<ProfilePage>
     with SingleTickerProviderStateMixin {
   bool _profileRequested = false;
   bool _isRefreshing = false;
+  bool _socketConnected = false;
   String? _profileError;
+  StreamSubscription<bool>? _socketSub;
   late final AnimationController _staggerCtrl;
 
   @override
@@ -40,10 +47,15 @@ class _ProfilePageState extends State<ProfilePage>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
+    _socketConnected = di.sl<SocketService>().isConnected;
+    _socketSub = di.sl<SocketService>().onConnectionChange.listen((connected) {
+      if (mounted) setState(() => _socketConnected = connected);
+    });
   }
 
   @override
   void dispose() {
+    _socketSub?.cancel();
     _staggerCtrl.dispose();
     super.dispose();
   }
@@ -77,6 +89,7 @@ class _ProfilePageState extends State<ProfilePage>
           if (state is AuthProfileLoaded) {
             _staggerCtrl.forward();
             _profileError = null;
+            context.read<PropertyBloc>().add(const GetMyPropertiesRequested());
           }
           if (state is AuthUnauthenticated || state is AuthInitial) {
             _profileRequested = false;
@@ -262,6 +275,15 @@ class _ProfilePageState extends State<ProfilePage>
                     ),
                   ),
                   _buildMenuRow(
+                    Icons.description_outlined,
+                    'My Leases',
+                    'View your active & past leases',
+                    () => _navigateIfAuthenticated(
+                      context,
+                      const LeaseListPage(),
+                    ),
+                  ),
+                  _buildMenuRow(
                     Icons.receipt_outlined,
                     'Invoices',
                     'View your invoices',
@@ -429,11 +451,16 @@ class _ProfilePageState extends State<ProfilePage>
           Row(
             children: [
               const SizedBox(width: AppSpacing.lg),
-              Expanded(child: _buildStatCard('${user.propertiesCount}', 'LISTINGS')),
+              BlocBuilder<PropertyBloc, PropertyState>(
+                builder: (context, pState) {
+                  final count = pState is MyPropertiesLoaded ? pState.properties.length : user.propertiesCount;
+                  return Expanded(child: _buildStatCard('$count', 'LISTINGS'));
+                },
+              ),
               const SizedBox(width: AppSpacing.sm),
               Expanded(child: _buildStatCard('${user.favoritesCount}', 'FAVORITES')),
               const SizedBox(width: AppSpacing.sm),
-              Expanded(child: _buildStatCard(user.isOnline ? 'ON' : 'OFF', 'STATUS')),
+              Expanded(child: _buildStatusCard()),
               const SizedBox(width: AppSpacing.lg),
             ],
           ),
@@ -442,7 +469,73 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  Widget _buildStatCard(String number, String label) {
+  Widget _buildStatusCard() {
+    final connected = _socketConnected;
+    final dotColor = connected ? const Color(0xFF2ECC71) : AppColors.textHint;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 600),
+      builder: (context, anim, _) {
+        final pulse = connected ? (0.7 + 0.3 * (1 - anim)) : 1.0;
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(color: AppColors.borderLight, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Transform.scale(
+                scale: pulse,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: dotColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                connected ? 'Online' : 'Offline',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: connected ? const Color(0xFF2ECC71) : AppColors.textHint,
+                  letterSpacing: 0.3,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'STATUS',
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: connected
+                      ? const Color(0xFF2ECC71).withValues(alpha: 0.6)
+                      : AppColors.textHint.withValues(alpha: 0.6),
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(String number, String label, {Color? numberColor}) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       decoration: BoxDecoration(
@@ -465,10 +558,10 @@ class _ProfilePageState extends State<ProfilePage>
             curve: Curves.easeOutCubic,
             builder: (context, value, _) => Text(
               number.contains(RegExp(r'[A-Za-z]')) ? number : value.toInt().toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppColors.primary,
+                color: numberColor ?? AppColors.primary,
               ),
             ),
           ),

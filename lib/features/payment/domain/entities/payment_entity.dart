@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:aqar/core/utils/parse_utils.dart';
 
 class TransactionEntity extends Equatable {
   final String? paymentId;
@@ -26,7 +27,7 @@ class TransactionEntity extends Equatable {
       paymentId: json['payment_id'] as String?,
       propertyId: json['property_id'] as int?,
       paymentType: json['payment_type'] as String?,
-      value: (json['value'] as num?)?.toDouble() ?? 0.0,
+      value: parseDouble(json['value']),
       paymentMethod: json['payment_method'] as String?,
       status: json['status'] as String?,
       transferId: json['transfer_id'] as String?,

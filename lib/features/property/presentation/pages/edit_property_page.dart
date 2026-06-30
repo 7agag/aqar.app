@@ -461,12 +461,15 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
             children: [
               Icon(icon, size: 16, color: AppColors.textHint),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textHint,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textHint,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],

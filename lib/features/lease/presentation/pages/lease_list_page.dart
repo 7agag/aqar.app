@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/extensions/num_formatting.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:aqar/injection_container.dart' as di;
 import '../bloc/lease_bloc.dart';
 import '../bloc/lease_event.dart';
 import '../bloc/lease_state.dart';
@@ -306,8 +308,8 @@ class _LeaseListPageState extends State<LeaseListPage>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => BlocProvider.value(
-                  value: context.read<LeaseBloc>(),
+                builder: (_) => BlocProvider(
+                  create: (_) => di.sl<LeaseBloc>(),
                   child: LeaseDetailPage(leaseId: lease.leaseId),
                 ),
               ),
@@ -362,7 +364,7 @@ class _LeaseListPageState extends State<LeaseListPage>
                     ),
                     if (lease.priceValue != null) ...[
                       const SizedBox(width: 8),
-                      Text('${lease.priceValue!.toStringAsFixed(0)} EGP',
+                      Text('${lease.priceValue!.formatWithCommas()} EGP',
                           style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,

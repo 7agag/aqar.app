@@ -4,8 +4,7 @@ import 'package:aqar/core/widgets/aqar_button.dart';
 import 'package:aqar/core/network/api_client.dart';
 import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/injection_container.dart' as di;
-import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
-import 'package:aqar/features/payment/presentation/mixins/payment_verification_mixin.dart';
+import 'package:aqar/features/payment/presentation/pages/payment_gateway_page.dart';
 import 'package:dio/dio.dart';
 import 'package:aqar/core/config/app_config.dart';
 
@@ -17,8 +16,7 @@ class SellingPlanPage extends StatefulWidget {
   State<SellingPlanPage> createState() => _SellingPlanPageState();
 }
 
-class _SellingPlanPageState extends State<SellingPlanPage>
-    with PaymentVerificationMixin<SellingPlanPage> {
+class _SellingPlanPageState extends State<SellingPlanPage> {
   int _selectedPlan = -1;
   bool _loading = false;
 
@@ -102,48 +100,16 @@ class _SellingPlanPageState extends State<SellingPlanPage>
       final kashierUrl = paymentResponse.data['url'] as String?;
       if (kashierUrl != null && mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.payment_rounded, color: Colors.white, size: 18),
-                SizedBox(width: 8),
-                Expanded(child: Text('Payment tab opened — complete it there')),
-              ],
-            ),
-            backgroundColor: AppColors.navyBlue,
-            behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 3),
-          ),
-        );
 
-        final result = await KashierWebViewPage.open(
+        final success = await PaymentGatewayPage.open(
           context,
-          url: kashierUrl,
-          propertyId: widget.propertyId,
-          paymentType: VerificationType.subscription,
+          itemName: _plans[_selectedPlan].name,
+          amount: double.parse(_plans[_selectedPlan].price),
+          generatePaymentUrl: () async => kashierUrl,
         );
-        if (!mounted) return;
 
-        if (result == null ||
-            result['status'] == 'failed' ||
-            result['status'] == 'cancelled') {
-          Navigator.pop(context, false);
-          return;
-        }
-
-        final confirmed = await verifyPaymentAfterWebView(
-          propertyId: widget.propertyId,
-          isVerified: (data) => ['active', 'under_negotiation', 'sold']
-              .contains(data['listing_status']),
-          successTitle: 'Payment Confirmed!',
-          successMessage: 'Your subscription is now active!',
-          timeoutTitle: 'Still Processing',
-          timeoutMessage:
-              'Payment received but activation is taking longer than expected.',
-        );
         if (!mounted) return;
-        Navigator.pop(context, confirmed);
+        Navigator.pop(context, success == true);
       } else {
         if (!mounted) return;
         setState(() => _loading = false);
@@ -183,11 +149,14 @@ class _SellingPlanPageState extends State<SellingPlanPage>
             child: RadioGroup<int>(
               groupValue: _selectedPlan,
               onChanged: (v) => setState(() => _selectedPlan = v!),
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: _plans.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
-                itemBuilder: (_, i) => _buildPlanCard(i),
+              child: RefreshIndicator(
+                onRefresh: () async => setState(() {}),
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: _plans.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  itemBuilder: (_, i) => _buildPlanCard(i),
+                ),
               ),
             ),
           ),

@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../../core/network/socket_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../injection_container.dart' as di;
 import '../../../property/presentation/pages/my_properties_page.dart';
 import '../bloc/notification_bloc.dart';
 import '../bloc/notification_event.dart';
@@ -47,11 +50,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
   static const _kPad = 16.0;
   static const _kGap = 12.0;
   static const _kRadiusCard = 14.0;
+  StreamSubscription<Map<String, dynamic>>? _notificationSub;
 
   @override
   void initState() {
     super.initState();
     context.read<NotificationBloc>().add(const GetNotificationsRequested());
+    _notificationSub = di.sl<SocketService>().onNotification.listen((_) {
+      if (!mounted) return;
+      context.read<NotificationBloc>().add(const GetNotificationsRequested());
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationSub?.cancel();
+    super.dispose();
   }
 
   @override
@@ -78,7 +92,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           // using is_verified field from property API
         },
         builder: (context, state) {
-          if (state is NotificationLoading) {
+          if (state is NotificationLoading || state is NotificationInitial) {
             return _buildShimmer();
           }
           if (state is NotificationError) {
