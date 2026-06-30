@@ -61,7 +61,7 @@
         <true/>
     </dict>
     <key>NSFaceIDUsageDescription</key>
-    <string>Authenticate to delete your property</string>
+    <string>AQAR uses Face ID to secure sensitive actions like payments, password changes, and property management.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>AQAR uses your location to show properties near you and help you find your perfect home.</string>
     <key>NSCameraUsageDescription</key>

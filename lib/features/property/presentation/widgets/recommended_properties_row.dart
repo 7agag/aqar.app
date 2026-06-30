@@ -9,16 +9,16 @@ import '../../../favorite/presentation/bloc/favorite_bloc.dart';
 import '../../../sponsor/presentation/widgets/sponsored_property_card.dart';
 import '../../data/models/property_model.dart';
 import '../../domain/entities/property_entity.dart';
+import '../../domain/entities/property_filter_params.dart';
+import '../../domain/usecases/get_properties_usecase.dart';
 import '../pages/property_detail_page.dart';
 
 class RecommendedPropertiesRow extends StatefulWidget {
-  final int propertyId;
-  final String propertyDescription;
+  final PropertyEntity property;
 
   const RecommendedPropertiesRow({
     super.key,
-    required this.propertyId,
-    this.propertyDescription = '',
+    required this.property,
   });
 
   @override
@@ -30,6 +30,7 @@ class _RecommendedPropertiesRowState extends State<RecommendedPropertiesRow> {
   final Set<int> _favoriteIds = {};
   List<PropertyEntity> _properties = [];
   bool _isLoading = false;
+  bool _isFallback = false;
 
   @override
   void initState() {
@@ -41,15 +42,32 @@ class _RecommendedPropertiesRowState extends State<RecommendedPropertiesRow> {
   @override
   void didUpdateWidget(covariant RecommendedPropertiesRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.propertyId != widget.propertyId ||
-        oldWidget.propertyDescription != widget.propertyDescription) {
+    if (oldWidget.property.propertyId != widget.property.propertyId) {
       _loadRecommendations();
     }
   }
 
   Future<void> _loadRecommendations() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _isFallback = false;
+      _properties = [];
+    });
 
+    // Try AI first
+    await _tryAiRecommendations();
+
+    // Fallback to main API if AI returned nothing
+    if (mounted && _properties.isEmpty) {
+      await _tryApiFallback();
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _tryAiRecommendations() async {
     final useCase = di.sl<RecommendSimilarPropertiesUseCase>();
     final sessionService = di.sl<AiSessionService>();
     final sessionId = await sessionService.getSessionId();
@@ -57,29 +75,54 @@ class _RecommendedPropertiesRowState extends State<RecommendedPropertiesRow> {
 
     final result = await useCase(
       RecommendSimilarParams(
-        description: widget.propertyDescription,
+        description: widget.property.propertyDesc,
         sessionId: sessionId,
-        propertyIds: [widget.propertyId],
+        propertyIds: [widget.property.propertyId],
         limit: 8,
       ),
     );
     if (!mounted) return;
 
     result.fold(
-      (_) => setState(() {
-        _properties = [];
-        _isLoading = false;
-      }),
-      (items) => setState(() {
-        _properties = items
+      (_) {},
+      (items) {
+        final parsed = items
             .map(PropertyModel.fromJson)
             .where((property) =>
                 property.propertyId > 0 &&
-                property.propertyId != widget.propertyId &&
+                property.propertyId != widget.property.propertyId &&
                 property.isPubliclyVisible)
             .toList(growable: false);
-        _isLoading = false;
-      }),
+        if (parsed.isNotEmpty) {
+          _properties = parsed;
+        }
+      },
+    );
+  }
+
+  Future<void> _tryApiFallback() async {
+    final getProperties = di.sl<GetPropertiesUseCase>();
+    final result = await getProperties(
+      PropertyFilterParams(
+        listingType: widget.property.listingType.value,
+      ),
+    );
+    if (!mounted) return;
+
+    result.fold(
+      (_) {},
+      (items) {
+        final filtered = items
+            .where((p) =>
+                p.propertyId != widget.property.propertyId &&
+                p.isPubliclyVisible)
+            .take(8)
+            .toList(growable: false);
+        if (filtered.isNotEmpty) {
+          _properties = filtered;
+          _isFallback = true;
+        }
+      },
     );
   }
 
@@ -155,15 +198,19 @@ class _RecommendedPropertiesRowState extends State<RecommendedPropertiesRow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             children: [
-              Icon(Icons.auto_awesome, color: AppColors.primary, size: 20),
-              SizedBox(width: 8),
+              Icon(
+                _isFallback ? Icons.home_work_outlined : Icons.auto_awesome,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Text(
-                'AI Similar Properties',
-                style: TextStyle(
+                _isFallback ? 'Similar Properties' : 'AI Similar Properties',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,

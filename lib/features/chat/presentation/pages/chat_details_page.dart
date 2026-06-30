@@ -361,6 +361,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
         listener: (context, state) {
           if (state is AuthProfileLoaded) {
             _currentUserId = state.user.id;
+            setState(() {});
           }
         },
         child: BlocListener<ChatBloc, ChatState>(
@@ -541,7 +542,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
         margin: const EdgeInsets.only(right: 80, bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: const BoxDecoration(
-          color: AppColors.navyBlue,
+          color: AppColors.surfaceLight,
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(4),
             topRight: Radius.circular(20),
@@ -557,7 +558,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
               msg.content,
               style: const TextStyle(
                 fontSize: 14,
-                color: Colors.white,
+                color: AppColors.textPrimary,
               ),
               textDirection: TextDirection.rtl,
             ),
@@ -566,7 +567,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
               _formatTime(msg.createdAt),
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.white.withValues(alpha: 0.7),
+                color: AppColors.textSecondary.withValues(alpha: 0.7),
               ),
               textDirection: TextDirection.ltr,
             ),

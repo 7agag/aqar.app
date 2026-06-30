@@ -293,7 +293,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         .map((part) => part.trim())
         .where((part) => part.isNotEmpty)
         .toList();
-    if (parts.isEmpty) return 'Property Owner';
+    if (parts.isEmpty) return 'Owner';
     return parts.join(' ');
   }
 
@@ -1586,7 +1586,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.surfaceLight,
         builder: (_) => AddReviewSheet(
           onSubmit: (rating, phrase) {
             context.read<ReviewBloc>().add(AddReview(
@@ -1603,8 +1603,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
 
   Widget _buildRecommendedProperties(PropertyEntity property) {
     return RecommendedPropertiesRow(
-      propertyId: property.propertyId,
-      propertyDescription: property.propertyDesc,
+      property: property,
     );
   }
 
