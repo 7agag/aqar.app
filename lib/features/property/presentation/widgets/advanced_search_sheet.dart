@@ -137,7 +137,7 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.only(
         left: 24,
@@ -160,11 +160,11 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Filters',
                   style: TextStyle(
                     fontSize: 18,
@@ -174,7 +174,7 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                 ),
                 GestureDetector(
                   onTap: _resetFilters,
-                  child: const Text(
+                  child: Text(
                     'Reset',
                     style: TextStyle(
                       fontSize: 14,
@@ -185,41 +185,41 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             _buildBuyRentToggle(),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             _buildLabel('Location'),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             TextField(
               controller: _locationController,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: 'e.g. Manhattan, NY',
-                prefixIcon: const Icon(Icons.location_on_outlined,
+                prefixIcon: Icon(Icons.location_on_outlined,
                     color: AppColors.textHint, size: 20),
                 filled: true,
                 fillColor: AppColors.surfaceLight,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.borderLight),
+                  borderSide: BorderSide(color: AppColors.borderLight),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.borderLight),
+                  borderSide: BorderSide(color: AppColors.borderLight),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide:
-                      const BorderSide(color: AppColors.primary, width: 1.5),
+                      BorderSide(color: AppColors.primary, width: 1.5),
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             if (!_isBuy) ...[
               _buildLabel('Rental Duration'),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               _buildRentalDurationChips(),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
             ],
             _buildLabel(
                 'Price Range  (\$${_minPrice.toInt().formatWithCommas()} - \$${_maxPrice.toInt().formatWithCommas()})'),
@@ -294,8 +294,8 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        margin: const EdgeInsets.all(4),
+        duration: Duration(milliseconds: 250),
+        margin: EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: active ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(22),
@@ -323,7 +323,7 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
   Widget _buildLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w700,
         color: AppColors.textPrimary,
@@ -410,8 +410,8 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        duration: Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(20),
@@ -438,17 +438,17 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Min Size',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(10),
@@ -460,12 +460,12 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                       child: TextFormField(
                         controller: _minSizeController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
                         ),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -478,7 +478,7 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                         },
                       ),
                     ),
-                    const Text(
+                    Text(
                       'sqft',
                       style: TextStyle(
                         fontSize: 12,
@@ -491,22 +491,22 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
             ],
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Max Size',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(10),
@@ -518,12 +518,12 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                       child: TextFormField(
                         controller: _maxSizeController,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           border: InputBorder.none,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
                         ),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
@@ -536,7 +536,7 @@ class _AdvancedSearchSheetState extends State<AdvancedSearchSheet> {
                         },
                       ),
                     ),
-                    const Text(
+                    Text(
                       'sqft',
                       style: TextStyle(
                         fontSize: 12,

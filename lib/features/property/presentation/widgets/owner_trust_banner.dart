@@ -25,16 +25,16 @@ class OwnerTrustBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFEEEEEE)),
+        border: Border.all(color: Color(0xFFEEEEEE)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
-            offset: const Offset(0, 1),
+            offset: Offset(0, 1),
           ),
         ],
       ),
@@ -45,34 +45,34 @@ class OwnerTrustBanner extends StatelessWidget {
             backgroundColor: AppColors.surfaceLight,
             child: Text(
               _initials,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _fullName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Row(
                   children: [
-                    const Icon(Icons.star_rounded, size: 16, color: Color(0xFFFFA000)),
-                    const SizedBox(width: 4),
+                    Icon(Icons.star_rounded, size: 16, color: Color(0xFFFFA000)),
+                    SizedBox(width: 4),
                     Text(
                       _rate.toStringAsFixed(1),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,

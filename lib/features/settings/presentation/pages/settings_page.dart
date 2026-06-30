@@ -4,6 +4,7 @@ import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/features/about/presentation/pages/about_page.dart';
 import 'package:aqar/features/help/presentation/pages/help_page.dart';
 import 'package:aqar/features/auth/presentation/pages/change_password_page.dart';
+import 'package:aqar/core/services/app_settings_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -27,9 +28,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadPreferences() async {
+    final themeMode = await AppSettingsManager.loadThemeMode();
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _darkMode = prefs.getBool('dark_mode') ?? false;
+      _darkMode = themeMode == ThemeMode.dark;
+      _currentLocale = appLocaleNotifier.value;
       _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
       _emailNotifications = prefs.getBool('email_notifications') ?? true;
       _smsNotifications = prefs.getBool('sms_notifications') ?? false;
@@ -38,15 +41,18 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _toggleLocale() {
     final newLocale = _currentLocale == 'en' ? 'ar' : 'en';
-    setState(() => _currentLocale = newLocale);
+    _currentLocale = newLocale;
     AppStrings.locale = newLocale;
+    appLocaleNotifier.value = newLocale;
     SharedPreferences.getInstance().then((prefs) => prefs.setString('locale', newLocale));
     setState(() {});
   }
 
   void _toggleDarkMode(bool v) {
-    setState(() => _darkMode = v);
-    SharedPreferences.getInstance().then((prefs) => prefs.setBool('dark_mode', v));
+    _darkMode = v;
+    appThemeModeNotifier.value = v ? ThemeMode.dark : ThemeMode.light;
+    AppSettingsManager.saveThemeMode(v ? ThemeMode.dark : ThemeMode.light);
+    setState(() {});
   }
 
   @override
@@ -54,7 +60,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Settings',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -191,13 +197,13 @@ class _SettingsPageState extends State<SettingsPage> {
     VoidCallback? onTap,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 2),
+      margin: EdgeInsets.only(bottom: 2),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 44,
           height: 44,
@@ -216,10 +222,10 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         subtitle: Padding(
-          padding: const EdgeInsets.only(top: 2),
+          padding: EdgeInsets.only(top: 2),
           child: Text(
             subtitle,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ),
         trailing: trailing,

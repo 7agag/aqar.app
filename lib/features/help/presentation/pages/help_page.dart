@@ -69,7 +69,7 @@ class _HelpPageState extends State<HelpPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Help & FAQ',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -83,10 +83,10 @@ class _HelpPageState extends State<HelpPage> {
         centerTitle: true,
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(16),
@@ -100,14 +100,14 @@ class _HelpPageState extends State<HelpPage> {
                     color: AppColors.primary.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.help_outline_rounded,
                     size: 32,
                     color: AppColors.primary,
                   ),
                 ),
-                const SizedBox(height: 16),
-                const Text(
+                SizedBox(height: 16),
+                Text(
                   'How can we help you?',
                   style: TextStyle(
                     fontSize: 20,
@@ -115,7 +115,7 @@ class _HelpPageState extends State<HelpPage> {
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Browse through frequently asked questions\nor contact our support team.',
                   textAlign: TextAlign.center,
@@ -152,7 +152,7 @@ class _HelpPageState extends State<HelpPage> {
     final isExpanded = _expandedIndex == index;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -168,7 +168,7 @@ class _HelpPageState extends State<HelpPage> {
             borderRadius: BorderRadius.circular(14),
             onTap: () => setState(() => _expandedIndex = isExpanded ? null : index),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
                   Expanded(
@@ -183,7 +183,7 @@ class _HelpPageState extends State<HelpPage> {
                   ),
                   AnimatedRotation(
                     turns: isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 250),
+                    duration: Duration(milliseconds: 250),
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
                       size: 22,
@@ -195,12 +195,12 @@ class _HelpPageState extends State<HelpPage> {
             ),
           ),
           AnimatedCrossFade(
-            firstChild: const SizedBox.shrink(),
+            firstChild: SizedBox.shrink(),
             secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Text(
                 faq.answer,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   color: AppColors.textSecondary,
                   height: 1.5,

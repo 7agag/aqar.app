@@ -6,6 +6,7 @@ import 'package:aqar/features/favorite/presentation/pages/favorites_page.dart';
 import 'package:aqar/features/map/presentation/pages/map_page.dart';
 import 'package:aqar/features/property/presentation/pages/search_page.dart';
 import 'package:aqar/features/auth/presentation/pages/profile_page.dart';
+import 'package:aqar/features/inbox/presentation/pages/inbox_page.dart';
 import 'package:aqar/features/property/presentation/pages/all_properties_page.dart';
 import 'package:aqar/features/property/presentation/pages/property_detail_page.dart';
 import 'package:aqar/features/ai/presentation/pages/ai_assistant_page.dart';
@@ -15,6 +16,7 @@ import 'package:aqar/features/notifications/presentation/pages/notifications_pag
 import 'package:aqar/features/notifications/presentation/bloc/notification_bloc.dart';
 import 'package:aqar/features/notifications/presentation/bloc/notification_event.dart';
 import 'package:aqar/features/notifications/presentation/bloc/notification_state.dart';
+import 'package:aqar/features/payment/presentation/widgets/rent_due_banner.dart';
 import 'package:aqar/features/chat/presentation/pages/chat_list_page.dart';
 import 'package:aqar/features/chat/presentation/bloc/chat_bloc.dart';
 import 'package:aqar/features/chat/presentation/bloc/chat_event.dart';
@@ -81,8 +83,6 @@ class _HomePageState extends State<HomePage>
   bool _isAiSearching = false;
   List<PropertyEntity> _aiSearchResults = [];
 
-  int? _detailPropertyId;
-  bool _showDetail = false;
   bool _aiHasUnread = false;
 
   // Loading
@@ -226,6 +226,7 @@ class _HomePageState extends State<HomePage>
               minSize: _activeMinSize,
               maxSize: _activeMaxSize,
               listingType: listingType,
+              rentalDuration: _activeRentalDuration,
             ),
           ),
         );
@@ -253,32 +254,29 @@ class _HomePageState extends State<HomePage>
     if (!mounted) return;
     result.fold(
       (failure) {
+        // Fallback to regular API search (like React does)
+        context.read<PropertyBloc>().add(
+          GetPropertiesRequested(
+            params: PropertyFilterParams(location: query),
+          ),
+        );
         setState(() {
           _isAiSearch = false;
           _isAiSearching = false;
-          _aiSearchResults = [];
         });
-        // Navigate to SearchPage as fallback
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => SearchPage(initialQuery: query),
-          ),
-        );
       },
       (properties) {
         if (properties.isEmpty) {
+          // Fallback to regular API search
+          context.read<PropertyBloc>().add(
+            GetPropertiesRequested(
+              params: PropertyFilterParams(location: query),
+            ),
+          );
           setState(() {
             _isAiSearch = false;
             _isAiSearching = false;
-            _aiSearchResults = [];
           });
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => SearchPage(initialQuery: query),
-            ),
-          );
           return;
         }
         setState(() {
@@ -398,29 +396,14 @@ class _HomePageState extends State<HomePage>
     _loadProperties();
     _loadCounts();
     _loadFavorites();
-    propertyDetailNavigator.addListener(_onDetailNavigatorChanged);
     context.read<ChatBloc>().add(const GetInboxRequested());
     context.read<NotificationBloc>().add(const GetNotificationsRequested());
     context.read<RentRequestBloc>().add(const LoadRentRequests());
-    AiUnreadService().clear();
   }
 
   @override
   void dispose() {
-    propertyDetailNavigator.removeListener(_onDetailNavigatorChanged);
     super.dispose();
-  }
-
-  void _onDetailNavigatorChanged() {
-    final value = propertyDetailNavigator.value;
-    setState(() {
-      if (value != null) {
-        _detailPropertyId = value;
-        _showDetail = true;
-      } else {
-        _showDetail = false;
-      }
-    });
   }
 
   // ========== تحميل الأعداد والمفضلة ==========
@@ -541,16 +524,16 @@ class _HomePageState extends State<HomePage>
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.auto_awesome,
@@ -567,10 +550,10 @@ class _HomePageState extends State<HomePage>
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 '${_aiSearchResults.length} ${_aiSearchResults.length == 1 ? 'result' : 'results'}',
-                style: const TextStyle(fontSize: 12, color: AppColors.textHint),
+                style: TextStyle(fontSize: 12, color: AppColors.textHint),
               ),
               const Spacer(),
               GestureDetector(
@@ -583,13 +566,13 @@ class _HomePageState extends State<HomePage>
                 },
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.borderLight),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.close, size: 12, color: AppColors.textHint),
@@ -658,15 +641,15 @@ class _HomePageState extends State<HomePage>
   // ----------------------------------------------------------------------
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             children: [
               Image.asset('assets/icons/aqar.png', height: 32),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'AQAR',
                 style: TextStyle(
                   fontSize: 20,
@@ -859,7 +842,7 @@ class _HomePageState extends State<HomePage>
 
   Widget _buildBuyRentToggle() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Container(
         height: 48,
         decoration: BoxDecoration(
@@ -882,8 +865,8 @@ class _HomePageState extends State<HomePage>
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          margin: const EdgeInsets.all(4),
+          duration: Duration(milliseconds: 250),
+          margin: EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: active ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(26),
@@ -923,13 +906,13 @@ class _HomePageState extends State<HomePage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+          padding: EdgeInsets.fromLTRB(20, 24, 20, 16),
           child: Row(
             children: [
               Icon(Icons.auto_awesome,
-                  size: 18, color: const Color(0xFFD4AF37)),
-              const SizedBox(width: 6),
-              const Text(
+                  size: 18, color: Color(0xFFD4AF37)),
+              SizedBox(width: 6),
+              Text(
                 'Sponsored Properties',
                 style: TextStyle(
                   fontSize: 18,
@@ -979,17 +962,17 @@ class _HomePageState extends State<HomePage>
             Icon(
               Icons.workspace_premium_outlined,
               size: 40,
-              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+              color: Color(0xFFD4AF37).withValues(alpha: 0.4),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               'No sponsored listings',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               'Premium properties appear here',
               style: TextStyle(
@@ -1012,11 +995,11 @@ class _HomePageState extends State<HomePage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          padding: EdgeInsets.fromLTRB(20, 8, 20, 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Nearby Properties',
                 style: TextStyle(
                   fontSize: 18,
@@ -1110,21 +1093,24 @@ class _HomePageState extends State<HomePage>
                 const MapPage(),
                 const FavoritesPage(),
                 const ProfilePage(),
+                const InboxPage(),
               ],
             ),
-            if (_detailPropertyId != null)
-              Positioned.fill(
-                child: Visibility(
-                  visible: _showDetail,
-                  maintainState: true,
+            ValueListenableBuilder<int?>(
+              valueListenable: propertyDetailNavigator,
+              builder: (context, detailId, _) {
+                if (detailId == null) return const SizedBox.shrink();
+                return Positioned.fill(
                   child: PropertyDetailPage(
-                    propertyId: _detailPropertyId!,
+                    propertyId: detailId,
                     onBack: () {
                       propertyDetailNavigator.value = null;
                     },
                   ),
-                ),
-              ),
+                );
+              },
+            ),
+            const RentDueBanner(),
           ],
         ),
       ),
@@ -1142,8 +1128,8 @@ class _HomePageState extends State<HomePage>
               },
             ),
             backgroundColor: AppColors.textPrimary,
-            shape: const CircleBorder(),
-            child: const Icon(
+            shape: CircleBorder(),
+            child: Icon(
               Icons.smart_toy_outlined,
               color: Colors.white,
               size: 24,
@@ -1157,7 +1143,7 @@ class _HomePageState extends State<HomePage>
                 width: 14,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2ECC71),
+                  color: Color(0xFF2ECC71),
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
@@ -1172,7 +1158,7 @@ class _HomePageState extends State<HomePage>
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 20,
-              offset: const Offset(0, -4),
+              offset: Offset(0, -4),
             ),
           ],
         ),
@@ -1209,6 +1195,10 @@ class _HomePageState extends State<HomePage>
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline_rounded),
               label: 'PROFILE',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inbox_rounded),
+              label: 'INBOX',
             ),
           ],
         ),

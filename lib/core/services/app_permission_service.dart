@@ -89,6 +89,7 @@ class AppPermissionService {
     final permissions = <Permission>[
       Permission.locationWhenInUse,
       Permission.camera,
+      Permission.notification,
     ];
 
     switch (defaultTargetPlatform) {

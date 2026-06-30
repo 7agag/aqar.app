@@ -39,7 +39,7 @@ class AiPropertyCard extends StatelessWidget {
                 : _imagePlaceholder(),
           ),
           const SizedBox(width: 10),
-          Expanded(
+          Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,

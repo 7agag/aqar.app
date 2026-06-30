@@ -18,7 +18,7 @@ class ProfileInfoPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Profile Information',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -75,7 +75,7 @@ class ProfileInfoPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: AppSpacing.sm),
           Stack(
             alignment: Alignment.bottomRight,
             children: [
@@ -92,7 +92,7 @@ class ProfileInfoPage extends StatelessWidget {
                   backgroundColor: AppColors.surfaceLight,
                   child: Text(
                     _initials(user),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 36,
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -101,40 +101,40 @@ class ProfileInfoPage extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: AppColors.primary,
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white, width: 2),
                 ),
-                child: const Icon(Icons.edit, color: Colors.white, size: 14),
+                child: Icon(Icons.edit, color: Colors.white, size: 14),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Text(
             user.fullName.isNotEmpty ? user.fullName : 'AQAR User',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 user.isVerified ? Icons.verified_outlined : Icons.info_outline,
-                color: user.isVerified ? const Color(0xFF2E7D32) : AppColors.textHint,
+                color: user.isVerified ? Color(0xFF2E7D32) : AppColors.textHint,
                 size: 16,
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: 4),
               Text(
                 user.isVerified ? 'Verified account' : 'Not verified',
                 style: TextStyle(
                   fontSize: 13,
-                  color: user.isVerified ? const Color(0xFF2E7D32) : AppColors.textSecondary,
+                  color: user.isVerified ? Color(0xFF2E7D32) : AppColors.textSecondary,
                 ),
               ),
             ],
@@ -199,7 +199,7 @@ class ProfileInfoPage extends StatelessWidget {
 
   Widget _infoRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+      padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       child: Row(
         children: [
           Container(
@@ -211,23 +211,23 @@ class ProfileInfoPage extends StatelessWidget {
             ),
             child: Icon(icon, size: 18, color: AppColors.primary),
           ),
-          const SizedBox(width: AppSpacing.md),
+          SizedBox(width: AppSpacing.md),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textHint,
                   letterSpacing: 0.3,
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2),
               Text(
                 value.isNotEmpty ? value : '—',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w500,
@@ -244,11 +244,11 @@ class ProfileInfoPage extends StatelessWidget {
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+        MaterialPageRoute(builder: (_) => ChangePasswordPage()),
       ),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -256,7 +256,7 @@ class ProfileInfoPage extends StatelessWidget {
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
-              offset: const Offset(0, 2),
+              offset: Offset(0, 2),
             ),
           ],
         ),
@@ -269,14 +269,14 @@ class ProfileInfoPage extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.lock_outline, color: AppColors.primary, size: 22),
+              child: Icon(Icons.lock_outline, color: AppColors.primary, size: 22),
             ),
-            const SizedBox(width: AppSpacing.md),
+            SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Change Password',
                     style: TextStyle(
                       fontSize: 15,
@@ -284,7 +284,7 @@ class ProfileInfoPage extends StatelessWidget {
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     'Update your account password',
                     style: TextStyle(fontSize: 12, color: AppColors.textSecondary),

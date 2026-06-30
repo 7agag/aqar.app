@@ -58,7 +58,7 @@ class NearbyPropertyCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -66,7 +66,7 @@ class NearbyPropertyCard extends StatelessWidget {
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
-              offset: const Offset(0, 2),
+              offset: Offset(0, 2),
             ),
           ],
         ),
@@ -84,7 +84,7 @@ class NearbyPropertyCard extends StatelessWidget {
                     )
                   : _buildPlaceholder(),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
 
             // Info
             Expanded(
@@ -94,7 +94,7 @@ class NearbyPropertyCard extends StatelessWidget {
                 children: [
                   Text(
                     property.propertyName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
@@ -103,20 +103,20 @@ class NearbyPropertyCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     softWrap: false,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   if (property.latitude != null && property.longitude != null && userLat != null && userLng != null)
                     Row(
                       children: [
                         Icon(
                           Icons.near_me_outlined,
                           size: 14,
-                          color: const Color(0xFFD4AF37),
+                          color: Color(0xFFD4AF37),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             _distanceText(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               color: AppColors.textSecondary,
                             ),
@@ -126,13 +126,13 @@ class NearbyPropertyCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                  const SizedBox(height: 6),
+                  SizedBox(height: 6),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         '\$${property.priceValue.formatWithCommas()}${property.pricingUnitSuffix}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                           color: AppColors.primary,
@@ -144,26 +144,26 @@ class NearbyPropertyCard extends StatelessWidget {
                           Icon(
                             Icons.bed_outlined,
                             size: 14,
-                            color: const Color(0xFFD4AF37),
+                            color: Color(0xFFD4AF37),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Text(
                             '${property.bedroomsNo}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Icon(
                             Icons.bathtub_outlined,
                             size: 14,
-                            color: const Color(0xFFD4AF37),
+                            color: Color(0xFFD4AF37),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Text(
                             '${property.bathroomsNo}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -181,7 +181,7 @@ class NearbyPropertyCard extends StatelessWidget {
               onTap: onFavTap,
               child: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: isFavorite ? const Color(0xFFD4AF37) : AppColors.textSecondary,
+                color: isFavorite ? Color(0xFFD4AF37) : AppColors.textSecondary,
                 size: 22,
               ),
             ),
@@ -196,7 +196,7 @@ class NearbyPropertyCard extends StatelessWidget {
       width: 80,
       height: 80,
       color: AppColors.surfaceLight,
-      child: const Icon(
+      child: Icon(
         Icons.home_outlined,
         size: 28,
         color: AppColors.textHint,

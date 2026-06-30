@@ -10,13 +10,13 @@ class AppTextStyles {
     letterSpacing: 1.2,
   );
 
-  static const TextStyle subtitle = TextStyle(
+  static TextStyle subtitle = TextStyle(
     fontSize: 15,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
   );
 
-  static const TextStyle label = TextStyle(
+  static TextStyle label = TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -35,7 +35,7 @@ class AppTextStyles {
     color: AppColors.primary,
   );
 
-  static const TextStyle body = TextStyle(
+  static TextStyle body = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,

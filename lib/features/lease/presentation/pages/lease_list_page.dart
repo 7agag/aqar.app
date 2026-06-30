@@ -47,7 +47,7 @@ class _LeaseListPageState extends State<LeaseListPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'My Leases',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -220,7 +220,7 @@ class _LeaseListPageState extends State<LeaseListPage>
   Widget _buildEmptyState({required bool isRenter}) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -232,14 +232,14 @@ class _LeaseListPageState extends State<LeaseListPage>
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.borderLight),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.description_outlined,
                 size: 44,
                 color: AppColors.textHint,
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'No leases yet',
               style: TextStyle(
                 fontSize: 18,
@@ -247,13 +247,13 @@ class _LeaseListPageState extends State<LeaseListPage>
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(
               isRenter
                   ? "You don't have any active leases.\nBrowse properties and start renting."
                   : "No one is renting your properties yet.\nList your property to generate leases.",
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
                 height: 1.5,
@@ -271,7 +271,7 @@ class _LeaseListPageState extends State<LeaseListPage>
 
   Widget _buildLeaseCard(LeaseEntity lease) {
     final statusColor = switch (lease.status) {
-      'UPCOMING' => const Color(0xFF3B82F6),
+      'UPCOMING' => Color(0xFF3B82F6),
       'IN_PROGRESS' => AppColors.success,
       'COMPLETED' => AppColors.textHint,
       'CANCELLED' => AppColors.error,
@@ -288,7 +288,7 @@ class _LeaseListPageState extends State<LeaseListPage>
     };
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: _kGap),
+      padding: EdgeInsets.only(bottom: _kGap),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -316,7 +316,7 @@ class _LeaseListPageState extends State<LeaseListPage>
             );
           },
           child: Padding(
-            padding: const EdgeInsets.all(_kPad),
+            padding: EdgeInsets.all(_kPad),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -326,46 +326,46 @@ class _LeaseListPageState extends State<LeaseListPage>
                     if (lease.propertyName != null)
                       Expanded(
                         child: Text(lease.propertyName!,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 15, fontWeight: FontWeight.w700)),
                       ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     _buildStatusBadge(statusColor, statusLabel),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 if (lease.renterName != null)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
+                    padding: EdgeInsets.only(bottom: 4),
                     child: Text('Renter: ${lease.renterName}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 13, color: AppColors.textSecondary)),
                   ),
                 Text(
                   '${_formatDate(lease.checkInDate)} — ${_formatDate(lease.checkOutDate)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 13, color: AppColors.textSecondary),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(lease.rentingType,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: AppColors.primary)),
                     ),
                     if (lease.priceValue != null) ...[
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Text('${lease.priceValue!.formatWithCommas()} EGP',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary)),

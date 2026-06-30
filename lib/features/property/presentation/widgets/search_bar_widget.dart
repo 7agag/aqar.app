@@ -67,19 +67,19 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: [
-          const SizedBox(width: 16),
+          SizedBox(width: 16),
           Icon(
             Icons.search_rounded,
             color: hasText ? AppColors.primary : AppColors.textHint,
             size: 20,
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: TextField(
               controller: _controller,
@@ -87,7 +87,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
               onSubmitted: widget.onSubmitted, // ✅ البحث عند الضغط على Enter
               decoration: InputDecoration(
                 hintText: widget.hintText,
-                hintStyle: const TextStyle(
+                hintStyle: TextStyle(
                   color: AppColors.textHint,
                   fontSize: 14,
                 ),
@@ -98,7 +98,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                 contentPadding: EdgeInsets.zero,
                 filled: false,
               ),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textPrimary,
               ),
@@ -110,12 +110,12 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
               child: Container(
                 width: 28,
                 height: 28,
-                margin: const EdgeInsets.only(right: 4),
+                margin: EdgeInsets.only(right: 4),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.close_rounded,
                   size: 16,
                   color: AppColors.textSecondary,
@@ -125,11 +125,11 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
           GestureDetector(
             onTap: widget.onFilterTap,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
+              duration: Duration(milliseconds: 250),
               curve: Curves.easeOutCubic,
               width: 38,
               height: 38,
-              margin: const EdgeInsets.only(right: 6),
+              margin: EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
                 color: widget.hasActiveFilters ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -141,14 +141,14 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
                         BoxShadow(
                           color: AppColors.primary.withValues(alpha: 0.28),
                           blurRadius: 12,
-                          offset: const Offset(0, 4),
+                          offset: Offset(0, 4),
                         ),
                       ]
                     : [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 8,
-                          offset: const Offset(0, 2),
+                          offset: Offset(0, 2),
                         ),
                       ],
               ),

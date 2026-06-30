@@ -261,7 +261,7 @@ class _PaymentVerificationOverlayState
   Widget _buildCard() {
     return Container(
       width: 320,
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+      padding: EdgeInsets.symmetric(horizontal: 28, vertical: 36),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -269,7 +269,7 @@ class _PaymentVerificationOverlayState
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 40,
-            offset: const Offset(0, 8),
+            offset: Offset(0, 8),
           ),
         ],
       ),
@@ -281,23 +281,23 @@ class _PaymentVerificationOverlayState
             height: 100,
             child: _buildIconContent(),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
+            duration: Duration(milliseconds: 300),
             child: Text(
               _titleText,
               key: ValueKey('${_status}_title'),
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
+            duration: Duration(milliseconds: 300),
             child: Text(
               _subtitleText,
               key: ValueKey('${_status}_msg_$_statusMsgIndex'),
@@ -310,9 +310,9 @@ class _PaymentVerificationOverlayState
             ),
           ),
           if (_status == _OverlayStatus.verifying) ...[
-            const SizedBox(height: 22),
+            SizedBox(height: 22),
             _buildProgressBar(),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               '$_elapsedAttempts / ${widget.maxAttempts}',
               style: TextStyle(

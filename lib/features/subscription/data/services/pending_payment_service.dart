@@ -1,6 +1,29 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class PendingInvoicePayment {
+  final String invoiceId;
+  final DateTime createdAt;
+
+  const PendingInvoicePayment({
+    required this.invoiceId,
+    required this.createdAt,
+  });
+
+  factory PendingInvoicePayment.fromJson(Map<String, dynamic> json) {
+    return PendingInvoicePayment(
+      invoiceId: json['invoiceId'] as String,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+          (json['createdAt'] as num).toInt()),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'invoiceId': invoiceId,
+        'createdAt': createdAt.millisecondsSinceEpoch,
+      };
+}
+
 class PendingSubscriptionPayment {
   final int propertyId;
   final String subscriptionId;
@@ -54,6 +77,33 @@ class PendingSponsorshipPayment {
 class PendingPaymentService {
   static const _subKey = 'pending_subscription_payment';
   static const _sponsorKey = 'pending_sponsorship_payment';
+  static const _invoiceKey = 'pending_invoice_payment';
+
+  Future<void> savePendingInvoicePayment(String invoiceId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final payload = PendingInvoicePayment(
+      invoiceId: invoiceId,
+      createdAt: DateTime.now(),
+    );
+    await prefs.setString(_invoiceKey, json.encode(payload.toJson()));
+  }
+
+  Future<PendingInvoicePayment?> loadPendingInvoicePayment() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_invoiceKey);
+    if (raw == null) return null;
+    try {
+      return PendingInvoicePayment.fromJson(
+          Map<String, dynamic>.from(json.decode(raw)));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> clearPendingInvoicePayment() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_invoiceKey);
+  }
 
   Future<void> savePendingSubscriptionPayment(
     int propertyId,

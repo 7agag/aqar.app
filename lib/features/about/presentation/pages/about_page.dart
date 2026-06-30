@@ -10,7 +10,7 @@ class AboutPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'About AQAR',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -24,10 +24,10 @@ class AboutPage extends StatelessWidget {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Container(
               width: 100,
               height: 100,
@@ -35,7 +35,7 @@ class AboutPage extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
                   'A',
                   style: TextStyle(
@@ -46,8 +46,8 @@ class AboutPage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'AQAR',
               style: TextStyle(
                 fontSize: 32,
@@ -56,17 +56,17 @@ class AboutPage extends StatelessWidget {
                 letterSpacing: 4,
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
+            SizedBox(height: 4),
+            Text(
               'Version 1.0.0',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textHint,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -74,11 +74,11 @@ class AboutPage extends StatelessWidget {
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 12,
-                    offset: const Offset(0, 2),
+                    offset: Offset(0, 2),
                   ),
                 ],
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -114,19 +114,19 @@ class AboutPage extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             _buildLinkTile(
               Icons.description_outlined,
               'Privacy Policy',
               () => _launchUrl('https://aqar.com/privacy'),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             _buildLinkTile(
               Icons.gavel_outlined,
               'Terms of Service',
               () => _launchUrl('https://aqar.com/terms'),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             _buildLinkTile(
               Icons.build_outlined,
               'Open Source Licenses',
@@ -136,7 +136,7 @@ class AboutPage extends StatelessWidget {
                 applicationVersion: '1.0.0',
               ),
             ),
-            const SizedBox(height: 40),
+            SizedBox(height: 40),
             Text(
               'Made with \u2665 by Team AQAR',
               style: TextStyle(
@@ -144,7 +144,7 @@ class AboutPage extends StatelessWidget {
                 color: AppColors.textHint,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               '\u00A9 2026 AQAR. All rights reserved.',
               style: TextStyle(
@@ -166,7 +166,7 @@ class AboutPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: Container(
           width: 44,
           height: 44,
@@ -178,7 +178,7 @@ class AboutPage extends StatelessWidget {
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,

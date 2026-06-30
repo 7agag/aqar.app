@@ -144,7 +144,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
       appBar: AppBar(
         title: Text(
           _currentStep == 3 ? '📍 Location' : 'Add Property',
-          style: const TextStyle(
+          style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 18,
               color: AppColors.textPrimary),
@@ -230,7 +230,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                       ),
                       child: Center(
                         child: isDone
-                            ? const Icon(Icons.check,
+                            ? Icon(Icons.check,
                                 color: Colors.white, size: 16)
                             : Icon(icons[i],
                                 color: isActive
@@ -239,7 +239,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                                 size: 16),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       labels[i],
                       style: TextStyle(
@@ -808,9 +808,9 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
         },
         decoration: InputDecoration(
           hintText: 'Search area or district…',
-          hintStyle: const TextStyle(fontSize: 14, color: AppColors.textHint),
+          hintStyle: TextStyle(fontSize: 14, color: AppColors.textHint),
           prefixIcon:
-              const Icon(Icons.search, color: AppColors.textHint, size: 22),
+              Icon(Icons.search, color: AppColors.textHint, size: 22),
           suffixIcon:
               Icon(Icons.explore_outlined, color: AppColors.primary, size: 20),
           filled: true,
@@ -882,18 +882,18 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.location_on,
+              child: Icon(Icons.location_on,
                   size: 18, color: AppColors.primary),
             ),
             title: Text(r.displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             subtitle: Text(
                 '${r.lat.toStringAsFixed(4)}, ${r.lon.toStringAsFixed(4)}',
                 style:
-                    const TextStyle(fontSize: 11, color: AppColors.textHint)),
+                    TextStyle(fontSize: 11, color: AppColors.textHint)),
             onTap: () {
               HapticFeedback.lightImpact();
               setState(() {
@@ -986,17 +986,17 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   // ---------------------------------------------------------------------------
   Widget _buildMapBottomCard() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
           AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(
+        borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppSpacing.radiusLg)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 16,
-              offset: const Offset(0, -4)),
+              offset: Offset(0, -4)),
         ],
       ),
       child: SafeArea(
@@ -1013,7 +1013,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: AppSpacing.md),
 
             // Coordinate row
             Row(
@@ -1024,7 +1024,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                     color: _locationConfirmed
                         ? AppColors.success
                         : AppColors.primary),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text(
                   '${_displayLat.toStringAsFixed(4)}, ${_displayLng.toStringAsFixed(4)}',
                   style: TextStyle(
@@ -1077,7 +1077,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   Widget _buildConfirmedCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.success.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
@@ -1085,14 +1085,14 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded,
+          Icon(Icons.check_circle_rounded,
               color: AppColors.success, size: 20),
-          const SizedBox(width: AppSpacing.sm),
+          SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Location Verified',
+                Text('Location Verified',
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -1100,7 +1100,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                 Text(_resolvedAddress,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 11, color: AppColors.textSecondary)),
               ],
             ),
@@ -1121,17 +1121,17 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                 child: OutlinedButton.icon(
                   onPressed: _isLocating ? null : _locateMe,
                   icon: _isLocating
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.my_location, size: 18),
+                      : Icon(Icons.my_location, size: 18),
                   label: Text(_isLocating ? 'Locating…' : 'Locate Me',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13, fontWeight: FontWeight.w600)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.navyBlue,
-                    side: const BorderSide(color: AppColors.navyBlue),
+                    side: BorderSide(color: AppColors.navyBlue),
                     shape: RoundedRectangleBorder(
                         borderRadius:
                             BorderRadius.circular(AppSpacing.radiusSm)),
@@ -1139,21 +1139,21 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                 ),
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
+            SizedBox(width: AppSpacing.sm),
             Expanded(
               child: SizedBox(
                 height: 46,
                 child: ElevatedButton.icon(
                   onPressed: _isGeocoding ? null : _confirmLocation,
                   icon: _isGeocoding
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.check, size: 18),
+                      : Icon(Icons.check, size: 18),
                   label: Text(_isGeocoding ? 'Resolving…' : 'Confirm',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13, fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -1170,7 +1170,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
         ),
         if (!_locationConfirmed)
           Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
+            padding: EdgeInsets.only(top: AppSpacing.sm),
             child: Text(
               'Long-press the map to fine-tune the pin position',
               style: TextStyle(
@@ -1188,9 +1188,9 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
       children: [
         Row(
           children: [
-            const Icon(Icons.edit_location_alt,
+            Icon(Icons.edit_location_alt,
                 size: 18, color: AppColors.primary),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text('Enter address manually',
                 style: TextStyle(
                     fontSize: 12,
@@ -1276,21 +1276,21 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   // ---------------------------------------------------------------------------
   Widget _buildMediaStep() {
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(AppSpacing.lg),
       children: [
-        const PhotoTipsCard(),
-        const SizedBox(height: AppSpacing.xl),
+        PhotoTipsCard(),
+        SizedBox(height: AppSpacing.xl),
         Row(
           children: [
             _buildLabel('Property Images * (3–10)'),
-            const Spacer(),
+            Spacer(),
           ],
         ),
-        const SizedBox(height: AppSpacing.sm),
+        SizedBox(height: AppSpacing.sm),
         _buildImageGrid(),
         if (_propertyImages.length < 3)
           Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: EdgeInsets.only(top: 6),
             child: Text(
               'Minimum 3 images required (${_propertyImages.length}/3)',
               style: TextStyle(
@@ -1439,12 +1439,12 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          padding: EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1456,8 +1456,8 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text('Add Photo',
+              SizedBox(height: 20),
+              Text('Add Photo',
                   style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
@@ -1506,7 +1506,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(14),
@@ -1523,15 +1523,15 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
               ),
               child: Icon(icon, color: AppColors.primary, size: 26),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary)),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11, color: AppColors.textSecondary)),
           ],
         ),
@@ -1579,21 +1579,21 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   // ---------------------------------------------------------------------------
   Widget _buildPlanStep() {
     return ListView(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(AppSpacing.lg),
       children: [
-        const Text(
+        Text(
           'Choose your listing plan',
           style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary),
         ),
-        const SizedBox(height: AppSpacing.xs),
+        SizedBox(height: AppSpacing.xs),
         Text(
           _isForRent
               ? 'Rental listings are free. No additional cost.'
               : 'Sale listings require a paid plan. Choose a duration below.',
-          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
         ),
         const SizedBox(height: AppSpacing.xl),
         if (_isForRent)
@@ -1637,7 +1637,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
   Widget _buildFreePlanCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -1652,34 +1652,34 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
               color: AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
             ),
-            child: const Icon(Icons.home_outlined,
+            child: Icon(Icons.home_outlined,
                 color: AppColors.textPrimary, size: 24),
           ),
-          const SizedBox(width: AppSpacing.md),
+          SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Free Listing',
+                Text('Free Listing',
                     style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary)),
-                const SizedBox(height: 4),
-                const Text('Standard visibility, no additional cost.',
+                SizedBox(height: 4),
+                Text('Standard visibility, no additional cost.',
                     style: TextStyle(
                         fontSize: 12, color: AppColors.textSecondary)),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(
+            padding: EdgeInsets.symmetric(
                 horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
             decoration: BoxDecoration(
               color: AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text('Auto-selected',
+            child: Text('Auto-selected',
                 style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
           ),
         ],
@@ -1693,8 +1693,8 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     return GestureDetector(
       onTap: () => setState(() => _salePlanMonths = months),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        duration: Duration(milliseconds: 250),
+        padding: EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -1707,7 +1707,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
               BoxShadow(
                 color: AppColors.primary.withValues(alpha: 0.1),
                 blurRadius: 12,
-                offset: const Offset(0, 4),
+                offset: Offset(0, 4),
               ),
           ],
         ),
@@ -1726,7 +1726,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                 size: 24,
               ),
             ),
-            const SizedBox(width: AppSpacing.md),
+            SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1734,29 +1734,29 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                   Row(
                     children: [
                       Text(title,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary)),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withAlpha(15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text('EGP $price',
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.primary)),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(description,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12, color: AppColors.textSecondary)),
                 ],
               ),
@@ -2170,11 +2170,11 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                 ),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check_circle_rounded,
+              child: Icon(Icons.check_circle_rounded,
                   color: AppColors.success, size: 44),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24),
+            Text(
               'Property Listed Successfully',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -2183,8 +2183,8 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16),
+            Text(
               'Your property has been submitted for admin review.\nYou will be notified once it is approved.',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -2247,9 +2247,9 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
 
   Widget _buildLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: EdgeInsets.only(bottom: AppSpacing.sm),
       child: Text(text,
-          style: const TextStyle(
+          style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary)),
@@ -2282,7 +2282,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
     return GestureDetector(
       onTap: () => setState(() => _rentPeriod = period),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 12),
         decoration: BoxDecoration(
           color: _rentPeriod == period
               ? AppColors.primary.withAlpha(15)
@@ -2307,7 +2307,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
                   ? AppColors.primary
                   : AppColors.textHint,
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Text(
               period.label,
               style: TextStyle(
@@ -2329,15 +2329,15 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary)),
-        const SizedBox(height: AppSpacing.xs),
+        SizedBox(height: AppSpacing.xs),
         TextFormField(
           controller: ctl,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             filled: true,
             fillColor: AppColors.surfaceLight,
             border: OutlineInputBorder(borderSide: BorderSide.none),
@@ -2361,7 +2361,7 @@ class _AddPropertyStepperPageState extends State<AddPropertyStepperPage>
               onPressed: isLoading ? null : onBack,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
-                side: const BorderSide(color: AppColors.borderLight),
+                side: BorderSide(color: AppColors.borderLight),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
                 minimumSize: const Size(0, 48),
@@ -2430,7 +2430,7 @@ class _PickedImageTileState extends State<_PickedImageTile> {
       return Container(
         color: AppColors.surfaceLight,
         child:
-            const Icon(Icons.broken_image_outlined, color: AppColors.textHint),
+            Icon(Icons.broken_image_outlined, color: AppColors.textHint),
       );
     }
     if (_bytes == null) {

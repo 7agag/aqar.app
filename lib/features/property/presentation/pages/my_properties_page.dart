@@ -61,7 +61,7 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Properties',
+        title: Text('My Properties',
             style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -138,7 +138,7 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
         children: [
           Icon(Icons.home_outlined,
               size: 80, color: AppColors.textHint.withValues(alpha: 0.4)),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text('You haven\'t added\nany properties yet',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -170,7 +170,7 @@ class _MyPropertiesPageState extends State<MyPropertiesPage>
         children: [
           Icon(Icons.error_outline,
               size: 64, color: AppColors.error.withValues(alpha: 0.6)),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Text(message,
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
@@ -307,7 +307,7 @@ class _PropertyCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
+        margin: EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
@@ -315,7 +315,7 @@ class _PropertyCard extends StatelessWidget {
             BoxShadow(
                 color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 12,
-                offset: const Offset(0, 2)),
+                offset: Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -325,7 +325,7 @@ class _PropertyCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.horizontal(
+                  borderRadius: BorderRadius.horizontal(
                       left: Radius.circular(14)),
                   child: SizedBox(
                     width: 140,
@@ -339,32 +339,32 @@ class _PropertyCard extends StatelessWidget {
                                     ? child
                                     : Container(
                                         color: AppColors.surfaceLight,
-                                        child: const Icon(Icons.home,
+                                        child: Icon(Icons.home,
                                             color: AppColors.textHint)),
                             errorBuilder: (_, __, ___) => Container(
                                 color: AppColors.surfaceLight,
-                                child: const Icon(Icons.home,
+                                child: Icon(Icons.home,
                                     color: AppColors.textHint)))
                         : Container(
                             color: AppColors.surfaceLight,
-                            child: const Icon(Icons.home,
+                            child: Icon(Icons.home,
                                 color: AppColors.textHint)),
                   ),
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(14),
+                    padding: EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(property.propertyName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary)),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(property.location,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -467,15 +467,15 @@ class _ActionRowState extends State<_ActionRow> {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.background.withValues(alpha: 0.5),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(14)),
       ),
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      padding: EdgeInsets.fromLTRB(12, 8, 12, 10),
       child: Stack(
         children: [
           SingleChildScrollView(
             controller: _scrollController,
             scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
+            physics: BouncingScrollPhysics(),
             child: isPendingRent
                 ? Center(
                     child: _buildButtons(context, isSale, showBoost, isDeleted),
@@ -524,7 +524,7 @@ class _ActionRowState extends State<_ActionRow> {
                       EditPropertyPage(property: widget.property)),
             ),
           ),
-        if (_canManage) const SizedBox(width: 10),
+        if (_canManage) SizedBox(width: 10),
         if (_canManage && isSale)
           _ActionButton(
             primary: true,
@@ -552,7 +552,7 @@ class _ActionRowState extends State<_ActionRow> {
             ),
           ),
         if (_canManage && (isSale || showBoost))
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
         Opacity(
           opacity: isDeleted ? 0.4 : 1,
           child: _ActionButton(
@@ -572,7 +572,7 @@ class _ActionRowState extends State<_ActionRow> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Property'),
+        title: Text('Delete Property'),
         content: Text(
             'Are you sure you want to delete "${widget.property.propertyName}"? This cannot be undone.'),
         actions: [

@@ -88,7 +88,7 @@ class _PurchaseRequestDetailPageState extends State<PurchaseRequestDetailPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Purchase Request'),
+        title: Text('Purchase Request'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -144,8 +144,8 @@ class _PurchaseRequestDetailPageState extends State<PurchaseRequestDetailPage> {
         );
       },
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        physics: AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -265,7 +265,7 @@ class _PurchaseRequestDetailPageState extends State<PurchaseRequestDetailPage> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -273,7 +273,7 @@ class _PurchaseRequestDetailPageState extends State<PurchaseRequestDetailPage> {
             width: 100,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
@@ -282,7 +282,7 @@ class _PurchaseRequestDetailPageState extends State<PurchaseRequestDetailPage> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),

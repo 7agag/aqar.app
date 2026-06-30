@@ -25,19 +25,19 @@ class MapBottomSheet extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
-            offset: const Offset(0, -4),
+            offset: Offset(0, -4),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Center(
             child: Container(
               width: 36,
@@ -49,15 +49,15 @@ class MapBottomSheet extends StatelessWidget {
             ),
           ),
           if (property.images.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             SizedBox(
               height: 90,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: 16),
                 itemCount: property.images.length,
                 itemBuilder: (_, i) => Padding(
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: EdgeInsets.only(right: 8),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: PropertyImage(
@@ -72,7 +72,7 @@ class MapBottomSheet extends StatelessWidget {
             ),
           ],
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+            padding: EdgeInsets.fromLTRB(20, 14, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -85,7 +85,7 @@ class MapBottomSheet extends StatelessWidget {
                         children: [
                           Text(
                             property.propertyName,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
@@ -93,14 +93,14 @@ class MapBottomSheet extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Row(
                             children: [
                               Icon(Icons.location_on_rounded,
                                   size: 14,
                                   color: AppColors.textSecondary
                                       .withValues(alpha: 0.6)),
-                              const SizedBox(width: 4),
+                              SizedBox(width: 4),
                               Text(
                                 property.location,
                                 style: TextStyle(
@@ -112,14 +112,14 @@ class MapBottomSheet extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               if (distanceText != null) ...[
-                                const SizedBox(width: 8),
+                                SizedBox(width: 8),
                                 Icon(Icons.near_me_outlined,
                                     size: 12,
                                     color: AppColors.primary),
-                                const SizedBox(width: 2),
+                                SizedBox(width: 2),
                                 Text(
                                   distanceText!,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
                                     color: AppColors.primary,
                                     fontWeight: FontWeight.w600,
@@ -134,18 +134,18 @@ class MapBottomSheet extends StatelessWidget {
                     GestureDetector(
                       onTap: onViewDetails,
                       child: Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: AppColors.navyBlue.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.arrow_forward_ios_rounded,
+                        child: Icon(Icons.arrow_forward_ios_rounded,
                             size: 16, color: AppColors.navyBlue),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                SizedBox(height: 14),
                 Row(
                   children: [
                     Column(
@@ -153,7 +153,7 @@ class MapBottomSheet extends StatelessWidget {
                       children: [
                         Text(
                           '$_formattedPrice EGP',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: AppColors.navyBlue,
@@ -215,10 +215,10 @@ class MapBottomSheet extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 16, color: AppColors.textSecondary),
-        const SizedBox(width: 4),
+        SizedBox(width: 4),
         Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,

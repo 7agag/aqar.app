@@ -19,24 +19,24 @@ class _AuthPageState extends State<AuthPage> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              const SizedBox(height: 40),
+              SizedBox(height: 40),
 
               // Logo
               Image.asset(
                 'assets/icons/aqar.png',
                 height: 80,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
 
               // Subtitle
               Text(
                 _isSignIn
                     ? 'Welcome back to the modern estate.'
                     : 'Create your exclusive account.',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   color: AppColors.textSecondary,
                 ),
@@ -86,8 +86,8 @@ class _AuthPageState extends State<AuthPage> {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          margin: const EdgeInsets.all(4),
+          duration: Duration(milliseconds: 250),
+          margin: EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: active ? Colors.white : Colors.transparent,
             borderRadius: BorderRadius.circular(26),

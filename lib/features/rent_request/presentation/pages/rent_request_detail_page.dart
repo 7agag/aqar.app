@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aqar/core/extensions/num_formatting.dart';
+import 'package:aqar/core/config/app_config.dart';
+import 'package:aqar/core/network/api_client.dart';
 import 'package:aqar/core/services/biometric_auth_guard.dart';
 import 'package:aqar/core/services/escrow_service.dart';
 import 'package:aqar/core/theme/app_colors.dart';
@@ -256,7 +258,7 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
                   color: isDone || isActive ? Colors.white : AppColors.textHint,
                 ),
               ),
-              const SizedBox(height: 4),
+              SizedBox(height: 4),
               Text(
                 step.label,
                 style: TextStyle(
@@ -300,8 +302,8 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -312,9 +314,9 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.description_outlined, size: 18, color: AppColors.primary),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.description_outlined, size: 18, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text(
                 'Lease Agreement',
                 style: TextStyle(
                   fontSize: 15,
@@ -385,8 +387,8 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -397,9 +399,9 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.description_outlined, size: 18, color: AppColors.primary),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.description_outlined, size: 18, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text(
                 'Lease Agreement',
                 style: TextStyle(
                   fontSize: 15,
@@ -469,14 +471,14 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             color: AppColors.textSecondary,
           ),
         ),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
@@ -488,7 +490,7 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -496,7 +498,7 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
             width: 100,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
@@ -505,7 +507,7 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -585,7 +587,7 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
           context,
           itemName: request.propertyName ?? 'Property #${request.propertyId}',
           amount: request.totalPrice,
-          generatePaymentUrl: () async => link.url,
+          generatePaymentUrl: () => _fetchFreshPaymentUrl(request.requestId),
         );
 
         if (ok == true && mounted) {
@@ -604,6 +606,15 @@ class _RentRequestDetailPageState extends State<RentRequestDetailPage> {
         }
       },
     );
+  }
+
+  Future<String> _fetchFreshPaymentUrl(String requestId) async {
+    final dio = di.sl<ApiClient>().dio;
+    final res = await dio.post('/api/payment/', data: {
+      'request_id': requestId,
+      'redirect': AppConfig.paymentCallbackUrl,
+    });
+    return res.data['url'] as String;
   }
 
   Widget _buildProceedToPayment(BuildContext context, RentRequestEntity request) {

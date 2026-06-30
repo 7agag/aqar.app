@@ -181,7 +181,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Edit Property',
           style: TextStyle(
             fontSize: 18,
@@ -355,7 +355,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
         color: AppColors.textHint,
@@ -447,7 +447,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
     required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
@@ -456,16 +456,16 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Row(
             children: [
               Icon(icon, size: 16, color: AppColors.textHint),
-              const SizedBox(width: 6),
+              SizedBox(width: 6),
               Flexible(
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textHint,
                     fontWeight: FontWeight.w600,
@@ -498,7 +498,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
       onTap: _pickMapLocation,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: hasCoords
               ? AppColors.success.withValues(alpha: 0.06)
@@ -527,14 +527,14 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                 size: 22,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     hasCoords ? 'Location Set' : 'Set Location on Map',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -543,13 +543,13 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                   if (hasCoords)
                     Text(
                       '${_lat!.toStringAsFixed(4)}, ${_lng!.toStringAsFixed(4)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         color: AppColors.textSecondary,
                       ),
                     ),
                   if (!hasCoords)
-                    const Text(
+                    Text(
                       'Tap to open map picker',
                       style: TextStyle(
                         fontSize: 12,
@@ -559,7 +559,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.textHint),
+            Icon(Icons.chevron_right, color: AppColors.textHint),
           ],
         ),
       ),
@@ -568,7 +568,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
 
   Widget _buildExistingImages() {
     if (widget.property.images.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.only(bottom: 8),
         child: Text(
           'No existing images',
@@ -581,7 +581,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: widget.property.images.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => SizedBox(width: 8),
         itemBuilder: (_, i) {
           return ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -593,7 +593,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   color: AppColors.surfaceLight,
-                  child: const Icon(Icons.broken_image,
+                  child: Icon(Icons.broken_image,
                       color: AppColors.textHint),
                 ),
               ),
@@ -615,7 +615,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: widget.property.ownershipProofs.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, __) => SizedBox(width: 8),
               itemBuilder: (_, i) {
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -627,7 +627,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         color: AppColors.surfaceLight,
-                        child: const Icon(Icons.description_outlined,
+                        child: Icon(Icons.description_outlined,
                             color: AppColors.textHint),
                       ),
                     ),
@@ -636,7 +636,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
               },
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
         ],
         if (_newOwnershipProof != null)
           Stack(
@@ -651,7 +651,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
                       color: AppColors.surfaceLight,
-                      child: const Icon(Icons.description_outlined,
+                      child: Icon(Icons.description_outlined,
                           color: AppColors.textHint),
                     ),
                   ),
@@ -700,7 +700,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
   Widget _buildPropertyTypeTile() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
@@ -741,7 +741,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
   Widget _buildFurnishedToggle() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
@@ -796,7 +796,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
     return Container(
       width: double.infinity,
       padding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),

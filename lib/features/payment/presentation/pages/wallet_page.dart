@@ -171,7 +171,7 @@ class _WalletPageState extends State<WalletPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Wallet',
           style: TextStyle(
             fontSize: 18,
@@ -181,9 +181,9 @@ class _WalletPageState extends State<WalletPage>
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_outlined),
+            icon: Icon(Icons.notifications_outlined),
             onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const NotificationsPage())),
+                MaterialPageRoute(builder: (_) => NotificationsPage())),
             color: AppColors.textSecondary,
           ),
         ],
@@ -507,7 +507,7 @@ class _WalletPageState extends State<WalletPage>
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(_kRadiusCard),
@@ -547,8 +547,8 @@ class _WalletPageState extends State<WalletPage>
           children: [
             Icon(Icons.search_off_rounded,
                 size: 48, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
-            const Text(
+            SizedBox(height: 12),
+            Text(
               'No transactions yet',
               style: TextStyle(fontSize: 14, color: AppColors.textHint),
             ),
@@ -575,7 +575,7 @@ class _WalletPageState extends State<WalletPage>
         ),
         child: Text(
           key,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: AppColors.textHint,
@@ -626,7 +626,7 @@ class _WalletPageState extends State<WalletPage>
     return Padding(
       padding: EdgeInsets.fromLTRB(_responsiveHPad, 4, _responsiveHPad, 4),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(_kRadiusCard),
@@ -635,7 +635,7 @@ class _WalletPageState extends State<WalletPage>
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
-              offset: const Offset(0, 2),
+              offset: Offset(0, 2),
             ),
           ],
         ),
@@ -650,23 +650,23 @@ class _WalletPageState extends State<WalletPage>
               ),
               child: Icon(icon, size: 22, color: color),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     tx.paymentType ?? 'Transaction',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textHint,
                     ),
@@ -694,7 +694,7 @@ class _WalletPageState extends State<WalletPage>
 
   Widget _buildWithdrawSheet() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      padding: EdgeInsets.fromLTRB(24, 16, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -709,8 +709,8 @@ class _WalletPageState extends State<WalletPage>
               ),
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
+          SizedBox(height: 20),
+          Text(
             'Withdraw Funds',
             style: TextStyle(
               fontSize: 18,
@@ -718,8 +718,8 @@ class _WalletPageState extends State<WalletPage>
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16),
+          Text(
             'Choose a withdrawal method',
             style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
@@ -732,7 +732,7 @@ class _WalletPageState extends State<WalletPage>
                     _showWithdrawFormSheet(m.title);
                   },
                   child: Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(14),
@@ -750,23 +750,23 @@ class _WalletPageState extends State<WalletPage>
                           child:
                               Icon(m.icon, color: AppColors.primary, size: 24),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: 14),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 m.title,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              SizedBox(height: 4),
                               Text(
                                 m.subtitle,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   color: AppColors.textHint,
                                 ),
@@ -774,7 +774,7 @@ class _WalletPageState extends State<WalletPage>
                             ],
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded,
+                        Icon(Icons.chevron_right_rounded,
                             color: AppColors.textHint),
                       ],
                     ),
@@ -830,10 +830,10 @@ class _WithdrawFormSheetState extends State<_WithdrawFormSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           Text(
             'Withdraw via ${widget.method}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,

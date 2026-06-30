@@ -482,7 +482,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
   Widget _buildSearchDropdown() {
     final results = _filteredProperties;
     return Container(
-      constraints: const BoxConstraints(maxHeight: 220),
+      constraints: BoxConstraints(maxHeight: 220),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -490,12 +490,12 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 16,
-            offset: const Offset(0, 4),
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: results.isEmpty
-          ? const Padding(
+          ? Padding(
               padding: EdgeInsets.all(20),
               child: Center(
                 child: Text(
@@ -549,6 +549,7 @@ class _MapPageState extends State<MapPage> with TickerProviderStateMixin {
                         color: AppColors.navyBlue),
                   ),
                   onTap: () {
+                    if (p.latitude == null || p.longitude == null) return;
                     setState(() {
                       _searchQuery = '';
                       _selectedProperty = p;

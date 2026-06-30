@@ -181,14 +181,14 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
             color: AppColors.error.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.shield_outlined,
             color: AppColors.error,
             size: 28,
           ),
         ),
-        const SizedBox(height: 16),
-        const Text(
+        SizedBox(height: 16),
+        Text(
           'Verification Declined',
           style: TextStyle(
             fontSize: 18,
@@ -196,10 +196,10 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: AppColors.error.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
@@ -215,7 +215,7 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
                 size: 16,
                 color: AppColors.error.withValues(alpha: 0.5),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                   widget.rejectionReason,
@@ -307,21 +307,21 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
         Row(
           children: [
             Icon(topic.icon, size: 16, color: AppColors.navyBlue),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(topic.label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                     color: AppColors.textPrimary)),
           ],
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(Icons.lightbulb_outline,
                 size: 14, color: AppColors.textHint),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Expanded(
               child: Text(topic.tip,
                   style: TextStyle(
@@ -346,7 +346,7 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
       onTap: onPick,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: file != null
               ? AppColors.success.withValues(alpha: 0.05)
@@ -364,7 +364,7 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, size: 18, color: AppColors.success),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       file.name,
@@ -379,12 +379,12 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
                   GestureDetector(
                     onTap: onClear,
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: AppColors.error.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
                         size: 14,
                         color: AppColors.error,
@@ -408,16 +408,16 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
                       size: 22,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     'PDF, JPG or PNG accepted',
                     style: TextStyle(
@@ -442,14 +442,14 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
             color: AppColors.success.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.check_circle,
             color: AppColors.success,
             size: 36,
           ),
         ),
-        const SizedBox(height: 16),
-        const Text(
+        SizedBox(height: 16),
+        Text(
           'Submitted for Review!',
           style: TextStyle(
             fontSize: 18,
@@ -457,7 +457,7 @@ class _RejectionSheetBodyState extends State<_RejectionSheetBody> {
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         Text(
           'Your document has been uploaded.\nYou\'ll be notified once reviewed.',
           textAlign: TextAlign.center,

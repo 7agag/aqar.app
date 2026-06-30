@@ -15,7 +15,7 @@ class PhotoTipsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.navyBlue.withAlpha(10),
         borderRadius: BorderRadius.circular(12),
@@ -27,7 +27,7 @@ class PhotoTipsCard extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.lightbulb_outline, size: 18, color: AppColors.navyBlue),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 'Photo Tips',
                 style: TextStyle(
@@ -38,9 +38,9 @@ class PhotoTipsCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10),
           ...List.generate(_tips.length, (i) => Padding(
-            padding: const EdgeInsets.only(bottom: 6),
+            padding: EdgeInsets.only(bottom: 6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -48,7 +48,7 @@ class PhotoTipsCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     _tips[i],
-                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
                   ),
                 ),
               ],

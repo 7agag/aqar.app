@@ -48,7 +48,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
   late final FocusNode _focusNode;
   late final ScrollController _scrollController;
   final List<ChatMessageEntity> _messages = [];
-  String? _currentUserId;
+  String _currentUserId = '';
   String? _chatId;
   StreamSubscription<Map<String, dynamic>>? _socketSub;
   bool _isOwner = false;
@@ -87,7 +87,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_currentUserId == null) {
+    if (_currentUserId.isEmpty) {
       final authState = context.read<AuthBloc>().state;
       if (authState is AuthProfileLoaded) {
         _currentUserId = authState.user.id;
@@ -188,7 +188,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
 
     _messages.insert(0, ChatMessageEntity(
       messageId: '',
-      senderId: _currentUserId ?? '',
+      senderId: _currentUserId,
       content: text,
       isRead: false,
       createdAt: DateTime.now(),
@@ -251,7 +251,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
           color: AppColors.textPrimary,
         ),
@@ -262,20 +262,20 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
               backgroundColor: AppColors.primary,
               child: Text(
                 widget.initials,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   widget.userName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
@@ -357,10 +357,11 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
             ),
           ],
         ),
-      body: BlocListener<AuthBloc, AuthState>(
+      body:       BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is AuthProfileLoaded) {
+          if (state is AuthProfileLoaded && _currentUserId != state.user.id) {
             _currentUserId = state.user.id;
+            setState(() {});
           }
         },
         child: BlocListener<ChatBloc, ChatState>(
@@ -377,6 +378,26 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
                   createdAt: m.createdAt,
                 )));
               });
+            }
+            if (state is MessageSent) {
+              final msgId = state.data['message_id']?.toString() ?? '';
+              final senderId = state.data['sender_id']?.toString() ?? '';
+              if (msgId.isNotEmpty && senderId.isNotEmpty) {
+                final idx = _messages.indexWhere(
+                  (m) => m.messageId.isEmpty && m.senderId == _currentUserId,
+                );
+                if (idx >= 0) {
+                  setState(() {
+                    _messages[idx] = ChatMessageEntity(
+                      messageId: msgId,
+                      senderId: senderId,
+                      content: _messages[idx].content,
+                      isRead: false,
+                      createdAt: _messages[idx].createdAt,
+                    );
+                  });
+                }
+              }
             }
           },
           child: GestureDetector(
@@ -396,8 +417,8 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
                     },
                     child: _messages.isEmpty
                         ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: const [
+                            physics: AlwaysScrollableScrollPhysics(),
+                            children: [
                               SizedBox(
                                 height: 200,
                                 child: Center(
@@ -589,7 +610,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => Padding(
@@ -605,13 +626,13 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
           children: [
             Container(
               width: 40, height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: AppColors.textHint.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Text(
+            Text(
               'Send Agreement',
               style: TextStyle(
                 fontSize: 18,
@@ -619,7 +640,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Propose a price and terms to the buyer.',
               style: TextStyle(
@@ -627,10 +648,10 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
                 color: AppColors.textSecondary.withValues(alpha: 0.8),
               ),
             ),
-            const SizedBox(height: 20),
-            const Text('Price (EGP)',
+            SizedBox(height: 20),
+            Text('Price (EGP)',
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textHint)),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             TextField(
               controller: _agreementPriceController,
               keyboardType: TextInputType.number,
@@ -639,11 +660,11 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
-            const SizedBox(height: 16),
-            const Text('Terms (optional)',
+            SizedBox(height: 16),
+            Text('Terms (optional)',
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textHint)),
             const SizedBox(height: 8),
             TextField(
@@ -692,7 +713,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
     return Container(
       color: Colors.white,
       child: AnimatedPadding(
-        duration: const Duration(milliseconds: 250),
+        duration: Duration(milliseconds: 250),
         curve: Curves.easeOut,
         padding: EdgeInsets.only(bottom: bottomInset),
         child: Container(
@@ -702,18 +723,18 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 8,
-                offset: const Offset(0, -2),
+                offset: Offset(0, -2),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (_canSendAgreement)
                   IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.description_outlined,
                       color: AppColors.navyBlue,
                     ),
@@ -721,7 +742,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
                     onPressed: () => _showAgreementSheet(context),
                   ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.attach_file_outlined,
                     color: AppColors.textHint,
                   ),
@@ -734,7 +755,7 @@ class _ChatDetailsPageState extends State<ChatDetailsPage> {
                     );
                   },
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: 4),
                 Expanded(
                   child: TextField(
                     controller: _messageController,

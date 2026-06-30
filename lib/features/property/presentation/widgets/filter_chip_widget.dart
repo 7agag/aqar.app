@@ -22,9 +22,9 @@ class FilterChipWidget extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
+        duration: Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(20),
@@ -43,7 +43,7 @@ class FilterChipWidget extends StatelessWidget {
                 color: isSelected ? Colors.white : AppColors.textPrimary,
               ),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             if (onRemove != null)
               GestureDetector(
                 onTap: onRemove,

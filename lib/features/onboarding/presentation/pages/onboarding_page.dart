@@ -97,7 +97,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   Widget _buildPage(_OnboardingItem item) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48),
+      padding: EdgeInsets.symmetric(horizontal: 48),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -110,21 +110,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             child: Icon(item.icon, size: 72, color: AppColors.primary),
           ),
-          const SizedBox(height: 48),
+          SizedBox(height: 48),
           Text(
             item.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             item.description,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               color: AppColors.textSecondary,
               height: 1.5,
@@ -189,8 +189,8 @@ class SmoothPageIndicator extends StatelessWidget {
       children: List.generate(count, (i) {
         final isActive = i == currentPage;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          margin: const EdgeInsets.symmetric(horizontal: 4),
+          duration: Duration(milliseconds: 300),
+          margin: EdgeInsets.symmetric(horizontal: 4),
           width: isActive ? 28 : 8,
           height: 8,
           decoration: BoxDecoration(

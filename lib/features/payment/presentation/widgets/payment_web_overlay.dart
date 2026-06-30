@@ -216,7 +216,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
   Widget _buildTitle() {
     switch (_status) {
       case _WebOverlayStatus.opening:
-        return const Text(
+        return Text(
           'Opening Payment Window',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -227,7 +227,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
         );
       case _WebOverlayStatus.awaiting:
       case _WebOverlayStatus.verifying:
-        return const Text(
+        return Text(
           'Complete Payment',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -262,7 +262,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
   Widget _buildMessage() {
     switch (_status) {
       case _WebOverlayStatus.opening:
-        return const Text(
+        return Text(
           'Please wait while we prepare the payment window.',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -274,7 +274,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
       case _WebOverlayStatus.awaiting:
       case _WebOverlayStatus.verifying:
         if (widget.paymentType == VerificationType.sponsorship) {
-          return const Text(
+          return Text(
             'Complete the payment in the popup window.\nWe\'ll verify it automatically.',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -284,7 +284,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
             ),
           );
         }
-        return const Text(
+        return Text(
           'Complete the payment in the popup window.\nWe\'ll activate your listing automatically.',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -295,7 +295,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
         );
       case _WebOverlayStatus.success:
         if (widget.paymentType == VerificationType.sponsorship) {
-          return const Text(
+          return Text(
             'Your boost has been activated successfully!',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -305,7 +305,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
             ),
           );
         }
-        return const Text(
+        return Text(
           'Your listing subscription is now active!',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -320,7 +320,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
               ? 'We haven\'t received confirmation yet.\nThe popup may have been closed.'
               : 'The payment popup was closed before completion.',
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             color: AppColors.textSecondary,
             height: 1.4,
@@ -363,7 +363,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
                 color: AppColors.textHint,
               ),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             SizedBox(
               width: 14,
               height: 14,
@@ -374,7 +374,7 @@ class _PaymentWebOverlayState extends State<PaymentWebOverlay> {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: 6),
         Text(
           'Auto-detecting payment in background',
           style: TextStyle(

@@ -69,22 +69,22 @@ class _GuardSheetState extends State<_GuardSheet> {
               size: 28,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             _isVerified ? 'Verified!' : 'Confirm Your Identity',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             _isVerified
                 ? 'Processing your request...'
                 : widget.reason,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
             ),

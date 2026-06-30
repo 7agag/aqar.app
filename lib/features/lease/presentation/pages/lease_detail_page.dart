@@ -38,7 +38,7 @@ class _LeaseDetailPageState extends State<LeaseDetailPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Lease Details',
+        title: Text('Lease Details',
             style: TextStyle(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -82,7 +82,7 @@ class _LeaseDetailPageState extends State<LeaseDetailPage> {
           if (state is LeaseDetailLoaded) {
             final lease = state.lease;
             final statusColor = switch (lease.status) {
-              'UPCOMING' => const Color(0xFF3B82F6),
+              'UPCOMING' => Color(0xFF3B82F6),
               'IN_PROGRESS' => AppColors.success,
               'COMPLETED' => AppColors.textHint,
               'CANCELLED' => AppColors.error,
@@ -102,8 +102,8 @@ class _LeaseDetailPageState extends State<LeaseDetailPage> {
                 context.read<LeaseBloc>().add(GetLeaseDetailRequested(leaseId: widget.leaseId));
               },
               child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(20),
+                physics: AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -112,21 +112,21 @@ class _LeaseDetailPageState extends State<LeaseDetailPage> {
                         if (lease.propertyName != null)
                           Expanded(
                             child: Text(lease.propertyName!,
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 22, fontWeight: FontWeight.bold)),
                           ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         _buildStatusBadge(statusColor, statusLabel),
                       ],
                     ),
                     if (lease.images != null && lease.images!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 16),
+                      SizedBox(height: 16),
                       SizedBox(
                         height: 200,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: lease.images!.split(',').length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          separatorBuilder: (_, __) => SizedBox(width: 12),
                           itemBuilder: (_, i) => ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: PropertyImage(
@@ -138,7 +138,7 @@ class _LeaseDetailPageState extends State<LeaseDetailPage> {
                         ),
                       ),
                     ],
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -215,21 +215,21 @@ class _LeaseDetailPageState extends State<LeaseDetailPage> {
 
   Widget _buildInfoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
             child: Text(label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textHint)),
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14, color: AppColors.textPrimary)),
           ),
         ],

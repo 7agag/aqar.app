@@ -66,10 +66,21 @@ class _RecommendedPropertiesRowState extends State<RecommendedPropertiesRow> {
     if (!mounted) return;
 
     result.fold(
-      (_) => setState(() {
-        _properties = [];
-        _isLoading = false;
-      }),
+      (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('AI recommendations are unavailable right now.'),
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        setState(() {
+          _properties = [];
+          _isLoading = false;
+        });
+      },
       (items) => setState(() {
         _properties = items
             .map(PropertyModel.fromJson)
@@ -123,7 +134,7 @@ class _RecommendedPropertiesRowState extends State<RecommendedPropertiesRow> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         child: Row(
           children: [
@@ -155,7 +166,7 @@ class _RecommendedPropertiesRowState extends State<RecommendedPropertiesRow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             children: [

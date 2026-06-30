@@ -10,6 +10,7 @@ class PropertyFilterParams {
   final double? longitude;
   final bool? featured;
   final String? listingType;
+  final String? rentalDuration;
 
   const PropertyFilterParams({
     this.location,
@@ -23,6 +24,7 @@ class PropertyFilterParams {
     this.longitude,
     this.featured,
     this.listingType,
+    this.rentalDuration,
   });
 
   Map<String, dynamic> toJson() {
@@ -38,6 +40,7 @@ class PropertyFilterParams {
       'longitude': longitude,
       if (featured == true) 'featured': 'true',
       'listingType': listingType,
+      'rentalDuration': rentalDuration,
     }..removeWhere((key, value) => value == null);
   }
 
@@ -53,6 +56,7 @@ class PropertyFilterParams {
     double? longitude,
     bool? featured,
     String? listingType,
+    String? rentalDuration,
   }) {
     return PropertyFilterParams(
       location: location ?? this.location,
@@ -66,6 +70,7 @@ class PropertyFilterParams {
       longitude: longitude ?? this.longitude,
       featured: featured ?? this.featured,
       listingType: listingType ?? this.listingType,
+      rentalDuration: rentalDuration ?? this.rentalDuration,
     );
   }
 }

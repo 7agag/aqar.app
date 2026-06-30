@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aqar/core/localization/app_strings.dart';
 import 'package:aqar/core/services/ai_unread_service.dart';
@@ -99,11 +100,7 @@ class _AiAssistantPageState extends State<AiAssistantPage>
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
+        _scrollController.jumpTo(0);
       }
     });
   }
@@ -115,7 +112,7 @@ class _AiAssistantPageState extends State<AiAssistantPage>
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Aqar Assistant',
           style: TextStyle(
             fontSize: 17,
@@ -124,12 +121,12 @@ class _AiAssistantPageState extends State<AiAssistantPage>
           ),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(20),
+          preferredSize: Size.fromHeight(20),
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+            padding: EdgeInsets.only(bottom: 8),
             child: Text(
               AppStrings.aiPoweredByAi,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 color: AppColors.textSecondary,
               ),
@@ -141,7 +138,7 @@ class _AiAssistantPageState extends State<AiAssistantPage>
             onPressed: () => context.read<AiBloc>().add(ResetAiChat()),
             child: Text(
               AppStrings.aiClearChat,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
               ),
@@ -226,7 +223,7 @@ class _AiAssistantPageState extends State<AiAssistantPage>
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -241,7 +238,7 @@ class _AiAssistantPageState extends State<AiAssistantPage>
                   BoxShadow(
                     color: AppColors.primary.withValues(alpha: 0.15),
                     blurRadius: 20,
-                    offset: const Offset(0, 4),
+                    offset: Offset(0, 4),
                   ),
                 ],
               ),
@@ -251,21 +248,21 @@ class _AiAssistantPageState extends State<AiAssistantPage>
                 color: AppColors.primary,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             Text(
               AppStrings.aiEmptyPrompt,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(
               AppStrings.aiWelcomeDesc,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
                 height: 1.6,
@@ -324,7 +321,8 @@ class _AiAssistantPageState extends State<AiAssistantPage>
       itemCount: messages.length + (isLoading ? 1 : 0),
       itemBuilder: (_, i) {
         if (i == 0 && isLoading) return _buildTypingIndicator();
-        final msg = messages[messages.length - 1 - i];
+        final messageIndex = isLoading ? i - 1 : i;
+        final msg = messages[messages.length - 1 - messageIndex];
         return _buildMessageBubble(msg);
       },
     );
@@ -340,11 +338,11 @@ class _AiAssistantPageState extends State<AiAssistantPage>
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: bubbleMaxWidth),
           child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            margin: EdgeInsets.only(bottom: 12),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: AppColors.surfaceLight,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(20),
                 topRight: Radius.circular(4),
                 bottomLeft: Radius.circular(20),
@@ -354,7 +352,8 @@ class _AiAssistantPageState extends State<AiAssistantPage>
             child: Text(
               msg.text,
               softWrap: true,
-              style: const TextStyle(
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textPrimary,
               ),
@@ -407,6 +406,7 @@ class _AiAssistantPageState extends State<AiAssistantPage>
                       Text(
                         msg.text,
                         softWrap: true,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.white,
@@ -436,19 +436,19 @@ class _AiAssistantPageState extends State<AiAssistantPage>
           Container(
             width: 28,
             height: 28,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: _navy,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_awesome,
               size: 14,
               color: Colors.white,
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(20),
@@ -509,14 +509,22 @@ class _AiAssistantPageState extends State<AiAssistantPage>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: TextField(
+                  child: KeyboardListener(
+                    focusNode: FocusNode(),
+                    onKeyEvent: (event) {
+                      if (event is KeyDownEvent &&
+                          event.logicalKey == LogicalKeyboardKey.enter &&
+                          !HardwareKeyboard.instance.isShiftPressed) {
+                        _handleSend();
+                      }
+                    },
+                    child: TextField(
                     controller: _messageController,
                     focusNode: _focusNode,
                     enabled: !isSending,
                     minLines: 1,
                     maxLines: 4,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => _handleSend(),
+                    textInputAction: TextInputAction.newline,
                     decoration: InputDecoration(
                       hintText: AppStrings.aiTypeMessage,
                       filled: true,
@@ -538,6 +546,7 @@ class _AiAssistantPageState extends State<AiAssistantPage>
                         borderSide: BorderSide.none,
                       ),
                     ),
+                  ),
                   ),
                 ),
                 const SizedBox(width: 10),

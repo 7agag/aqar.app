@@ -57,12 +57,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             leading: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                margin: const EdgeInsets.all(8),
+                margin: EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.borderLight),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 18,
                   color: AppColors.textPrimary,
@@ -72,13 +72,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
           body: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24),
                     Center(
                       child: Container(
                         width: 90,
@@ -87,15 +87,15 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.lock_reset_outlined,
                           size: 46,
                           color: AppColors.primary,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
-                    const Text(
+                    SizedBox(height: 28),
+                    Text(
                       'Forgot Password',
                       style: TextStyle(
                         fontSize: 26,
@@ -103,8 +103,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    SizedBox(height: 12),
+                    Text(
                       'Enter your email address and we will send you a link to reset your password.',
                       style: TextStyle(
                         fontSize: 14,
@@ -112,13 +112,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32),
                     AqarTextField(
                       label: 'Email Address',
                       hint: 'hello@example.com',
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.email_outlined,
                         color: AppColors.textHint,
                         size: 20,

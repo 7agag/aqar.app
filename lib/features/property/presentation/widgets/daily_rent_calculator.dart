@@ -75,7 +75,7 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -84,7 +84,7 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -93,18 +93,18 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
         children: [
           Text(
             AppStrings.dailyRent,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             '${AppStrings.pricePerDayLabel}: ${AppStrings.egp} ${widget.property.pricePerDay.formatWithCommas()} / ${AppStrings.day}',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
               color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           Row(
             children: [
               Expanded(
@@ -115,7 +115,7 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
                   onTap: () => _pickDate(isStart: true),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: _DateButton(
                   label: AppStrings.toDate,
@@ -127,13 +127,13 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           if (_hasError)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: EdgeInsets.only(top: 4),
               child: Text(
                 endDateError,
-                style: const TextStyle(color: AppColors.error, fontSize: 13),
+                style: TextStyle(color: AppColors.error, fontSize: 13),
               ),
             )
           else if (_startDate != null && _endDate != null)
@@ -141,12 +141,12 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
           else if (_startDate != null)
             Text(
               endHint,
-              style: const TextStyle(color: AppColors.textHint, fontSize: 14),
+              style: TextStyle(color: AppColors.textHint, fontSize: 14),
             )
           else
             Text(
               hint,
-              style: const TextStyle(color: AppColors.textHint, fontSize: 14),
+              style: TextStyle(color: AppColors.textHint, fontSize: 14),
             ),
           if (_startDate != null && _endDate != null && !_hasError) ...[
             const SizedBox(height: 16),
@@ -185,7 +185,7 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
   Widget _buildSummary() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      padding: EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(10),
@@ -198,21 +198,21 @@ class _DailyRentCalculatorState extends State<DailyRentCalculator> {
             children: [
               Text(
                 AppStrings.daysCount,
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               Text(
                 '$_days ${AppStrings.isArabic ? 'أيام' : 'days'}',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 AppStrings.totalCost,
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
               Text(
                 '${AppStrings.egp} ${_totalCost.formatWithCommas(decimals: 2)}',
@@ -250,7 +250,7 @@ class _DateButton extends StatelessWidget {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        padding: EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         decoration: BoxDecoration(
           color: AppColors.navyBlue.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(10),
@@ -265,7 +265,7 @@ class _DateButton extends StatelessWidget {
               size: 16,
               color: AppColors.navyBlue.withValues(alpha: enabled ? 0.8 : 0.35),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +277,7 @@ class _DateButton extends StatelessWidget {
                       color: AppColors.navyBlue.withValues(alpha: 0.5),
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     date != null ? formatDate(date!) : AppStrings.selectDate,
                     style: TextStyle(

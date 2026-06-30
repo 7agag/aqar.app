@@ -48,7 +48,7 @@ class _PurchaseRequestsPageState extends State<PurchaseRequestsPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Purchase Requests'),
+        title: Text('Purchase Requests'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -149,7 +149,7 @@ class _PurchaseRequestsPageState extends State<PurchaseRequestsPage>
     if (list.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40),
+          padding: EdgeInsets.symmetric(horizontal: 40),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -167,21 +167,21 @@ class _PurchaseRequestsPageState extends State<PurchaseRequestsPage>
                   color: AppColors.textHint,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               Text(
                 isSent ? 'No sent requests' : 'No received requests',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               Text(
                 isSent ? 'Browse properties and send a purchase request'
                     : 'Purchase requests for your properties will appear here',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
                   height: 1.5,
@@ -204,7 +204,7 @@ class _PurchaseRequestsPageState extends State<PurchaseRequestsPage>
         itemBuilder: (context, index) {
           final request = list[index];
           return Padding(
-            padding: const EdgeInsets.only(bottom: _kGap),
+            padding: EdgeInsets.only(bottom: _kGap),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -238,7 +238,7 @@ class _PurchaseRequestsPageState extends State<PurchaseRequestsPage>
                   );
                 },
                 child: Padding(
-                  padding: const EdgeInsets.all(_kPad),
+                  padding: EdgeInsets.all(_kPad),
                   child: Row(
                     children: [
                       Expanded(
@@ -249,24 +249,24 @@ class _PurchaseRequestsPageState extends State<PurchaseRequestsPage>
                               request.propertyName ?? 'Property #${request.propertyId}',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6),
                             Text(
                               isSent ? 'To: ${request.ownerName}' : 'From: ${request.buyerName}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            SizedBox(height: 2),
                             Text(
                               _formatDate(request.createdAt),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textHint,
                               ),

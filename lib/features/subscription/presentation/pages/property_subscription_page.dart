@@ -186,7 +186,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Selling Plan'),
+        title: Text('Selling Plan'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -203,14 +203,14 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
     if (_error != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('⚠️', style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 16),
+              Text('⚠️', style: TextStyle(fontSize: 48)),
+              SizedBox(height: 16),
               Text(_error!, textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _loadPage,
@@ -242,14 +242,14 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
       color: AppColors.primary,
       onRefresh: _loadPage,
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        physics: AlwaysScrollableScrollPhysics(),
+        padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(property.propertyName,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-            const SizedBox(height: 6),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+            SizedBox(height: 6),
             Text('Manage your selling plan subscription',
               style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
 
@@ -352,7 +352,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
     final canChange = _uiState == SaleSubscriptionState.readyToPay;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -361,7 +361,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Subscription Details',
+          Text('Subscription Details',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const SizedBox(height: 12),
           _detailRow('Plan', '${sub.planMonths} Month${sub.planMonths > 1 ? 's' : ''}',
@@ -390,19 +390,19 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
 
   Widget _detailRow(String label, String value, {Widget? trailing}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+          Text(label, style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
           if (trailing != null)
             Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-              const SizedBox(width: 8),
+              Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              SizedBox(width: 8),
               trailing,
             ])
           else
-            Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+            Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
         ],
       ),
     );
@@ -411,7 +411,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
   Widget _buildActionsCard(PropertyEntity property, SaleSubscriptionState? uiState) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -421,18 +421,18 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (uiState == SaleSubscriptionState.missingSubscription) ...[
-            const Text('Select a Plan',
+            Text('Select a Plan',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             _buildPlanSelector(),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _creating ? null : _handleCreateSubscription,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary, foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(_creating ? 'Creating...' : 'Create Subscription'),
@@ -441,34 +441,34 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
           ],
           if (uiState == SaleSubscriptionState.readyToPay) ...[
             if (_changingPlan) ...[
-              const Text('Change Plan',
+              Text('Change Plan',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               _buildPlanSelector(),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: _creating ? null : _handleChangePlan,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary, foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    padding: EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text(_creating ? 'Saving...' : 'Confirm Change'),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
             ],
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: _paying ? null : startPaymentFlow,
-                icon: const Icon(Icons.payment_rounded, size: 18),
+                icon: Icon(Icons.payment_rounded, size: 18),
                 label: Text(_paying ? 'Preparing payment...' : 'Pay Listing Fee'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary, foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
@@ -479,24 +479,24 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: _loadPage,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Check Payment Status'),
+                icon: Icon(Icons.refresh_rounded, size: 18),
+                label: Text('Check Payment Status'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primary),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(color: AppColors.primary),
+                  padding: EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: _loadPage,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
-              label: const Text('Refresh'),
+              icon: Icon(Icons.refresh_rounded, size: 18),
+              label: Text('Refresh'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
                 side: BorderSide(color: Colors.grey[300]!),
@@ -519,8 +519,8 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
           child: GestureDetector(
             onTap: () => setState(() => _selectedPlan = months),
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              margin: EdgeInsets.symmetric(horizontal: 4),
+              padding: EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: selected ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(12),
@@ -551,16 +551,16 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
   Widget _buildInfoCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
+        color: Color(0xFFFAFAFA),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderLight),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('What happens next',
+          Text('What happens next',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
           const SizedBox(height: 12),
           _step(1, 'Add the sale property with a selling plan.'),
@@ -574,7 +574,7 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
 
   Widget _step(int number, String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -584,11 +584,11 @@ class _PropertySubscriptionPageState extends State<PropertySubscriptionPage>
               color: AppColors.primary, shape: BoxShape.circle,
             ),
             child: Center(child: Text('$number',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(child: Text(text,
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4))),
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4))),
         ],
       ),
     );

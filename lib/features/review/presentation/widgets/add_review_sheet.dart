@@ -67,7 +67,7 @@ class _AddReviewSheetState extends State<AddReviewSheet> {
               );
             }),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           Center(
             child: Text(
               _ratingText(_rating),
@@ -77,7 +77,7 @@ class _AddReviewSheetState extends State<AddReviewSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           TextField(
             controller: _phraseController,
             maxLines: 3,
@@ -91,9 +91,9 @@ class _AddReviewSheetState extends State<AddReviewSheet> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary),
+                borderSide: BorderSide(color: AppColors.primary),
               ),
-              contentPadding: const EdgeInsets.all(14),
+              contentPadding: EdgeInsets.all(14),
               counterStyle: TextStyle(
                 fontSize: 11,
                 color: AppColors.textHint.withValues(alpha: 0.6),

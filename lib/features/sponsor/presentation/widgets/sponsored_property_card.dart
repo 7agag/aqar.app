@@ -80,7 +80,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                         ? _gold.withValues(alpha: 0.12)
                         : Colors.black.withValues(alpha: 0.06),
                     blurRadius: isSponsored ? 12 : 8,
-                    offset: const Offset(0, 3),
+                    offset: Offset(0, 3),
                   ),
                 ],
               ),
@@ -91,7 +91,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                   Stack(
                     children: [
                       ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
+                        borderRadius: BorderRadius.vertical(
                             top: Radius.circular(12)),
                         child: property.images.isNotEmpty
                             ? PropertyImage(
@@ -106,10 +106,10 @@ class SponsoredPropertyCard extends StatelessWidget {
                           top: 6,
                           left: 6,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
+                            padding: EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 colors: [_gold, _goldLight],
                                 begin: Alignment.centerLeft,
                                 end: Alignment.centerRight,
@@ -119,13 +119,13 @@ class SponsoredPropertyCard extends StatelessWidget {
                                 BoxShadow(
                                   color: _gold.withValues(alpha: 0.3),
                                   blurRadius: 4,
-                                  offset: const Offset(0, 1),
+                                  offset: Offset(0, 1),
                                 ),
                               ],
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
-                              children: const [
+                              children: [
                                 Icon(Icons.auto_awesome,
                                     size: 10, color: Colors.white),
                                 SizedBox(width: 4),
@@ -157,7 +157,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                                 BoxShadow(
                                   color: Colors.black.withValues(alpha: 0.12),
                                   blurRadius: 4,
-                                  offset: const Offset(0, 1),
+                                  offset: Offset(0, 1),
                                 ),
                               ],
                             ),
@@ -200,7 +200,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                                 softWrap: false,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 '\$${property.priceValue.formatWithCommas()}${property.pricingUnitSuffix}',
@@ -221,7 +221,7 @@ class SponsoredPropertyCard extends StatelessWidget {
                           children: [
                             Icon(Icons.location_on_outlined,
                                 size: iconSize, color: _gold),
-                            const SizedBox(width: 2),
+                            SizedBox(width: 2),
                             Expanded(
                               child: Text(
                                 property.location,
@@ -302,7 +302,7 @@ class SponsoredPropertyCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: iconSize, color: _gold),
-          const SizedBox(width: 2),
+          SizedBox(width: 2),
           Flexible(
             child: Text(
               label,
@@ -324,7 +324,7 @@ class SponsoredPropertyCard extends StatelessWidget {
       width: double.infinity,
       color: AppColors.surfaceLight,
       child:
-          const Icon(Icons.home_outlined, size: 36, color: AppColors.textHint),
+          Icon(Icons.home_outlined, size: 36, color: AppColors.textHint),
     );
   }
 }

@@ -98,32 +98,41 @@ class _SearchPageState extends State<SearchPage> {
     if (!mounted) return;
     result.fold(
       (failure) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('AI search unavailable, showing matching listings.'),
-            behavior: SnackBarBehavior.floating,
+        // Fallback to regular API with location filter (like React)
+        context.read<PropertyBloc>().add(
+          GetPropertiesRequested(
+            params: PropertyFilterParams(location: query, listingType: _isBuy ? 'forSale' : 'forRent'),
           ),
         );
         setState(() {
           _isAiSearch = false;
           _isAiSearching = false;
         });
-        _reloadWithFilters();
       },
       (properties) {
         if (properties.isEmpty) {
+          // Fallback to regular API
+          context.read<PropertyBloc>().add(
+            GetPropertiesRequested(
+              params: PropertyFilterParams(location: query, listingType: _isBuy ? 'forSale' : 'forRent'),
+            ),
+          );
           setState(() {
             _isAiSearch = false;
             _isAiSearching = false;
           });
-          _reloadWithFilters();
           return;
         }
-        setState(() {
-          _isAiSearch = true;
-          _isAiSearching = false;
-          _filteredProperties = properties.map(mapAiPropertyToEntity).toList();
-        });
+          setState(() {
+            _isAiSearch = true;
+            _isAiSearching = false;
+            _filteredProperties = properties.map(mapAiPropertyToEntity).toList();
+            // Sort sponsored properties to top (like React)
+            _filteredProperties.sort((a, b) {
+              if (a.isSponsored == b.isSponsored) return 0;
+              return a.isSponsored ? -1 : 1;
+            });
+          });
       },
     );
   }
@@ -356,7 +365,7 @@ class _SearchPageState extends State<SearchPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Search'),
+        title: Text('Search'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -389,7 +398,7 @@ class _SearchPageState extends State<SearchPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: SearchBarWidget(
                 onSubmitted: _performSearch,
                 onFilterTap: _openAdvancedSearch,
@@ -399,12 +408,12 @@ class _SearchPageState extends State<SearchPage> {
             ),
             if (_recentSearches.isNotEmpty && (_searchText == null || _searchText!.isEmpty))
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 child: Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.only(top: 4, right: 4),
                       child: Icon(Icons.history, size: 14, color: AppColors.textHint),
                     ),
@@ -413,24 +422,24 @@ class _SearchPageState extends State<SearchPage> {
                         _performSearch(q);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: AppColors.surfaceLight,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(color: AppColors.borderLight),
                         ),
-                        child: Text(q, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        child: Text(q, style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                       ),
                     )),
                   ],
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
                 children: [
                   if (_isAiSearching)
-                    const SizedBox(
+                    SizedBox(
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(
@@ -439,16 +448,16 @@ class _SearchPageState extends State<SearchPage> {
                       ),
                     ),
                   if (_isAiSearching)
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                   if (_isAiSearch)
                     Container(
-                      margin: const EdgeInsets.only(right: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      margin: EdgeInsets.only(right: 6),
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.auto_awesome, size: 10, color: AppColors.primary),
@@ -467,13 +476,13 @@ class _SearchPageState extends State<SearchPage> {
                   if (_filteredProperties.isNotEmpty)
                     Text(
                       '${_filteredProperties.length} ${_filteredProperties.length == 1 ? 'result' : 'results'}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textHint),
+                      style: TextStyle(fontSize: 12, color: AppColors.textHint),
                     ),
-                  const Spacer(),
+                  Spacer(),
                   if (!_isAiSearch)
                     Container(
                       height: 32,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: EdgeInsets.symmetric(horizontal: 10),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
@@ -482,8 +491,8 @@ class _SearchPageState extends State<SearchPage> {
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _sortBy,
-                          icon: const Icon(Icons.swap_vert, size: 16, color: AppColors.textHint),
-                          style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                          icon: Icon(Icons.swap_vert, size: 16, color: AppColors.textHint),
+                          style: TextStyle(fontSize: 12, color: AppColors.textPrimary),
                           items: const [
                             DropdownMenuItem(value: 'newest', child: Text('Newest')),
                             DropdownMenuItem(value: 'price_asc', child: Text('Price: Low to High')),
@@ -571,7 +580,7 @@ class _SearchPageState extends State<SearchPage> {
                         }
                         if (state is PropertiesLoaded) {
                           if (_filteredProperties.isEmpty && !_isAiSearching) {
-                            return const Center(
+                            return Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [

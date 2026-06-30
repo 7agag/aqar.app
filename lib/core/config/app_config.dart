@@ -15,6 +15,10 @@ class AppConfig {
     return '$_vercelUrl/payment-callback';
   }
 
+  /// رابط الدفع للفاتورة (Invoice)
+  static String invoiceCallbackUrl(String invoiceId) =>
+      '$paymentCallbackUrl?type=invoice&invoice_id=$invoiceId';
+
   /// رابط الدفع للرعاية (Sponsorship)
   static String sponsorshipCallbackUrl(int propertyId) =>
       '$paymentCallbackUrl?type=sponsor&propertyId=$propertyId';

@@ -73,7 +73,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       label: 'First Name',
                       hint: 'Jane',
                       controller: _firstNameController,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.person_outline,
                         color: AppColors.textHint,
                         size: 20,
@@ -86,13 +86,13 @@ class _RegisterPageState extends State<RegisterPage> {
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: AqarTextField(
                       label: 'Last Name',
                       hint: 'Doe',
                       controller: _lastNameController,
-                      prefixIcon: const Icon(
+                      prefixIcon: Icon(
                         Icons.person_outline,
                         color: AppColors.textHint,
                         size: 20,
@@ -108,7 +108,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ],
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               // Email
               AqarTextField(
@@ -116,7 +116,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 hint: 'hello@example.com',
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.email_outlined,
                   color: AppColors.textHint,
                   size: 20,
@@ -128,7 +128,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 },
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               // Password
               AqarTextField(
@@ -136,7 +136,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 hint: '••••••••',
                 controller: _passwordController,
                 obscureText: _obscurePassword,
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.lock_outline,
                   color: AppColors.textHint,
                   size: 20,
@@ -159,7 +159,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 },
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
               // Confirm Password
               AqarTextField(
@@ -167,7 +167,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 hint: '••••••••',
                 controller: _confirmPasswordController,
                 obscureText: _obscureConfirmPassword,
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.lock_outline,
                   color: AppColors.textHint,
                   size: 20,
@@ -213,12 +213,12 @@ class _RegisterPageState extends State<RegisterPage> {
                 },
               ),
 
-              const SizedBox(height: 28),
+              SizedBox(height: 28),
 
               // Terms
               RichText(
                 textAlign: TextAlign.center,
-                text: const TextSpan(
+                text: TextSpan(
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,

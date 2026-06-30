@@ -42,7 +42,6 @@ class _ProfilePageState extends State<ProfilePage>
   @override
   void initState() {
     super.initState();
-    context.read<AuthBloc>().add(CheckAuthStatus());
     _staggerCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -66,7 +65,7 @@ class _ProfilePageState extends State<ProfilePage>
       backgroundColor: AppColors.background,
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text(
+        title: Text(
           'My Profile',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -87,6 +86,7 @@ class _ProfilePageState extends State<ProfilePage>
             context.read<AuthBloc>().add(GetProfileRequested());
           }
           if (state is AuthProfileLoaded) {
+            _profileRequested = true;
             _staggerCtrl.forward();
             _profileError = null;
             context.read<PropertyBloc>().add(const GetMyPropertiesRequested());
@@ -129,7 +129,7 @@ class _ProfilePageState extends State<ProfilePage>
   Widget _buildNotLoggedInView(BuildContext context, {String? errorMessage}) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -144,14 +144,14 @@ class _ProfilePageState extends State<ProfilePage>
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    offset: Offset(0, 4),
                   ),
                 ],
               ),
-              child: const Icon(Icons.person_outline_rounded, size: 44, color: AppColors.textHint),
+              child: Icon(Icons.person_outline_rounded, size: 44, color: AppColors.textHint),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24),
+            Text(
               'Welcome to AQAR',
               style: TextStyle(
                 fontSize: 20,
@@ -159,8 +159,8 @@ class _ProfilePageState extends State<ProfilePage>
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               'Log in or create an account\nto manage your listings & requests.',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -222,47 +222,49 @@ class _ProfilePageState extends State<ProfilePage>
     final userEmail = user.email;
     final statusText = user.isVerified ? 'Verified account' : 'Not verified';
     final statusColor =
-        user.isVerified ? const Color(0xFF2E7D32) : AppColors.textSecondary;
+        user.isVerified ? Color(0xFF2E7D32) : AppColors.textSecondary;
 
     return RefreshIndicator(
       onRefresh: () async {
         if (_isRefreshing) return;
         _isRefreshing = true;
         context.read<AuthBloc>().add(GetProfileRequested());
-        await context.read<AuthBloc>().stream.firstWhere(
-          (s) => s is AuthProfileLoaded || s is AuthError,
-        );
+        try {
+          await context.read<AuthBloc>().stream.firstWhere(
+            (s) => s is AuthProfileLoaded || s is AuthError,
+          ).timeout(const Duration(seconds: 15));
+        } catch (_) {}
         if (mounted) _isRefreshing = false;
       },
       color: AppColors.primary,
       child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         child: Column(
           children: [
             _buildGradientHeader(user, userName, userEmail, statusText, statusColor),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(height: AppSpacing.lg),
                   _buildMenuRow(
                     Icons.person_outline,
                     'Profile Information',
                     userEmail.isNotEmpty ? userEmail : 'No email available',
                     () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ProfileInfoPage()),
+                      MaterialPageRoute(builder: (_) => ProfileInfoPage()),
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.lg),
+                  SizedBox(height: AppSpacing.lg),
                   Divider(color: AppColors.borderLight.withValues(alpha: 0.5), height: 1),
-                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(height: AppSpacing.md),
                   BlocProvider.value(
                     value: di.sl<PropertyBloc>(),
-                    child: const ProfilePropertiesWidget(),
+                    child: ProfilePropertiesWidget(),
                   ),
-                  const SizedBox(height: AppSpacing.md),
+                  SizedBox(height: AppSpacing.md),
                   Divider(color: AppColors.borderLight.withValues(alpha: 0.5), height: 1),
                   const SizedBox(height: AppSpacing.lg),
                   _buildMenuRow(
@@ -375,7 +377,7 @@ class _ProfilePageState extends State<ProfilePage>
       ),
       child: Column(
         children: [
-          const SizedBox(height: AppSpacing.sm),
+          SizedBox(height: AppSpacing.sm),
           Stack(
             alignment: Alignment.bottomRight,
             children: [
@@ -392,7 +394,7 @@ class _ProfilePageState extends State<ProfilePage>
                   backgroundColor: AppColors.surfaceLight,
                   child: Text(
                     _getInitials(user),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 40,
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -403,30 +405,30 @@ class _ProfilePageState extends State<ProfilePage>
               GestureDetector(
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const ProfileInfoPage()),
+                  MaterialPageRoute(builder: (_) => ProfileInfoPage()),
                 ),
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
-                  child: const Icon(Icons.edit, color: Colors.white, size: 16),
+                  child: Icon(Icons.edit, color: Colors.white, size: 16),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: AppSpacing.md),
           Text(
             userName,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -435,17 +437,17 @@ class _ProfilePageState extends State<ProfilePage>
                 color: statusColor,
                 size: 16,
               ),
-              const SizedBox(width: AppSpacing.xs),
+              SizedBox(width: AppSpacing.xs),
               Text(
                 statusText,
                 style: TextStyle(fontSize: 13, color: statusColor),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           Text(
             userEmail,
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           const SizedBox(height: AppSpacing.lg),
           Row(
@@ -471,7 +473,7 @@ class _ProfilePageState extends State<ProfilePage>
 
   Widget _buildStatusCard() {
     final connected = _socketConnected;
-    final dotColor = connected ? const Color(0xFF2ECC71) : AppColors.textHint;
+    final dotColor = connected ? Color(0xFF2ECC71) : AppColors.textHint;
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
@@ -479,7 +481,7 @@ class _ProfilePageState extends State<ProfilePage>
       builder: (context, anim, _) {
         final pulse = connected ? (0.7 + 0.3 * (1 - anim)) : 1.0;
         return Container(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -488,7 +490,7 @@ class _ProfilePageState extends State<ProfilePage>
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
-                offset: const Offset(0, 2),
+                offset: Offset(0, 2),
               ),
             ],
           ),
@@ -506,24 +508,24 @@ class _ProfilePageState extends State<ProfilePage>
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 connected ? 'Online' : 'Offline',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: connected ? const Color(0xFF2ECC71) : AppColors.textHint,
+                  color: connected ? Color(0xFF2ECC71) : AppColors.textHint,
                   letterSpacing: 0.3,
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2),
               Text(
                 'STATUS',
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                   color: connected
-                      ? const Color(0xFF2ECC71).withValues(alpha: 0.6)
+                      ? Color(0xFF2ECC71).withValues(alpha: 0.6)
                       : AppColors.textHint.withValues(alpha: 0.6),
                   letterSpacing: 0.5,
                 ),
@@ -537,7 +539,7 @@ class _ProfilePageState extends State<ProfilePage>
 
   Widget _buildStatCard(String number, String label, {Color? numberColor}) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -546,7 +548,7 @@ class _ProfilePageState extends State<ProfilePage>
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -554,7 +556,7 @@ class _ProfilePageState extends State<ProfilePage>
         children: [
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: double.tryParse(number) ?? 0),
-            duration: const Duration(milliseconds: 800),
+            duration: Duration(milliseconds: 800),
             curve: Curves.easeOutCubic,
             builder: (context, value, _) => Text(
               number.contains(RegExp(r'[A-Za-z]')) ? number : value.toInt().toString(),
@@ -565,10 +567,10 @@ class _ProfilePageState extends State<ProfilePage>
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.xs),
+          SizedBox(height: AppSpacing.xs),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
@@ -584,7 +586,7 @@ class _ProfilePageState extends State<ProfilePage>
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+        padding: EdgeInsets.only(bottom: AppSpacing.lg),
         child: Row(
           children: [
             Container(
@@ -596,23 +598,23 @@ class _ProfilePageState extends State<ProfilePage>
               ),
               child: Icon(icon, color: AppColors.textPrimary, size: 22),
             ),
-            const SizedBox(width: AppSpacing.md),
+            SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),

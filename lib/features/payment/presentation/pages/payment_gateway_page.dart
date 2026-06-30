@@ -158,9 +158,9 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
         if (!didPop && _isProcessing) _showCancelDialog();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F6FA),
+        backgroundColor: Color(0xFFF5F6FA),
         appBar: AppBar(
-          title: const Text(
+          title: Text(
             'بوابة الدفع الآمنة',
             style: TextStyle(
               fontSize: 17,
@@ -170,14 +170,14 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
           ),
           centerTitle: true,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: Icon(Icons.arrow_back_rounded),
             color: AppColors.textPrimary,
             onPressed: () => Navigator.pop(context, false),
           ),
           backgroundColor: Colors.white,
           elevation: 0,
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
+            preferredSize: Size.fromHeight(1),
             child: Container(color: AppColors.borderLight, height: 1),
           ),
         ),
@@ -258,7 +258,7 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
   Widget _buildInvoiceCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -266,7 +266,7 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 12,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -281,18 +281,18 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
                   color: _navyBlue.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.receipt_long_rounded,
                   color: _navyBlue,
                   size: 22,
                 ),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'ملخص الفاتورة',
                       style: TextStyle(
                         fontSize: 11,
@@ -301,10 +301,10 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       widget.itemName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -407,7 +407,7 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(Icons.lock_rounded, size: 14, color: AppColors.textHint.withValues(alpha: 0.7)),
-        const SizedBox(width: 6),
+        SizedBox(width: 6),
         Text(
           'مدفوعات آمنة 256-bit SSL',
           style: TextStyle(
@@ -415,7 +415,7 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
             color: AppColors.textHint.withValues(alpha: 0.7),
           ),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: 6),
         Icon(Icons.verified_rounded, size: 14, color: AppColors.textHint.withValues(alpha: 0.7)),
       ],
     );
@@ -423,10 +423,10 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
 
   Widget _buildSuccessView() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(32),
       child: Column(
         children: [
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           ScaleTransition(
             scale: _successScale,
             child: Container(
@@ -436,43 +436,43 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
                 color: AppColors.success.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.check_circle_rounded,
                 size: 56,
                 color: AppColors.success,
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          const Text(
+          SizedBox(height: 24),
+          Text(
             'تمت عملية الدفع بنجاح',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             'تم خصم مبلغ ${widget.amount.formatWithCommas(decimals: 2)} ج.م',
-            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFFAFBFC),
+              color: Color(0xFFFAFBFC),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFEEEEEE)),
+              border: Border.all(color: Color(0xFFEEEEEE)),
             ),
             child: Column(
               children: [
                 _buildReceiptRow('الخدمة', widget.itemName),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _buildReceiptRow('المبلغ', '${widget.amount.formatWithCommas(decimals: 2)} ج.م'),
-                const SizedBox(height: 10),
+                SizedBox(height: 10),
                 _buildReceiptRow('طريقة الدفع', 'Kashier'),
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'سيتم إرسال إيصال الدفع إلى بريدك الإلكتروني',
             style: TextStyle(fontSize: 12, color: AppColors.textHint.withValues(alpha: 0.8)),
@@ -508,11 +508,11 @@ class _PaymentGatewayPageState extends State<PaymentGatewayPage>
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
         Text(
           value,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
         ),
       ],
     );

@@ -21,12 +21,12 @@ void _showAuthRequiredSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    shape: const RoundedRectangleBorder(
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
     builder: (_) => Container(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-      decoration: const BoxDecoration(
+      padding: EdgeInsets.fromLTRB(24, 32, 24, 32),
+      decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -42,13 +42,13 @@ void _showAuthRequiredSheet(BuildContext context) {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.lock_outline,
                 size: 28,
                 color: AppColors.primary,
               ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             Text(
               AppStrings.verifyAccountPrompt,
               textAlign: TextAlign.center,
@@ -69,15 +69,15 @@ void _showAuthRequiredSheet(BuildContext context) {
                 },
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
                 style: TextButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
+                  minimumSize: Size.fromHeight(48),
                 ),
-                child: const Text(
+                child: Text(
                   'إلغاء',
                   style: TextStyle(
                     fontSize: 15,

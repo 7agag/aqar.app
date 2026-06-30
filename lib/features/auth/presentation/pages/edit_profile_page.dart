@@ -88,7 +88,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Edit Profile',
               style: TextStyle(
                 color: AppColors.textPrimary,
@@ -102,7 +102,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             centerTitle: true,
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             child: Form(
               key: _formKey,
               child: Column(
@@ -177,13 +177,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         TextFormField(
           controller: ctl,
           validator: validator ??

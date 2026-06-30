@@ -138,7 +138,7 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
           top: 16,
           bottom: MediaQuery.of(context).viewInsets.bottom + 24,
         ),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -157,8 +157,8 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20),
+              Text(
                 'Request to Rent',
                 style: TextStyle(
                   fontSize: 18,
@@ -166,17 +166,17 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 widget.property.propertyName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
 
-              const Text(
+              Text(
                 'Check-in Date',
                 style: TextStyle(
                   fontSize: 13,
@@ -184,22 +184,22 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               _dateButton(
                 _checkIn != null ? _checkIn!.toString().substring(0, 10) : 'Select date',
                 () => _pickDate(true),
               ),
               if (_dateError != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: 4),
+                  padding: EdgeInsets.only(top: 4),
                   child: Text(
                     _dateError!,
-                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                    style: TextStyle(fontSize: 12, color: Colors.red),
                   ),
                 ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
 
-              const Text(
+              Text(
                 'Check-out Date',
                 style: TextStyle(
                   fontSize: 13,
@@ -207,24 +207,24 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               _dateButton(
                 _checkOut != null ? _checkOut!.toString().substring(0, 10) : 'Select date',
                 () => _pickDate(false),
               ),
               if (_rangeError != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: 4),
+                  padding: EdgeInsets.only(top: 4),
                   child: Text(
                     _rangeError!,
-                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                    style: TextStyle(fontSize: 12, color: Colors.red),
                   ),
                 ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               if (_totalPrice > 0)
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceLight,
                     borderRadius: BorderRadius.circular(12),
@@ -232,7 +232,7 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
+                      Text(
                         'Total Price',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
@@ -288,7 +288,7 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(12),
@@ -304,7 +304,7 @@ class _CreateRentRequestSheetState extends State<CreateRentRequestSheet> {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const Icon(Icons.calendar_today, size: 18, color: AppColors.textHint),
+            Icon(Icons.calendar_today, size: 18, color: AppColors.textHint),
           ],
         ),
       ),

@@ -40,7 +40,7 @@ class PropertyInfoWindow extends StatelessWidget {
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.12),
                     blurRadius: 20,
-                    offset: const Offset(0, 6),
+                    offset: Offset(0, 6),
                   ),
                 ],
               ),
@@ -53,7 +53,7 @@ class PropertyInfoWindow extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius:
-                            const BorderRadius.vertical(top: Radius.circular(16)),
+                            BorderRadius.vertical(top: Radius.circular(16)),
                         child: SizedBox(
                           height: 130,
                           width: double.infinity,
@@ -66,7 +66,7 @@ class PropertyInfoWindow extends StatelessWidget {
                                 )
                               : Container(
                                   color: AppColors.surfaceLight,
-                                  child: const Center(
+                                  child: Center(
                                     child: Icon(Icons.home_outlined,
                                         size: 40, color: AppColors.textHint),
                                   ),
@@ -74,13 +74,13 @@ class PropertyInfoWindow extends StatelessWidget {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                        padding: EdgeInsets.fromLTRB(14, 12, 14, 14),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               property.propertyName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
@@ -88,20 +88,20 @@ class PropertyInfoWindow extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               _formattedPrice,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.navyBlue,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            SizedBox(height: 6),
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
+                                  padding: EdgeInsets.symmetric(
                                       horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: status.color.withValues(alpha: 0.1),
@@ -116,12 +116,12 @@ class PropertyInfoWindow extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 6),
+                                SizedBox(width: 6),
                                 Icon(Icons.location_on_rounded,
                                     size: 12,
                                     color: AppColors.textSecondary
                                         .withValues(alpha: 0.6)),
-                                const SizedBox(width: 2),
+                                SizedBox(width: 2),
                                 Flexible(
                                   child: Text(
                                     property.location,

@@ -138,12 +138,12 @@ class _OtpPageState extends State<OtpPage> {
             leading: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                margin: const EdgeInsets.all(8),
+                margin: EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.borderLight),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 18,
                   color: AppColors.textPrimary,
@@ -153,11 +153,11 @@ class _OtpPageState extends State<OtpPage> {
           ),
           body: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20),
 
                   // Mail Icon
                   Container(
@@ -167,17 +167,17 @@ class _OtpPageState extends State<OtpPage> {
                       color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.mark_email_unread_outlined,
                       size: 44,
                       color: AppColors.primary,
                     ),
                   ),
 
-                  const SizedBox(height: 28),
+                  SizedBox(height: 28),
 
                   // Title
-                  const Text(
+                  Text(
                     'Check Your Email',
                     style: TextStyle(
                       fontSize: 24,
@@ -186,23 +186,23 @@ class _OtpPageState extends State<OtpPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
 
                   // Subtitle
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
                         height: 1.6,
                       ),
                       children: [
-                        const TextSpan(
+                        TextSpan(
                             text: 'We sent a 6-digit verification code to\n'),
                         TextSpan(
                           text: widget.email,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),
@@ -211,14 +211,14 @@ class _OtpPageState extends State<OtpPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  SizedBox(height: 40),
 
                   // OTP Fields
                   Row(
                     children: List.generate(6, (index) {
                       return Flexible(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 4),
                           child: AspectRatio(
                             aspectRatio: 0.85,
                             child: Container(
@@ -230,7 +230,7 @@ class _OtpPageState extends State<OtpPage> {
                                           color: AppColors.primary
                                               .withValues(alpha: 0.2),
                                           blurRadius: 8,
-                                          offset: const Offset(0, 4),
+                                          offset: Offset(0, 4),
                                         ),
                                       ]
                                     : null,
@@ -247,13 +247,13 @@ class _OtpPageState extends State<OtpPage> {
                                   LengthLimitingTextInputFormatter(1),
                                 ],
                                 autofillHints: index == 0
-                                    ? const [AutofillHints.oneTimeCode]
+                                    ? [AutofillHints.oneTimeCode]
                                     : null,
                                 autofocus: index == 0,
                                 cursorColor: AppColors.primary,
                                 cursorHeight: 26,
                                 cursorWidth: 1.5,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 30,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textPrimary,
@@ -261,18 +261,18 @@ class _OtpPageState extends State<OtpPage> {
                                 decoration: InputDecoration(
                                   counterText: '',
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.all(0),
+                                  contentPadding: EdgeInsets.all(0),
                                   filled: true,
                                   fillColor: Colors.white,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(
+                                    borderSide: BorderSide(
                                       color: AppColors.borderLight,
                                     ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(16),
-                                    borderSide: const BorderSide(
+                                    borderSide: BorderSide(
                                       color: AppColors.borderLight,
                                     ),
                                   ),
@@ -323,7 +323,7 @@ class _OtpPageState extends State<OtpPage> {
                                       );
                                 },
                           child: RichText(
-                            text: const TextSpan(
+                            text: TextSpan(
                               style: TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textSecondary,
@@ -343,7 +343,7 @@ class _OtpPageState extends State<OtpPage> {
                         )
                       : RichText(
                           text: TextSpan(
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               color: AppColors.textSecondary,
                             ),

@@ -17,6 +17,8 @@ import '../../../favorite/presentation/bloc/favorite_bloc.dart';
 import '../../../rent_request/presentation/bloc/rent_request_bloc.dart';
 import '../../../rent_request/presentation/bloc/rent_request_event.dart';
 import '../../../rent_request/presentation/bloc/rent_request_state.dart';
+import '../../../rent_request/domain/entities/rent_request_entity.dart';
+import '../../../rent_request/domain/entities/rent_request_enums.dart' as rent_enums;
 import 'package:aqar/features/review/presentation/bloc/review_bloc.dart';
 import 'package:aqar/features/review/presentation/widgets/add_review_sheet.dart';
 import 'package:aqar/features/review/presentation/widgets/review_list_widget.dart';
@@ -39,6 +41,7 @@ import '../widgets/property_image_carousel.dart';
 import '../widgets/recommended_properties_row.dart';
 import 'full_screen_image_page.dart';
 import 'selling_plan_page.dart';
+import 'edit_property_page.dart';
 import '../../../../core/services/biometric_auth_guard.dart';
 import '../../../../injection_container.dart' as di;
 
@@ -51,7 +54,8 @@ class PropertyDetailPage extends StatefulWidget {
   State<PropertyDetailPage> createState() => _PropertyDetailPageState();
 }
 
-class _PropertyDetailPageState extends State<PropertyDetailPage> {
+class _PropertyDetailPageState extends State<PropertyDetailPage>
+    with SingleTickerProviderStateMixin {
   bool _isFavorite = false;
   bool _revertFavTo = false;
   bool _favLoading = false;
@@ -60,6 +64,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   late PageController _pageController;
   PropertyEntity? _property;
   bool _isLoading = true;
+  RentRequestEntity? _existingRentRequest;
   DateTime? _rentCheckIn;
   int _rentDays = 1;
   int _rentMonths = 1;
@@ -68,6 +73,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   LeaseEntity? _activeLease;
   late final LeaseBloc _leaseBloc;
   StreamSubscription? _leaseSub;
+  late AnimationController _shimmerCtrl;
 
   DateTime? get _rentEndDate {
     if (_rentCheckIn == null) return null;
@@ -96,6 +102,10 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    _shimmerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
     _leaseBloc = di.sl<LeaseBloc>();
     _leaseSub = _leaseBloc.stream.listen(_onLeaseState);
     context
@@ -103,6 +113,18 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         .add(GetPropertyByIdRequested(id: widget.propertyId));
     context.read<FavoriteBloc>().add(GetFavoritesEvent());
     context.read<ReviewBloc>().add(GetReviews(propertyId: widget.propertyId));
+    final rentState = context.read<RentRequestBloc>().state;
+    if (rentState is RentRequestsLoaded) {
+      final match = rentState.sent.where(
+        (r) =>
+            r.propertyId == widget.propertyId &&
+            (r.state == rent_enums.RentRequestState.pending ||
+                r.state == rent_enums.RentRequestState.accepted ||
+                r.state == rent_enums.RentRequestState.paymentPending),
+      ).firstOrNull;
+      _existingRentRequest = match;
+    }
+    context.read<RentRequestBloc>().add(const LoadRentRequests());
   }
 
   @override
@@ -131,8 +153,8 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   @override
   void dispose() {
     _leaseSub?.cancel();
-    _leaseBloc.close();
     _pageController.dispose();
+    _shimmerCtrl.dispose();
     super.dispose();
   }
 
@@ -160,12 +182,12 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          padding: EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -175,8 +197,8 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                   decoration: BoxDecoration(
                       color: AppColors.textHint.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(2))),
-              const SizedBox(height: 20),
-              const Text('Share Property',
+              SizedBox(height: 20),
+              Text('Share Property',
                   style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
@@ -231,7 +253,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
               child: Icon(icon, color: color, size: 26)),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(label,
               style: TextStyle(
                   fontSize: 12,
@@ -358,15 +380,16 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<PropertyBloc, PropertyState>(
-          listener: (context, state) {
-            if (state is PropertyDetailLoaded) {
-              setState(() {
-                _property = state.property;
-                _isLoading = false;
-                _isFavorite = _favoriteIds.contains(state.property.propertyId);
+    return RepaintBoundary(
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<PropertyBloc, PropertyState>(
+            listener: (context, state) {
+              if (state is PropertyDetailLoaded) {
+                setState(() {
+                  _property = state.property;
+                  _isLoading = false;
+                  _isFavorite = _favoriteIds.contains(state.property.propertyId);
               });
               _determineContext();
             }
@@ -411,6 +434,20 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         ),
         BlocListener<RentRequestBloc, RentRequestState>(
           listener: (context, state) {
+            if (state is RentRequestsLoaded) {
+          final match = state.sent.where(
+            (r) =>
+                r.propertyId == widget.propertyId &&
+                (r.state == rent_enums.RentRequestState.pending ||
+                    r.state == rent_enums.RentRequestState.accepted ||
+                    r.state == rent_enums.RentRequestState.paymentPending),
+          ).firstOrNull;
+          if (match != null) {
+            setState(() => _existingRentRequest = match);
+          } else {
+            setState(() => _existingRentRequest = null);
+          }
+            }
             if (state is RentRequestActionSuccess) {
               ScaffoldMessenger.of(context)
                   .showSnackBar(SnackBar(content: Text(state.message)));
@@ -419,6 +456,9 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                 _rentDays = 1;
                 _rentMonths = 1;
               });
+              context
+                  .read<RentRequestBloc>()
+                  .add(const LoadRentRequests());
             }
             if (state is RentRequestError) {
               ScaffoldMessenger.of(context)
@@ -479,16 +519,13 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         ),
       ],
       child: _buildBody(),
-    );
+    ),
+  );
   }
 
   Widget _buildBody() {
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: const Center(
-            child: CircularProgressIndicator(color: AppColors.primary)),
-      );
+      return _buildShimmer();
     }
     if (_property == null) {
       return Scaffold(
@@ -501,7 +538,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               children: [
                 Icon(Icons.error_outline_rounded,
                     size: 72, color: AppColors.textHint.withValues(alpha: 0.5)),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Text('Could not load property',
                     style: TextStyle(
                         fontSize: 16, color: AppColors.textSecondary)),
@@ -602,7 +639,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                   widget.onBack?.call();
                   if (widget.onBack == null) Navigator.pop(context);
                 },
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: Icon(Icons.arrow_back_rounded),
                 color: AppColors.textPrimary,
               ),
             ),
@@ -620,7 +657,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                   child: IconButton(
                     onPressed: _favLoading ? null : _toggleFavorite,
                     icon: _favLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2))
@@ -633,14 +670,14 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                                 : AppColors.textPrimary),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.9),
                       shape: BoxShape.circle),
                   child: IconButton(
                       onPressed: _shareProperty,
-                      icon: const Icon(Icons.ios_share_outlined),
+                      icon: Icon(Icons.ios_share_outlined),
                       color: AppColors.textPrimary),
                 ),
               ],
@@ -665,7 +702,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -674,7 +711,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               Expanded(
                 child: Text(
                   property.propertyName,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
@@ -696,15 +733,15 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
 
   Widget _buildLocation(PropertyEntity property) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20),
       child: GestureDetector(
         onTap: () => _openGoogleMaps(property),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFEEEEEE))),
+              border: Border.all(color: Color(0xFFEEEEEE))),
           child: Row(
             children: [
               Container(
@@ -713,13 +750,13 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                 decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.location_on_rounded,
+                child: Icon(Icons.location_on_rounded,
                     color: AppColors.primary, size: 20),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Text(property.location,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 13, color: AppColors.textSecondary),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis),
@@ -759,24 +796,24 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   Widget _specCard(IconData icon, String value, String label) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFEEEEEE))),
+            border: Border.all(color: Color(0xFFEEEEEE))),
         child: Column(
           children: [
             Icon(icon, size: 22, color: AppColors.navyBlue),
-            const SizedBox(height: 6),
+            SizedBox(height: 6),
             Text(value,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary)),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(label,
                 style:
-                    const TextStyle(fontSize: 10, color: AppColors.textHint)),
+                    TextStyle(fontSize: 10, color: AppColors.textHint)),
           ],
         ),
       ),
@@ -852,19 +889,19 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, size: 18, color: AppColors.primary),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textHint,
                     letterSpacing: 0.3)),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(value,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary)),
@@ -889,33 +926,33 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     final needsToggle = desc.split('\n').length > maxLines || desc.length > 150;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(18),
         decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFEEEEEE))),
+            border: Border.all(color: Color(0xFFEEEEEE))),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _sectionTitle(AppStrings.aboutProperty),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             AnimatedCrossFade(
-              duration: const Duration(milliseconds: 250),
+              duration: Duration(milliseconds: 250),
               crossFadeState: _aboutExpanded
                   ? CrossFadeState.showSecond
                   : CrossFadeState.showFirst,
               firstChild: Text(desc,
                   maxLines: maxLines,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 14,
                       height: 1.6,
                       color: AppColors.textSecondary)),
               secondChild: Text(desc,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 14,
                       height: 1.6,
                       color: AppColors.textSecondary)),
@@ -950,19 +987,19 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     }
     if (property.listingStatus == ListingStatus.sold) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: 20),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(18),
+          padding: EdgeInsets.all(18),
           decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFEEEEEE))),
+              border: Border.all(color: Color(0xFFEEEEEE))),
           child: Column(children: [
             ListingStatusBadge(property: property),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(AppStrings.propertyUnavailable,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 15, color: AppColors.textSecondary)),
           ]),
         ),
@@ -982,24 +1019,24 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(18),
       decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFEEEEEE))),
+          border: Border.all(color: Color(0xFFEEEEEE))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Manage Property',
+        Text('Manage Property',
             style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary)),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         if (isSale) ...[
           if (property.listingStatus == ListingStatus.inactive &&
               property.isVerified) ...[
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: AppColors.error.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
@@ -1008,19 +1045,19 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded,
+                  Icon(Icons.warning_amber_rounded,
                       color: AppColors.error, size: 20),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Subscription Missing',
+                        Text('Subscription Missing',
                             style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                                 color: AppColors.error)),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2),
                         Text('Selling plan not found. Tap to manage.',
                             style: TextStyle(
                                 fontSize: 11,
@@ -1166,7 +1203,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       bool isDestructive = false}) {
     final color = isDestructive ? AppColors.error : AppColors.navyBlue;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: EdgeInsets.only(bottom: 10),
       child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
@@ -1176,9 +1213,9 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFEEEEEE)),
+              border: Border.all(color: Color(0xFFEEEEEE)),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(children: [
               Container(
                 width: 40,
@@ -1189,7 +1226,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                 ),
                 child: Icon(icon, size: 22, color: color),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Text(title,
                     style: TextStyle(
@@ -1224,48 +1261,48 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
     final maxValue = isDaily ? 90 : 12;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(18),
         decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFEEEEEE))),
+            border: Border.all(color: Color(0xFFEEEEEE))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const Icon(Icons.calculate_rounded,
+            Icon(Icons.calculate_rounded,
                 size: 20, color: AppColors.primary),
-            const SizedBox(width: 8),
-            const Text('Rent Calculator',
+            SizedBox(width: 8),
+            Text('Rent Calculator',
                 style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary)),
           ]),
-          const SizedBox(height: 14),
+          SizedBox(height: 14),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 14),
             decoration: BoxDecoration(
                 color: AppColors.navyBlue.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10)),
             child: Text(priceLabel,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: AppColors.navyBlue)),
           ),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           _buildDatePicker(),
-          const SizedBox(height: 18),
+          SizedBox(height: 18),
           Row(children: [
             Text(durationLabel,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary)),
-            const Spacer(),
+            Spacer(),
             IconButton(
                 icon: Icon(Icons.remove_circle_outline,
                     color: durationValue > 1
@@ -1281,10 +1318,10 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                         })
                     : null),
             Container(
-                constraints: const BoxConstraints(minWidth: 36),
+                constraints: BoxConstraints(minWidth: 36),
                 alignment: Alignment.center,
                 child: Text('$durationValue',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary))),
@@ -1353,15 +1390,15 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
             color: AppColors.navyBlue.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(10),
             border:
                 Border.all(color: AppColors.navyBlue.withValues(alpha: 0.15))),
         child: Row(children: [
-          const Icon(Icons.calendar_today, size: 18, color: AppColors.navyBlue),
-          const SizedBox(width: 10),
+          Icon(Icons.calendar_today, size: 18, color: AppColors.navyBlue),
+          SizedBox(width: 10),
           Expanded(
               child: Text(
                   _rentCheckIn != null
@@ -1378,7 +1415,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
           if (_rentCheckIn != null)
             GestureDetector(
                 onTap: () => setState(() => _rentCheckIn = null),
-                child: const Icon(Icons.close_rounded,
+                child: Icon(Icons.close_rounded,
                     size: 18, color: AppColors.textHint)),
         ]),
       ),
@@ -1393,7 +1430,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               color: AppColors.textSecondary.withValues(alpha: 0.8))),
       Text(value,
           style: valueStyle ??
-              const TextStyle(
+              TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary)),
@@ -1492,44 +1529,36 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
   Widget _buildRatingsSection(PropertyEntity property) {
     final rating = property.rate ?? 0.0;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(18),
+        padding: EdgeInsets.all(18),
         decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFEEEEEE))),
+            border: Border.all(color: Color(0xFFEEEEEE))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             _sectionTitle(AppStrings.ratings),
             TextButton.icon(
               onPressed: () => _showAddReviewSheet(property),
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('Write'),
+              icon: Icon(Icons.edit_outlined, size: 18),
+              label: Text('Write'),
               style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 8)),
+                  padding: EdgeInsets.symmetric(horizontal: 8)),
             ),
           ]),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Row(children: [
             Text(rating.toStringAsFixed(1),
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary)),
             const SizedBox(width: 12),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(
-                  children: List.generate(5, (i) {
-                return Icon(
-                    i < rating.round()
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    size: 20,
-                    color: const Color(0xFFFFA000));
-              })),
+              _starRow(rating, 20),
               const SizedBox(height: 2),
               BlocBuilder<ReviewBloc, ReviewState>(
                 builder: (context, state) {
@@ -1555,8 +1584,8 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               }
               if (state is ReviewsLoaded && state.reviews.isEmpty) {
                 return Container(
-                  padding: const EdgeInsets.all(16),
-                  child: const Column(children: [
+                  padding: EdgeInsets.all(16),
+                  child: Column(children: [
                     Icon(Icons.rate_review_outlined,
                         size: 32, color: AppColors.textHint),
                     SizedBox(height: 8),
@@ -1616,8 +1645,8 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         ? 'Upcoming Lease'
         : 'Your Lease is Confirmed';
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.success.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
@@ -1632,23 +1661,23 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               color: AppColors.success.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.description_rounded,
+            child: Icon(Icons.description_rounded,
                 color: AppColors.success, size: 20),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
                         color: AppColors.textPrimary)),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                     'From ${_formatDate(lease.checkInDate)} to ${_formatDate(lease.checkOutDate)}',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 12, color: AppColors.textSecondary)),
               ],
             ),
@@ -1745,7 +1774,7 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
             BoxShadow(
                 color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 12,
-                offset: const Offset(0, -2))
+                offset: Offset(0, -2))
           ]),
           child: Row(
             children: [
@@ -1757,36 +1786,55 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
                         partnerId: property.ownerId,
                         userName: _ownerDisplayName(property),
                         initials: _ownerInitials(property)),
-                    icon: const Icon(Icons.chat_outlined, size: 20),
-                    label: const Text('Chat',
+                    icon: Icon(Icons.chat_outlined, size: 20),
+                    label: Text('Chat',
                         style: TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w700)),
                     style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.primary),
+                        side: BorderSide(color: AppColors.primary),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14))),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 flex: 2,
                 child: SizedBox(
                   height: 50,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _sendRentRequest(property),
-                    icon: const Icon(Icons.home_work_outlined, size: 20),
-                    label: const Text('Send Rent Request',
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w700)),
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14)),
-                        elevation: 0),
-                  ),
+                  child: _existingRentRequest != null
+                      ? ElevatedButton.icon(
+                          onPressed: null,
+                          icon: Icon(Icons.hourglass_empty, size: 20),
+                          label: Text('Under Review',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700)),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.textHint,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(14)),
+                              elevation: 0),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: () => _sendRentRequest(property),
+                          icon: const Icon(Icons.home_work_outlined,
+                              size: 20),
+                          label: const Text('Send Rent Request',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700)),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(14)),
+                              elevation: 0),
+                        ),
                 ),
               ),
             ],
@@ -1873,23 +1921,51 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
               ],
             )
           else
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const LeaseListPage())),
-                icon: const Icon(Icons.description_rounded, size: 20),
-                label: const Text('View My Leases',
-                    style:
-                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.navyBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    elevation: 0),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () => Navigator.push(context,
+                          MaterialPageRoute(builder: (_) => const LeaseListPage())),
+                      icon: const Icon(Icons.description_rounded, size: 20),
+                      label: const Text('My Leases',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.navyBlue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          elevation: 0),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => EditPropertyPage(
+                                  property: _property!))),
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      label: const Text('Edit',
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700)),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          elevation: 0),
+                    ),
+                  ),
+                ),
+              ],
             ),
         ],
       ),
@@ -1998,6 +2074,159 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
         ));
   }
 
+  Widget _buildShimmer() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: AnimatedBuilder(
+        animation: _shimmerCtrl,
+        builder: (_, __) {
+          final shimmerVal = 0.3 + (_shimmerCtrl.value * 0.4);
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  height: 280,
+                  color: Colors.white,
+                  child: Center(
+                    child: Container(
+                      height: 240,
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: shimmerVal * 0.5),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 22,
+                        width: 200,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: shimmerVal * 0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 16,
+                        width: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: shimmerVal * 0.4),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 14,
+                        width: 160,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: shimmerVal * 0.35),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        height: 18,
+                        width: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: shimmerVal * 0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...List.generate(3, (i) => Padding(
+                        padding: EdgeInsets.only(bottom: 8),
+                        child: Container(
+                          height: 12,
+                          width: 180 + (i * 40.0),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: shimmerVal * 0.3),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      )),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  height: 200,
+                  color: Colors.white,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Center(
+                    child: Container(
+                      height: 160,
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: shimmerVal * 0.5),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withValues(alpha: shimmerVal * 0.5),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 14,
+                            width: 120,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: shimmerVal * 0.5),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            height: 12,
+                            width: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withValues(alpha: shimmerVal * 0.35),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _sendRentRequest(PropertyEntity property) {
     if (!_rentValid) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2021,9 +2250,24 @@ class _PropertyDetailPageState extends State<PropertyDetailPage> {
 
   Widget _sectionTitle(String text) {
     return Text(text,
-        style: const TextStyle(
+        style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary));
+  }
+
+  Widget _starRow(double rating, double size) {
+    return Row(children: List.generate(5, (i) {
+      final diff = rating - i;
+      IconData icon;
+      if (diff >= 1) {
+        icon = Icons.star_rounded;
+      } else if (diff >= 0.25) {
+        icon = Icons.star_half_rounded;
+      } else {
+        icon = Icons.star_border_rounded;
+      }
+      return Icon(icon, size: size, color: const Color(0xFFFFA000));
+    }));
   }
 }

@@ -1,6 +1,7 @@
 // lib/main.dart
 
 import 'package:aqar/core/localization/app_strings.dart';
+import 'package:aqar/core/services/app_settings_manager.dart';
 import 'package:aqar/core/network/socket_service.dart';
 import 'package:aqar/core/services/app_permission_service.dart';
 import 'package:aqar/core/services/escrow_service.dart';
@@ -56,6 +57,10 @@ void main() async {
     AppStrings.locale = deviceLocale == 'ar' ? 'ar' : 'en';
   }
 
+  final savedTheme = await AppSettingsManager.loadThemeMode();
+  appThemeModeNotifier.value = savedTheme;
+  appLocaleNotifier.value = AppStrings.locale;
+
   if (kReleaseMode) {
     FlutterError.onError = (FlutterErrorDetails details) {
       developer.log(
@@ -77,10 +82,13 @@ class AqarApp extends StatefulWidget {
   State<AqarApp> createState() => _AqarAppState();
 }
 
-class _AqarAppState extends State<AqarApp> with WidgetsBindingObserver {
+class _AqarAppState extends State<AqarApp>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final _navigatorKey = GlobalKey<NavigatorState>();
   late final AppLinks _appLinks;
   final _resumeVerifier = PaymentResumeVerifier();
+  late final AnimationController _themeAnimCtrl;
+  final _rebuildTrigger = ValueNotifier<int>(0);
 
   @override
   void initState() {
@@ -91,6 +99,40 @@ class _AqarAppState extends State<AqarApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       AppPermissionService.requestStartupPermissions();
+    });
+
+    _themeAnimCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _themeAnimCtrl.addListener(_onThemeAnimationFrame);
+    themeAnimProgress.value =
+        appThemeModeNotifier.value == ThemeMode.dark ? 1.0 : 0.0;
+    appThemeModeNotifier.addListener(_onThemeModeChanged);
+    appLocaleNotifier.addListener(_onLocaleChanged);
+  }
+
+  void _onThemeAnimationFrame() {
+    themeAnimProgress.value = _themeAnimCtrl.value;
+    _rebuildTrigger.value++;
+  }
+
+  void _onThemeModeChanged() {
+    if (appThemeModeNotifier.value == ThemeMode.dark) {
+      _themeAnimCtrl.forward();
+    } else {
+      _themeAnimCtrl.reverse();
+    }
+    _rebuildTrigger.value++;
+  }
+
+  void _onLocaleChanged() {
+    _rebuildTrigger.value++;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+        '/home',
+        (route) => false,
+      );
     });
   }
 
@@ -127,6 +169,10 @@ class _AqarAppState extends State<AqarApp> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    appThemeModeNotifier.removeListener(_onThemeModeChanged);
+    appLocaleNotifier.removeListener(_onLocaleChanged);
+    _themeAnimCtrl.removeListener(_onThemeAnimationFrame);
+    _themeAnimCtrl.dispose();
     WidgetsBinding.instance.removeObserver(this);
     _appLinks = AppLinks();
     super.dispose();
@@ -193,67 +239,83 @@ class _AqarAppState extends State<AqarApp> with WidgetsBindingObserver {
             socketService.disconnect();
           }
         },
-        child: MaterialApp(
-          navigatorKey: _navigatorKey,
-          title: 'AQAR',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          locale: Locale(AppStrings.locale),
-          supportedLocales: const [Locale('en'), Locale('ar')],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          localeResolutionCallback: (locale, supported) {
-            if (locale != null && supported.contains(locale)) {
-              AppStrings.locale = locale.languageCode;
-              return locale;
-            }
-            AppStrings.locale = 'en';
-            return const Locale('en');
-          },
-          builder: (context, child) {
-            return Directionality(
-              textDirection:
-                  AppStrings.isArabic ? TextDirection.rtl : TextDirection.ltr,
-              child: ScrollConfiguration(
-                behavior: ScrollConfiguration.of(context).copyWith(
-                  physics: const BouncingScrollPhysics(),
-                ),
-                child: child!,
-              ),
+        child: ListenableBuilder(
+          listenable: _rebuildTrigger,
+          builder: (context, _) {
+            final localeStr = appLocaleNotifier.value;
+            final progress = _themeAnimCtrl.value.clamp(0.0, 1.0);
+            final themeData = ThemeData.lerp(
+              AppTheme.lightTheme,
+              AppTheme.darkTheme,
+              progress,
+            );
+            return MaterialApp(
+              navigatorKey: _navigatorKey,
+              title: 'AQAR',
+              debugShowCheckedModeBanner: false,
+              theme: themeData,
+              locale: Locale(localeStr),
+              supportedLocales: const [Locale('en'), Locale('ar')],
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              localeResolutionCallback: (locale, supported) {
+                if (locale != null && supported.contains(locale)) {
+                  AppStrings.locale = locale.languageCode;
+                  return locale;
+                }
+                AppStrings.locale = 'en';
+                return const Locale('en');
+              },
+              builder: (context, child) {
+                return Directionality(
+                  textDirection: AppStrings.isArabic
+                      ? TextDirection.rtl
+                      : TextDirection.ltr,
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(
+                      physics: const BouncingScrollPhysics(),
+                    ),
+                    child: child!,
+                  ),
+                );
+              },
+              initialRoute: '/',
+              onGenerateRoute: (settings) {
+                final uri = Uri.parse(settings.name ?? '/');
+                if (uri.path == '/') {
+                  return MaterialPageRoute(
+                      builder: (_) => const SplashPage(),
+                      settings: settings);
+                }
+                if (uri.path == '/home') {
+                  return MaterialPageRoute(
+                      builder: (_) => const HomePage(),
+                      settings: settings);
+                }
+                if (uri.path == '/auth') {
+                  return MaterialPageRoute(
+                      builder: (_) => const AuthPage(),
+                      settings: settings);
+                }
+                if (uri.pathSegments.length >= 2 &&
+                    uri.pathSegments[0] == 'auth' &&
+                    uri.pathSegments[1] == 'reset-password') {
+                  final token = uri.pathSegments.length >= 3
+                      ? uri.pathSegments[2]
+                      : null;
+                  return MaterialPageRoute(
+                    builder: (_) => ResetPasswordPage(token: token),
+                    settings: settings,
+                  );
+                }
+                return MaterialPageRoute(
+                    builder: (_) => const AuthPage(), settings: settings);
+              },
             );
           },
-          initialRoute: '/',
-          onGenerateRoute: (settings) {
-            final uri = Uri.parse(settings.name ?? '/');
-            if (uri.path == '/') {
-              return MaterialPageRoute(
-                  builder: (_) => const SplashPage(), settings: settings);
-            }
-            if (uri.path == '/home') {
-              return MaterialPageRoute(
-                  builder: (_) => const HomePage(), settings: settings);
-            }
-            if (uri.path == '/auth') {
-              return MaterialPageRoute(
-                  builder: (_) => const AuthPage(), settings: settings);
-            }
-            if (uri.pathSegments.length >= 2 &&
-                uri.pathSegments[0] == 'auth' &&
-                uri.pathSegments[1] == 'reset-password') {
-              final token =
-                  uri.pathSegments.length >= 3 ? uri.pathSegments[2] : null;
-              return MaterialPageRoute(
-                builder: (_) => ResetPasswordPage(token: token),
-                settings: settings,
-              );
-            }
-            return MaterialPageRoute(
-                builder: (_) => const AuthPage(), settings: settings);
-          },
-          themeMode: ThemeMode.light,
         ),
       ),
     );

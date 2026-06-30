@@ -117,7 +117,7 @@ class _MapPickerPageState extends State<MapPickerPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('📍 Location',
+        title: Text('📍 Location',
             style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -503,9 +503,9 @@ class _MapPickerPageState extends State<MapPickerPage>
         decoration: InputDecoration(
           hintText: 'Search area or district…',
           hintStyle:
-              const TextStyle(fontSize: 14, color: AppColors.textHint),
+              TextStyle(fontSize: 14, color: AppColors.textHint),
           prefixIcon:
-              const Icon(Icons.search, color: AppColors.textHint, size: 22),
+              Icon(Icons.search, color: AppColors.textHint, size: 22),
           suffixIcon: Icon(Icons.explore_outlined,
               color: AppColors.primary, size: 20),
           filled: true,
@@ -576,18 +576,18 @@ class _MapPickerPageState extends State<MapPickerPage>
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.location_on,
+              child: Icon(Icons.location_on,
                   size: 18, color: AppColors.primary),
             ),
             title: Text(r.displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 13, fontWeight: FontWeight.w600)),
             subtitle: Text(
                 '${r.lat.toStringAsFixed(4)}, ${r.lon.toStringAsFixed(4)}',
                 style:
-                    const TextStyle(fontSize: 11, color: AppColors.textHint)),
+                    TextStyle(fontSize: 11, color: AppColors.textHint)),
             onTap: () {
               HapticFeedback.lightImpact();
               setState(() {
@@ -674,17 +674,17 @@ class _MapPickerPageState extends State<MapPickerPage>
 
   Widget _buildBottomCard() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
           AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.vertical(
+        borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppSpacing.radiusLg)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 16,
-              offset: const Offset(0, -4)),
+              offset: Offset(0, -4)),
         ],
       ),
       child: SafeArea(
@@ -700,7 +700,7 @@ class _MapPickerPageState extends State<MapPickerPage>
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            SizedBox(height: AppSpacing.md),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -709,7 +709,7 @@ class _MapPickerPageState extends State<MapPickerPage>
                     color: _locationConfirmed
                         ? AppColors.success
                         : AppColors.primary),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text(
                   '${_displayLat.toStringAsFixed(4)}, ${_displayLng.toStringAsFixed(4)}',
                   style: TextStyle(
@@ -760,7 +760,7 @@ class _MapPickerPageState extends State<MapPickerPage>
   Widget _buildConfirmedCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.success.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
@@ -769,14 +769,14 @@ class _MapPickerPageState extends State<MapPickerPage>
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded,
+          Icon(Icons.check_circle_rounded,
               color: AppColors.success, size: 20),
-          const SizedBox(width: AppSpacing.sm),
+          SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Location Verified',
+                Text('Location Verified',
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -784,7 +784,7 @@ class _MapPickerPageState extends State<MapPickerPage>
                 Text(_resolvedAddress,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary)),
               ],
@@ -806,19 +806,19 @@ class _MapPickerPageState extends State<MapPickerPage>
                 child: OutlinedButton.icon(
                   onPressed: _isLocating ? null : _locateMe,
                   icon: _isLocating
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
                               strokeWidth: 2))
-                      : const Icon(Icons.my_location, size: 18),
+                      : Icon(Icons.my_location, size: 18),
                   label: Text(_isLocating ? 'Locating…' : 'Locate Me',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600)),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.navyBlue,
-                    side: const BorderSide(color: AppColors.navyBlue),
+                    side: BorderSide(color: AppColors.navyBlue),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
                             AppSpacing.radiusSm)),
@@ -826,21 +826,21 @@ class _MapPickerPageState extends State<MapPickerPage>
                 ),
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
+            SizedBox(width: AppSpacing.sm),
             Expanded(
               child: SizedBox(
                 height: 46,
                 child: ElevatedButton.icon(
                   onPressed: _isGeocoding ? null : _confirmLocation,
                   icon: _isGeocoding
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 16,
                           height: 16,
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.check, size: 18),
+                      : Icon(Icons.check, size: 18),
                   label: Text(_isGeocoding ? 'Resolving…' : 'Confirm',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600)),
                   style: ElevatedButton.styleFrom(
@@ -858,7 +858,7 @@ class _MapPickerPageState extends State<MapPickerPage>
         ),
         if (!_locationConfirmed)
           Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
+            padding: EdgeInsets.only(top: AppSpacing.sm),
             child: Text(
               'Long-press the map to fine-tune the pin position',
               style: TextStyle(
@@ -876,9 +876,9 @@ class _MapPickerPageState extends State<MapPickerPage>
       children: [
         Row(
           children: [
-            const Icon(Icons.edit_location_alt,
+            Icon(Icons.edit_location_alt,
                 size: 18, color: AppColors.primary),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text('Enter address manually',
                 style: TextStyle(
                     fontSize: 12,

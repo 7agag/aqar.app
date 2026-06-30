@@ -299,13 +299,13 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
         backgroundColor: Colors.white,
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.close_rounded),
+            icon: Icon(Icons.close_rounded),
             color: AppColors.textPrimary,
             onPressed: _isLoading
                 ? _confirmClose
                 : () => Navigator.pop(context),
           ),
-          title: const Text(
+          title: Text(
             'Secure Payment Gateway',
             style: TextStyle(
               fontSize: 17,
@@ -317,7 +317,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
           backgroundColor: Colors.white,
           elevation: 0,
           bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1),
+            preferredSize: Size.fromHeight(1),
             child: Container(color: AppColors.borderLight, height: 1),
           ),
         ),
@@ -343,7 +343,7 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
   Widget _buildErrorState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -354,14 +354,14 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
                 color: AppColors.error.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.wifi_off_rounded,
                 size: 32,
                 color: AppColors.error,
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'Unable to load payment page',
               style: TextStyle(
                 fontSize: 18,
@@ -369,13 +369,13 @@ class _KashierWebViewPageState extends State<KashierWebViewPage> {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               _errorMessage.isNotEmpty
                   ? _errorMessage
                   : 'Check your internet connection and try again.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
               ),

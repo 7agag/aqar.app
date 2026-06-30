@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aqar/features/property/presentation/pages/all_properties_page.dart';
+import 'package:aqar/core/config/app_config.dart';
+import 'package:aqar/core/network/api_client.dart';
 import 'package:aqar/core/theme/app_colors.dart';
 import 'package:aqar/features/invoice/presentation/bloc/invoice_bloc.dart';
 import 'package:aqar/features/invoice/presentation/bloc/invoice_event.dart';
 import 'package:aqar/features/invoice/presentation/bloc/invoice_state.dart';
 import 'package:aqar/features/invoice/domain/entities/invoice_entity.dart';
+import 'package:aqar/features/payment/presentation/pages/invoice_payment_status_page.dart';
+import 'package:aqar/features/payment/presentation/pages/kashier_web_view_page.dart';
+import 'package:aqar/features/payment/presentation/widgets/invoice_summary_cards.dart';
+import 'package:aqar/features/subscription/data/services/pending_payment_service.dart';
+import 'package:aqar/injection_container.dart' as di;
 
 const _months = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -83,13 +90,57 @@ class _InvoicesPageState extends State<InvoicesPage>
     return '$buffer ج.م';
   }
 
+  Future<void> _payInvoice(InvoiceEntity invoice) async {
+    final pendingService = PendingPaymentService();
+    await pendingService.savePendingInvoicePayment(invoice.invoiceId);
+    if (!mounted) return;
+
+    try {
+      final dio = di.sl<ApiClient>().dio;
+      final res = await dio.post('/api/payment/', data: {
+        'invoice_id': invoice.invoiceId,
+        'redirect': AppConfig.invoiceCallbackUrl(invoice.invoiceId),
+      });
+      final url = res.data['url'] as String?;
+      if (url == null || url.isEmpty) {
+        throw Exception('Missing payment URL');
+      }
+      if (!mounted) return;
+      await KashierWebViewPage.open(context, url: url);
+      if (!mounted) return;
+      await pendingService.clearPendingInvoicePayment();
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => InvoicePaymentStatusPage(
+            invoiceId: invoice.invoiceId,
+          ),
+        ),
+      );
+    } catch (e) {
+      await pendingService.clearPendingInvoicePayment();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Payment failed: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   void _onInvoiceTap(InvoiceEntity invoice) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${invoice.invoiceId} — ${_statusLabel(invoice.status)}'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    if (invoice.isUnpaid || invoice.isOverdue) {
+      _payInvoice(invoice);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${invoice.invoiceId} — ${_statusLabel(invoice.status)}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -155,6 +206,11 @@ class _InvoicesPageState extends State<InvoicesPage>
                 ? state.invoices
                 : (state is OwnerInvoicesLoaded ? state.invoices : <InvoiceEntity>[]);
             final isRenter = state is RenterInvoicesLoaded;
+            final stats = state is RenterInvoicesLoaded
+                ? (state).stats
+                : (state is OwnerInvoicesLoaded ? (state).stats : null);
+            final renterStats = stats?.asRenter;
+            final ownerStats = stats?.asOwner;
             return RefreshIndicator(
               onRefresh: () async {
                 context.read<InvoiceBloc>().add(isRenter
@@ -173,10 +229,23 @@ class _InvoicesPageState extends State<InvoicesPage>
                     )
                   : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(_kPad),
-                      itemCount: invoices.length,
+                      padding: const EdgeInsets.only(top: 12, bottom: 24),
+                      itemCount: invoices.length + 1,
                       itemBuilder: (context, index) {
-                        return _buildInvoiceCard(invoices[index]);
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: InvoiceSummaryCards(
+                              renterStats: isRenter ? renterStats : null,
+                              ownerStats: !isRenter ? ownerStats : null,
+                              isRenter: isRenter,
+                            ),
+                          );
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: _kPad),
+                          child: _buildInvoiceCard(invoices[index - 1]),
+                        );
                       },
                     ),
             );
@@ -190,8 +259,9 @@ class _InvoicesPageState extends State<InvoicesPage>
   Widget _buildInvoiceCard(InvoiceEntity invoice) {
     final color = _statusColor(invoice.status);
     final label = _statusLabel(invoice.status);
+    final canPay = invoice.isUnpaid || invoice.isOverdue;
     return Padding(
-      padding: const EdgeInsets.only(bottom: _kGap),
+      padding: EdgeInsets.only(bottom: _kGap),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -201,84 +271,60 @@ class _InvoicesPageState extends State<InvoicesPage>
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
-              offset: const Offset(0, 2),
+              offset: Offset(0, 2),
             ),
           ],
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(_kRadiusCard),
-          onTap: () => _onInvoiceTap(invoice),
+          onTap: canPay ? null : () => _onInvoiceTap(invoice),
           child: Padding(
-            padding: const EdgeInsets.all(_kPad),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            invoice.propertyName ?? 'Property #${invoice.propertyId ?? ''}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            invoice.invoiceId,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textHint,
-                              fontFamily: 'monospace',
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _buildStatusBadge(color, label),
-                  ],
-                ),
-                const Divider(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Due Date',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textHint,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatDate(invoice.dueDate),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+            padding: EdgeInsets.all(_kPad),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Total',
+                        Text(
+                          invoice.propertyName ?? 'Property #${invoice.propertyId ?? ''}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          invoice.invoiceId,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textHint,
+                            fontFamily: 'monospace',
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildStatusBadge(color, label),
+                ],
+              ),
+              Divider(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Due Date',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -286,25 +332,69 @@ class _InvoicesPageState extends State<InvoicesPage>
                             letterSpacing: 0.5,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4),
                         Text(
-                          _formatAmount(invoice.amount),
-                          textDirection: TextDirection.rtl,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                          _formatDate(invoice.dueDate),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
                         ),
                       ],
                     ),
-                  ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Total',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textHint,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        _formatAmount(invoice.amount),
+                        textDirection: TextDirection.rtl,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              if (canPay) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _payInvoice(invoice),
+                    icon: const Icon(Icons.payment_rounded, size: 16),
+                    label: const Text('Pay Now'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
                 ),
               ],
-            ),
+            ],
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -346,7 +436,7 @@ class _InvoicesPageState extends State<InvoicesPage>
   Widget _buildEmptyState({required bool isRenter}) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -358,14 +448,14 @@ class _InvoicesPageState extends State<InvoicesPage>
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.borderLight),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.description_outlined,
                 size: 44,
                 color: AppColors.textHint,
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'No invoices yet',
               style: TextStyle(
                 fontSize: 18,
@@ -373,13 +463,13 @@ class _InvoicesPageState extends State<InvoicesPage>
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(
               isRenter
                   ? "You don't have any rental invoices.\nBrowse properties and start renting."
                   : "You don't have any owner invoices.\nList your property to generate invoices.",
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
                 height: 1.5,

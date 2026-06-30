@@ -57,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
                 hint: 'Enter your email',
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                prefixIcon: const Icon(Icons.email_outlined,
+                prefixIcon: Icon(Icons.email_outlined,
                     color: AppColors.textHint, size: 20),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Enter your email';
@@ -117,7 +117,7 @@ class _LoginPageState extends State<LoginPage> {
                     },
                     decoration: InputDecoration(
                       hintText: 'Enter your password',
-                      prefixIcon: const Icon(Icons.lock_outline,
+                      prefixIcon: Icon(Icons.lock_outline,
                           color: AppColors.textHint, size: 20),
                       suffixIcon: GestureDetector(
                         onTap: () => setState(
@@ -171,7 +171,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildTerms() {
     return RichText(
       textAlign: TextAlign.center,
-      text: const TextSpan(
+      text: TextSpan(
         style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         children: [
           TextSpan(text: 'By signing in, you agree to our '),

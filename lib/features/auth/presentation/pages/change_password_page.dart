@@ -97,7 +97,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: const Text(
+            title: Text(
               'Change Password',
               style: TextStyle(
                 color: AppColors.textPrimary,
@@ -111,29 +111,29 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             centerTitle: true,
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             child: Form(
               key: _formKey,
               child: Column(
                 children: [
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Center(
                     child: Container(
                       width: 80,
                       height: 80,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         color: AppColors.surfaceLight,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.lock_outline,
                         size: 40,
                         color: AppColors.primary,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: 16),
+                  Text(
                     "Choose a strong password you haven't used before",
                     textAlign: TextAlign.center,
                     style: TextStyle(
@@ -220,13 +220,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         TextFormField(
           controller: controller,
           obscureText: obscure,
@@ -238,7 +238,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.lock_outline,
               color: AppColors.textHint,
             ),

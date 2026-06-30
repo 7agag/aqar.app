@@ -44,7 +44,7 @@ class _MyRequestsPageState extends State<MyRequestsPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Requests'),
+        title: Text('My Requests'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -123,16 +123,16 @@ class _MyRequestsPageState extends State<MyRequestsPage>
   Widget _buildErrorRetry(VoidCallback onRetry, String? message) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.textHint),
-            const SizedBox(height: 16),
+            Icon(Icons.error_outline, size: 48, color: AppColors.textHint),
+            SizedBox(height: 16),
             Text(
               message ?? 'Something went wrong',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -192,7 +192,7 @@ class _MyRequestsPageState extends State<MyRequestsPage>
           );
         },
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14),
           child: Row(
             children: [
               Container(
@@ -204,32 +204,32 @@ class _MyRequestsPageState extends State<MyRequestsPage>
                 ),
                 child: Icon(Icons.home_work_outlined, size: 22, color: _rentStatusColor(r.state.label)),
               ),
-              const SizedBox(width: 14),
+              SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       r.propertyName ?? 'Property #${r.propertyId}',
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Row(
                       children: [
                         Icon(Icons.calendar_today, size: 11, color: AppColors.textHint),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         Text(
                           '${r.checkInDate.toString().substring(0, 10)} — ${r.checkOutDate.toString().substring(0, 10)}',
-                          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       '\$${r.totalPrice.formatWithCommas()} · ${r.rentingType.label}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                      style: TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -272,7 +272,7 @@ class _MyRequestsPageState extends State<MyRequestsPage>
   Widget _emptyState({required IconData icon, required String title, required String subtitle}) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -286,10 +286,10 @@ class _MyRequestsPageState extends State<MyRequestsPage>
               ),
               child: Icon(icon, size: 36, color: AppColors.textHint),
             ),
-            const SizedBox(height: 20),
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 8),
-            Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            SizedBox(height: 20),
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            SizedBox(height: 8),
+            Text(subtitle, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
           ],
         ),
       ),

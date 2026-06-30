@@ -12,7 +12,7 @@ class ReviewListWidget extends StatelessWidget {
     if (reviews.isEmpty) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 32),
+        padding: EdgeInsets.symmetric(vertical: 32),
         decoration: BoxDecoration(
           color: AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(12),
@@ -28,14 +28,14 @@ class ReviewListWidget extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.borderLight),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.edit_note_rounded,
                 size: 32,
                 color: AppColors.textHint,
               ),
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16),
+            Text(
               'No reviews yet',
               style: TextStyle(
                 fontSize: 16,
@@ -43,8 +43,8 @@ class ReviewListWidget extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
+            SizedBox(height: 6),
+            Text(
               'Be the first to share your experience',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -67,8 +67,8 @@ class ReviewListWidget extends StatelessWidget {
   Widget _buildReviewCard(ReviewEntity review) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
@@ -92,14 +92,14 @@ class ReviewListWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       review.reviewerName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -114,22 +114,11 @@ class ReviewListWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(5, (i) {
-                  return Icon(
-                    i < review.rating.round()
-                        ? Icons.star_rounded
-                        : Icons.star_border_rounded,
-                    size: 16,
-                    color: const Color(0xFFFFA000),
-                  );
-                }),
-              ),
+              _starRow(review.rating, 16),
             ],
           ),
           if (review.phrase.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               review.phrase,
               style: TextStyle(
@@ -142,6 +131,21 @@ class ReviewListWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _starRow(double rating, double size) {
+    return Row(mainAxisSize: MainAxisSize.min, children: List.generate(5, (i) {
+      final diff = rating - i;
+      IconData icon;
+      if (diff >= 1) {
+        icon = Icons.star_rounded;
+      } else if (diff >= 0.25) {
+        icon = Icons.star_half_rounded;
+      } else {
+        icon = Icons.star_border_rounded;
+      }
+      return Icon(icon, size: size, color: const Color(0xFFFFA000));
+    }));
   }
 
   String _formatDate(DateTime date) {

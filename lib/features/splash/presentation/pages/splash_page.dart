@@ -56,7 +56,7 @@ class _SplashPageState extends State<SplashPage>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -89,7 +89,7 @@ class _SplashPageState extends State<SplashPage>
                         shape: BoxShape.circle,
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(22),
+                        padding: EdgeInsets.all(22),
                         child: Image.asset(
                           'assets/icons/aqar.png',
                           fit: BoxFit.contain,
@@ -98,7 +98,7 @@ class _SplashPageState extends State<SplashPage>
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                SizedBox(height: 32),
                 SlideTransition(
                   position: _slideUp,
                   child: Column(
@@ -112,7 +112,7 @@ class _SplashPageState extends State<SplashPage>
                           letterSpacing: 6,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         'Find Your Perfect Home',
                         style: TextStyle(

@@ -155,12 +155,12 @@ class _ChatListPageState extends State<ChatListPage>
     final isPinned = _pinnedIds.contains(thread.id);
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (_) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.symmetric(vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -237,7 +237,7 @@ class _ChatListPageState extends State<ChatListPage>
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
+          title: Text(
             'Messages',
             style: TextStyle(
               fontSize: 18,
@@ -324,24 +324,24 @@ class _ChatListPageState extends State<ChatListPage>
 
   Widget _buildSearchBar() {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+      duration: Duration(milliseconds: 200),
       height: _searchQuery.isNotEmpty || _searchController.text.isNotEmpty
           ? 56
           : 0,
       child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 200),
+        duration: Duration(milliseconds: 200),
         opacity: _searchQuery.isNotEmpty || _searchController.text.isNotEmpty
             ? 1.0
             : 0.0,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          padding: EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: TextField(
             controller: _searchController,
             textDirection: TextDirection.rtl,
             decoration: InputDecoration(
               hintText: 'البحث في المحادثات...',
               hintTextDirection: TextDirection.rtl,
-              prefixIcon: const Icon(Icons.search, color: AppColors.textHint),
+              prefixIcon: Icon(Icons.search, color: AppColors.textHint),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.clear_rounded, size: 20),
@@ -520,7 +520,7 @@ class _ChatListPageState extends State<ChatListPage>
       child: GestureDetector(
         onLongPress: () => _showPinSheet(thread),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: hasUnread
                 ? AppColors.primary.withValues(alpha: 0.03)
@@ -557,7 +557,7 @@ class _ChatListPageState extends State<ChatListPage>
               );
             },
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -568,7 +568,7 @@ class _ChatListPageState extends State<ChatListPage>
                         backgroundColor: AppColors.primary,
                         child: Text(
                           _getInitials(thread.partnerName),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -577,7 +577,7 @@ class _ChatListPageState extends State<ChatListPage>
                       ),
                     ],
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -586,7 +586,7 @@ class _ChatListPageState extends State<ChatListPage>
                           children: [
                             if (isPinned)
                               Padding(
-                                padding: const EdgeInsets.only(left: 4),
+                                padding: EdgeInsets.only(left: 4),
                                 child: Icon(
                                   Icons.push_pin,
                                   size: 14,
@@ -607,14 +607,14 @@ class _ChatListPageState extends State<ChatListPage>
                             if (thread.lastMessageTime != null)
                               Text(
                                 _formatTime(thread.lastMessageTime),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11,
                                   color: AppColors.textHint,
                                 ),
                               ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        SizedBox(height: 6),
                         Row(
                           children: [
                             Expanded(
@@ -678,8 +678,8 @@ class _ChatListPageState extends State<ChatListPage>
             size: 64,
             color: AppColors.textHint,
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16),
+          Text(
             'No conversations found',
             style: TextStyle(
               fontSize: 16,
@@ -687,8 +687,8 @@ class _ChatListPageState extends State<ChatListPage>
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
+          SizedBox(height: 8),
+          Text(
             'Try a different search term',
             style: TextStyle(
               fontSize: 13,
@@ -703,7 +703,7 @@ class _ChatListPageState extends State<ChatListPage>
   Widget _buildErrorState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -724,8 +724,8 @@ class _ChatListPageState extends State<ChatListPage>
                 color: AppColors.error,
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24),
+            Text(
               'Something went wrong',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -734,8 +734,8 @@ class _ChatListPageState extends State<ChatListPage>
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               'Unable to load messages. Please try again.',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -766,7 +766,7 @@ class _ChatListPageState extends State<ChatListPage>
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -787,8 +787,8 @@ class _ChatListPageState extends State<ChatListPage>
                 color: AppColors.textHint,
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24),
+            Text(
               'No messages yet',
               style: TextStyle(
                 fontSize: 18,
@@ -796,8 +796,8 @@ class _ChatListPageState extends State<ChatListPage>
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 10),
-            const Text(
+            SizedBox(height: 10),
+            Text(
               'Start a conversation with a property owner\nby browsing available listings',
               textAlign: TextAlign.center,
               style: TextStyle(

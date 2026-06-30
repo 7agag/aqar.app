@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'notification_event.dart';
@@ -20,7 +21,8 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<GetNotificationsRequested>((event, emit) async {
       emit(NotificationLoading());
       try {
-        final result = await getNotifications(NoParams());
+        final result = await getNotifications(NoParams())
+            .timeout(const Duration(seconds: 15));
         result.fold(
           (failure) => emit(NotificationError(failure.message)),
           (data) {
@@ -31,6 +33,8 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
             ));
           },
         );
+      } on TimeoutException {
+        emit(NotificationError('Request timed out. Please try again.'));
       } catch (e) {
         emit(NotificationError(e.toString()));
       }

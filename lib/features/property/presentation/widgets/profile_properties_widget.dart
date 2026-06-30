@@ -89,7 +89,7 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
     return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('My Listings',
+          Text('My Listings',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
           const SizedBox(height: 8),
           Container(
@@ -129,7 +129,7 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
             children: [
               Text(
                 'My Listings ($count)',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -189,7 +189,7 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
   Widget _buildEmpty() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(12),
@@ -198,11 +198,11 @@ class _ProfilePropertiesWidgetState extends State<ProfilePropertiesWidget>
       child: Column(
         children: [
           Icon(Icons.home_outlined, size: 40, color: AppColors.textHint.withValues(alpha: 0.5)),
-          const SizedBox(height: 8),
-          const Text('No listings yet',
+          SizedBox(height: 8),
+          Text('No listings yet',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-          const SizedBox(height: 4),
-          const Text('Add your first property to get started',
+          SizedBox(height: 4),
+          Text('Add your first property to get started',
               style: TextStyle(fontSize: 12, color: AppColors.textHint)),
           const SizedBox(height: 12),
           ElevatedButton.icon(
@@ -370,7 +370,7 @@ class _PropertyCardHorizontal extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
               child: SizedBox(
                 width: cardWidth,
                 height: imageHeight,
@@ -383,21 +383,21 @@ class _PropertyCardHorizontal extends StatelessWidget {
                                 ? child
                                 : Container(
                                     color: AppColors.surfaceLight,
-                                    child: const Icon(Icons.home,
+                                    child: Icon(Icons.home,
                                         color: AppColors.textHint, size: 28)),
                         errorBuilder: (_, __, ___) => Container(
                             color: AppColors.surfaceLight,
-                            child: const Icon(Icons.home,
+                            child: Icon(Icons.home,
                                 color: AppColors.textHint, size: 28)))
                     : Container(
                         color: AppColors.surfaceLight,
-                        child: const Icon(Icons.home, color: AppColors.textHint, size: 28),
+                        child: Icon(Icons.home, color: AppColors.textHint, size: 28),
                       ),
               ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -405,7 +405,7 @@ class _PropertyCardHorizontal extends StatelessWidget {
                       property.propertyName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
@@ -413,18 +413,18 @@ class _PropertyCardHorizontal extends StatelessWidget {
                     ),
                     if (property.location.isNotEmpty)
                       Padding(
-                        padding: const EdgeInsets.only(top: 3),
+                        padding: EdgeInsets.only(top: 3),
                         child: Text(
                           property.location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
                             color: AppColors.textSecondary,
                           ),
                         ),
                       ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -432,14 +432,14 @@ class _PropertyCardHorizontal extends StatelessWidget {
                           width: 5, height: 5,
                           decoration: BoxDecoration(color: chipColor, shape: BoxShape.circle),
                         ),
-                        const SizedBox(width: 3),
+                        SizedBox(width: 3),
                         Text(
                           chipLabel,
                           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: chipColor),
                         ),
                       ],
                     ),
-                    const Spacer(),
+                    Spacer(),
                     Row(
                       children: [
                         Flexible(
@@ -447,18 +447,18 @@ class _PropertyCardHorizontal extends StatelessWidget {
                             'EGP ${property.priceValue.formatWithCommas()}${property.pricingUnitSuffix}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
                               color: AppColors.navyBlue,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 4),
+                        SizedBox(width: 4),
                         GestureDetector(
                           onTap: onEdit,
                           child: Padding(
-                            padding: const EdgeInsets.all(2),
+                            padding: EdgeInsets.all(2),
                             child: Icon(Icons.edit_outlined, size: 18, color: AppColors.textHint.withValues(alpha: 0.6)),
                           ),
                         ),

@@ -35,7 +35,7 @@ class PropertyImageCarousel extends StatelessWidget {
   Widget _buildPlaceholder() {
     return Container(
       color: AppColors.surfaceLight,
-      child: const Center(
+      child: Center(
         child: Icon(Icons.home_outlined, size: 76, color: AppColors.textHint),
       ),
     );

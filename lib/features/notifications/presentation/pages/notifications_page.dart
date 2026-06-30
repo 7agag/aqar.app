@@ -73,7 +73,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Notifications',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -177,20 +177,20 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget _buildErrorState(String message) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.error_outline_rounded,
               size: 48,
               color: AppColors.error,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),
@@ -214,7 +214,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -226,14 +226,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.borderLight),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.notifications_none_outlined,
                 size: 44,
                 color: AppColors.textHint,
               ),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'No notifications',
               style: TextStyle(
                 fontSize: 18,
@@ -241,8 +241,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 10),
-            const Text(
+            SizedBox(height: 10),
+            Text(
               'You\'re all caught up',
               style: TextStyle(
                 fontSize: 14,
@@ -270,14 +270,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
           if (notif.type == 'property_rejection') {
             showModalBottomSheet(
               context: context,
-              shape: const RoundedRectangleBorder(
+              shape: RoundedRectangleBorder(
                 borderRadius:
                     BorderRadius.vertical(top: Radius.circular(24)),
               ),
               builder: (_) => SingleChildScrollView(
                 child: Padding(
                   padding:
-                      const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                      EdgeInsets.fromLTRB(24, 24, 24, 32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                   children: [
@@ -289,7 +289,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                     Container(
                       width: 56,
                       height: 56,
@@ -298,22 +298,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             AppColors.error.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.shield_outlined,
                         color: AppColors.error,
                         size: 28,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text('Verification Declined',
+                    SizedBox(height: 16),
+                    Text('Verification Declined',
                         style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary)),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(14),
+                      padding: EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: AppColors.error
                             .withValues(alpha: 0.05),
@@ -333,7 +333,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             color: AppColors.error
                                 .withValues(alpha: 0.5),
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: Text(notif.body,
                                 style: TextStyle(
@@ -398,12 +398,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
-                offset: const Offset(0, 2),
+                offset: Offset(0, 2),
               ),
             ],
           ),
           child: Padding(
-            padding: const EdgeInsets.all(_kPad),
+            padding: EdgeInsets.all(_kPad),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -429,7 +429,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         child: Container(
                           width: 10,
                           height: 10,
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppColors.error,
                             shape: BoxShape.circle,
                           ),
@@ -437,7 +437,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       ),
                   ],
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,12 +451,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(
                         notif.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
@@ -464,10 +464,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   _timeAgo(notif.createdAt),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     color: AppColors.textHint,
                   ),

@@ -35,7 +35,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Favorites'),
+        title: Text('My Favorites'),
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
@@ -139,7 +139,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
   Widget _buildEmpty() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -154,18 +154,18 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    offset: Offset(0, 4),
                   ),
                 ],
               ),
-              child: const Icon(Icons.favorite_border_rounded, size: 42, color: AppColors.textHint),
+              child: Icon(Icons.favorite_border_rounded, size: 42, color: AppColors.textHint),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            SizedBox(height: 24),
+            Text(
               'No favorites yet',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Start adding properties you love.\nTap the heart icon on any listing.',
               textAlign: TextAlign.center,

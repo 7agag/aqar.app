@@ -89,12 +89,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 (_) => false,
               ),
               child: Container(
-                margin: const EdgeInsets.all(8),
+                margin: EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.borderLight),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back_ios_new_rounded,
                   size: 18,
                   color: AppColors.textPrimary,
@@ -128,7 +128,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           Center(
             child: Container(
               width: 90,
@@ -137,15 +137,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.password_outlined,
                 size: 44,
                 color: AppColors.primary,
               ),
             ),
           ),
-          const SizedBox(height: 28),
-          const Text(
+          SizedBox(height: 28),
+          Text(
             'Reset Password',
             style: TextStyle(
               fontSize: 26,
@@ -153,8 +153,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             'Create a new password for your AQAR account.',
             style: TextStyle(
               fontSize: 14,
@@ -162,13 +162,13 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 32),
+          SizedBox(height: 32),
           AqarTextField(
             label: 'New Password',
             hint: 'At least 8 characters',
             controller: _passwordController,
             obscureText: _obscurePassword,
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.lock_outline,
               color: AppColors.textHint,
               size: 20,
@@ -189,13 +189,13 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
               return null;
             },
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20),
           AqarTextField(
             label: 'Confirm Password',
             hint: 'Repeat your new password',
             controller: _confirmPasswordController,
             obscureText: _obscureConfirmPassword,
-            prefixIcon: const Icon(
+            prefixIcon: Icon(
               Icons.lock_outline,
               color: AppColors.textHint,
               size: 20,
@@ -254,7 +254,7 @@ class _InvalidResetLink extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 80),
+        SizedBox(height: 80),
         Container(
           width: 90,
           height: 90,
@@ -262,14 +262,14 @@ class _InvalidResetLink extends StatelessWidget {
             color: AppColors.error.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(
+          child: Icon(
             Icons.link_off_rounded,
             size: 44,
             color: AppColors.error,
           ),
         ),
-        const SizedBox(height: 28),
-        const Text(
+        SizedBox(height: 28),
+        Text(
           'Invalid Reset Link',
           textAlign: TextAlign.center,
           style: TextStyle(
@@ -278,8 +278,8 @@ class _InvalidResetLink extends StatelessWidget {
             color: AppColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 12),
-        const Text(
+        SizedBox(height: 12),
+        Text(
           'Please request a new password reset link from the login screen.',
           textAlign: TextAlign.center,
           style: TextStyle(

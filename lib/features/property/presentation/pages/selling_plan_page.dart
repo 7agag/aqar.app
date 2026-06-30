@@ -170,13 +170,13 @@ class _SellingPlanPageState extends State<SellingPlanPage> {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+      padding: EdgeInsets.fromLTRB(20, 24, 20, 20),
       color: Colors.white,
       child: Column(
         children: [
           Icon(Icons.verified, size: 40, color: AppColors.primary),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             'Activate Your Listing',
             style: TextStyle(
               fontSize: 20,
@@ -184,7 +184,7 @@ class _SellingPlanPageState extends State<SellingPlanPage> {
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Text(
             'Choose a plan to activate your sale listing\nand reach more buyers.',
             textAlign: TextAlign.center,
@@ -215,7 +215,7 @@ class _SellingPlanPageState extends State<SellingPlanPage> {
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -228,12 +228,12 @@ class _SellingPlanPageState extends State<SellingPlanPage> {
               right: 16,
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.success,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.star, size: 12, color: Colors.white),
@@ -252,7 +252,7 @@ class _SellingPlanPageState extends State<SellingPlanPage> {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -263,20 +263,20 @@ class _SellingPlanPageState extends State<SellingPlanPage> {
                       activeColor: AppColors.primary,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             plan.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                          SizedBox(height: 2),
                           Text(
                             'Listing plan',
                             style: TextStyle(
@@ -297,10 +297,10 @@ class _SellingPlanPageState extends State<SellingPlanPage> {
                     ),
                   ],
                 ),
-                const Divider(height: 24),
+                Divider(height: 24),
                 ...plan.features.map(
                   (f) => Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: EdgeInsets.only(bottom: 10),
                     child: Row(
                       children: [
                         Icon(
@@ -310,7 +310,7 @@ class _SellingPlanPageState extends State<SellingPlanPage> {
                               ? AppColors.success
                               : AppColors.textHint,
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: 10),
                         Text(
                           f,
                           style: TextStyle(

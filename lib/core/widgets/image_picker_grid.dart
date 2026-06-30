@@ -34,7 +34,7 @@ class ImagePickerGrid extends StatelessWidget {
       children: [
         Text(
           '$title (${images.length}/$maxImages)',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
             color: AppColors.textHint,
@@ -78,12 +78,12 @@ class ImagePickerGrid extends StatelessWidget {
     HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          padding: EdgeInsets.fromLTRB(24, 16, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -95,8 +95,8 @@ class ImagePickerGrid extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20),
+              Text(
                 'Add Photo',
                 style: TextStyle(
                   fontSize: 17,
@@ -168,7 +168,7 @@ class ImagePickerGrid extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
           color: AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(14),
@@ -185,15 +185,15 @@ class ImagePickerGrid extends StatelessWidget {
               ),
               child: Icon(icon, color: AppColors.primary, size: 26),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             Text(label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary)),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11, color: AppColors.textSecondary)),
           ],
         ),
@@ -315,7 +315,7 @@ class _PickedImageTileState extends State<_PickedImageTile> {
       return Container(
         color: AppColors.surfaceLight,
         child:
-            const Icon(Icons.broken_image_outlined, color: AppColors.textHint),
+            Icon(Icons.broken_image_outlined, color: AppColors.textHint),
       );
     }
     if (_bytes == null) {

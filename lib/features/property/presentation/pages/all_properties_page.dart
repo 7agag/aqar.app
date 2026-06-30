@@ -107,12 +107,12 @@ class _AllPropertiesPageState extends State<AllPropertiesPage> {
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back_rounded,
+          icon: Icon(Icons.arrow_back_rounded,
               color: AppColors.textPrimary),
         ),
         title: Text(
           _title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
@@ -156,10 +156,10 @@ class _AllPropertiesPageState extends State<AllPropertiesPage> {
               size: 64,
               color: AppColors.textHint,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'No properties found',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 color: AppColors.textSecondary,
               ),

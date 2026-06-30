@@ -32,7 +32,7 @@ class MapFilterBar extends StatelessWidget {
     return GestureDetector(
       onTap: () => onChanged(filter),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: isActive ? AppColors.navyBlue : Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -43,7 +43,7 @@ class MapFilterBar extends StatelessWidget {
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 6,
-              offset: const Offset(0, 2),
+              offset: Offset(0, 2),
             ),
           ],
         ),
